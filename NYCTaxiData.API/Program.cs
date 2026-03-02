@@ -5,6 +5,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddExceptionHandler<NYCTaxiData.API.MiddleWares.GlobalExceptionHandler>();
+builder.Services.AddProblemDetails(); // ضرورية لعمل الـ ExceptionHandler
 
 var app = builder.Build();
 
@@ -13,6 +15,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
