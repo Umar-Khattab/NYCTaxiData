@@ -1,6 +1,6 @@
 <Solution>
+  <Project Path="NYCTaxiData.API/NYCTaxiData.API.csproj" />
   <Project Path="NYCTaxiData.Application/NYCTaxiData.Application.csproj" />
   <Project Path="NYCTaxiData.Domain/NYCTaxiData.Domain.csproj" />
   <Project Path="NYCTaxiData.Infrastructure/NYCTaxiData.Infrastructure.csproj" />
-  <Project Path="WebApplication1/NYCTaxiData.API.csproj" />
 </Solution>
