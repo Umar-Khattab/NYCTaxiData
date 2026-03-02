@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NYCTaxiData.Application\NYCTaxiData.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ExternalServices\" />
+    <Folder Include="Caching\" />
+    <Folder Include="Real-TimeCommunication\" />
+    <Folder Include="Persistence\Contexts\" />
+    <Folder Include="Persistence\Repositories\" />
+  </ItemGroup>
+
+</Project>
