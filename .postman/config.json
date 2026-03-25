@@ -1,0 +1,15 @@
+{
+  "workspace": {
+    "id": "2c015034-63c8-4607-8dbb-b3fa4a71ce1c"
+  },
+  "entities": {
+    "environments": [],
+    "flows": [],
+    "globals": [],
+    "mocks": [],
+    "specs": [
+      "..\\NYCTaxiData.API\\obj\\Debug\\net10.0\\EndpointInfo\\NYCTaxiData.API.json"
+    ],
+    "collections": []
+  }
+}
