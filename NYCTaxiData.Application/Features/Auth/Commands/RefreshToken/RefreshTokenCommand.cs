@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MediatR;
+using NYCTaxiData.Domain.DTOs.Identity; 
 
-namespace NYCTaxiData.Application.Features.Auth.Commands.RefreshToken
+namespace NYCTaxiData.Application.Auth.Commands.RefreshToken
 {
-    internal class RefreshTokenCommand
-    {
-    }
+
+    public record RefreshTokenCommand(string PhoneNumber, string Role, string FullName)
+        : IRequest<UserResultDto>;
 }
