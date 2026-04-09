@@ -8,15 +8,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NYCTaxiData.Domain\NYCTaxiData.Domain.csproj" />
+    <ProjectReference Include="..\NYCTaxiData.Infrastructure\NYCTaxiData.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DTO%27s\" />
-  </ItemGroup>
-
-  <ItemGroup>
+	  <PackageReference Include="AutoMapper" Version="13.0.1" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="MediatR" Version="14.1.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.4" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />

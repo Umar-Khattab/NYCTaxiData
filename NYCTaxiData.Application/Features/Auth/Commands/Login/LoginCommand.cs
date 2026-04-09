@@ -1,10 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿
+using MediatR;
+using NYCTaxiData.Domain.DTOs.Identity;
 
-namespace NYCTaxiData.Application.Features.Auth.Commands.Login
+namespace NYCTaxiData.Application.Auth.Commands.Login
 {
-    internal class LoginCommand
+
+    public record LoginCommand(string PhoneNumber, string Password) : IRequest<UserResultDto>
     {
+
     }
 }

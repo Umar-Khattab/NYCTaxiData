@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MediatR;
+ using NYCTaxiData.Domain.DTOs.Identity;
 
-namespace NYCTaxiData.Application.Features.Auth.Queries.GetProfile
+namespace NYCTaxiData.Application.Auth.Queries.GetProfile
 {
-    internal class GetProfileQuery
-    {
-    }
+
+    public record GetProfileQuery(string PhoneNumber) : IRequest<UserResultDto>;
 }

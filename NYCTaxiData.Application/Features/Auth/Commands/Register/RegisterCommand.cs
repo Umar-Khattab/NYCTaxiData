@@ -1,10 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MediatR;
+using NYCTaxiData.Domain.DTOs.Identity;
 
-namespace NYCTaxiData.Application.Features.Auth.Commands.Register
+namespace NYCTaxiData.Application.Auth.Commands.RegisterDriver
 {
-    internal class RegisterCommand
-    {
-    }
+
+    public record RegisterDriverCommand(
+        string FirstName,
+        string LastName,
+        string PhoneNumber,
+        string Password,
+        int Age,
+        string City,
+        string Street,
+        string LicenseNumber,
+        string PlateNumber
+    ) : IRequest<UserResultDto>;
 }
