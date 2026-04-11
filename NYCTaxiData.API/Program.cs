@@ -1,18 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NYCTaxiData.Application.Common.Interfaces.Identity;
-using NYCTaxiData.Application.Common.Mappings;
 using NYCTaxiData.Domain.Common.Interfaces;
 using NYCTaxiData.Domain.DTOs.Identity;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Data; 
 using NYCTaxiData.Infrastructure.Data;
 using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Data.Repository;
 using NYCTaxiData.Infrastructure.Services;
 using NYCTaxiData.Infrastructure.Services.Twilio;
 using System.Reflection;
+using NYCTaxiData.Application.Common.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,7 +42,7 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 builder.Services.Configure<TwilioSettings>(builder.Configuration.GetSection("Twilio"));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 // تأكد إنك عامل using AutoMapper; فوق
-builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(MappingProfile).Assembly));
 
 builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(NYCTaxiData.Application.Features.Auth.Commands.Login.LoginCommandHandler).Assembly);

@@ -1,45 +1,60 @@
-﻿//using FluentValidation;
-//using MediatR;
-//using Microsoft.Extensions.DependencyInjection;
-//using NYCTaxiData.Application.Behaviors;
-//using System.Reflection;
+﻿using FluentValidation;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+using NYCTaxiData.Application.Behaviors;
+using System.Reflection;
 
-//namespace SFIP.Application
-//{
-//    public static class DependencyInjection
-//    {
-//        public static IServiceCollection AddApplicationServices(this IServiceCollection services)
-//        {
-//            // 1. تسجيل كل الـ Validators (شروط التحقق) الموجودة في هذا المشروع تلقائياً
-//            // هذا السطر سيبحث عن أي كلاس يرث من AbstractValidator ويسجله.
-//            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+namespace NYCTaxiData.Application
+{
+    public static class DependencyInjection
+    {
+        public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        {
+            // Register all Validators automatically
+            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
-//            // 2. تسجيل MediatR والـ Pipeline Behaviors
-//            services.AddMediatR(config =>
-//            {
-//                // أ. تسجيل كل الـ Handlers والـ Commands/Queries تلقائياً
-//                config.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+            // Register MediatR and Pipeline Behaviors
+            services.AddMediatR(config =>
+            {
+                // Register all Handlers and Commands/Queries automatically
+                config.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
 
-//                // ب. تسجيل الـ Pipeline Behaviors (الترتيب هنا هو سر المهنة - Order is STRICTLY important!)
+                // Register Pipeline Behaviors (Order is STRICTLY important)
+                // 1. Metrics - collect performance/operational metrics
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(MetricsBehavior<,>));
 
-//                // الغلاف الخارجي: تسجيل العمليات وقياس وقت الأداء
-//                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-//                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(MetricsAndPerformanceBehavior<,>));
+                // 2. Performance - detect slow requests / degradation
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
 
-//                // الطبقة الثانية: الكاش (إذا كانت الداتا في الذاكرة، نرجعها فوراً ولن نكمل باقي الخطوات)
-//                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
+                // 3. Logging - request tracing and structured logs
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 
-//                // الطبقة الثالثة: التحقق (موظف الأمن - يرفض الطلب إذا كانت الداتا غير صالحة)
-//                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+                // 4. Caching - short-circuit queries with cached results
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
 
-//                // الطبقة الرابعة: منع التكرار (يحمي النظام من تنفيذ نفس الطلب مرتين في نفس اللحظة)
-//                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
+                // 5. Validation - validate requests via FluentValidation
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
-//                // الغلاف الداخلي (قبل الـ Handler مباشرة): فتح وإغلاق الـ Database Transaction
-//                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
-//            });
+                // 6. Authorization - enforce permissions/roles
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
 
-//            return services;
-//        }
-//    }
-//}
+                // 7. Idempotency - prevent duplicate side-effecting operations
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
+
+                // 8. Retry - retry transient failures where appropriate
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(RetryBehavior<,>));
+
+                // 9. Timeout - enforce request time limits and cancel
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TimeoutBehavior<,>));
+
+                // 10. Exception Handling - centralized exception categorization
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ExceptionHandlingBehavior<,>));
+
+                // 11. Transaction - manage DB transactions (inner-most)
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
+            });
+
+            return services;
+        }
+    }
+}
