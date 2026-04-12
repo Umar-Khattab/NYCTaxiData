@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using NYCTaxiData.Domain.DTOs.Identity;
+﻿using AutoMapper; 
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Infrastructure;
 using NYCTaxiData.Application.Features.Trips.Commands.StartTrip;
@@ -13,7 +12,7 @@ using System.Text;
 
 namespace NYCTaxiData.Application.Common.Mappings
 {
-    internal class MappingTrips : Profile
+    public class MappingTrips : Profile
     {
         public MappingTrips()
         {
@@ -24,16 +23,16 @@ namespace NYCTaxiData.Application.Common.Mappings
 
             // ===== Trips - EndTripCommand =====
             CreateMap<Trip, TripEndResultDto>()
-                .ForMember(dest => dest.DurationMinutes, opt => opt.MapFrom(src => 
+                .ForMember(dest => dest.DurationMinutes, opt => opt.MapFrom(src =>
                     src.StartedAt.HasValue && src.EndedAt.HasValue
-                        ? (int)(src.EndedAt.Value - src.StartedAt.Value).TotalMinutes 
+                        ? (int)(src.EndedAt.Value - src.StartedAt.Value).TotalMinutes
                         : 0))
                 .ForMember(dest => dest.TotalFare, opt => opt.MapFrom(src => src.ActualFare ?? 0m))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => "Completed"));
 
             // ===== Trips - ManualDispatchCommand =====
             CreateMap<Trip, DispatchResultDto>()
-                .ForMember(dest => dest.DispatchId, opt => opt.MapFrom(src => 
+                .ForMember(dest => dest.DispatchId, opt => opt.MapFrom(src =>
                     $"DSP-{src.TripId:D6}-{new DateTimeOffset(src.StartedAt ?? DateTime.UtcNow).ToUnixTimeSeconds()}"))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => "Sent"))
                 .ForMember(dest => dest.DispatchedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
@@ -41,20 +40,20 @@ namespace NYCTaxiData.Application.Common.Mappings
                 .ForMember(dest => dest.PickupZoneId, opt => opt.Ignore())
                 .ForMember(dest => dest.DropoffZoneId, opt => opt.Ignore());
 
-        // ===== Trips - GetTripHistory =====
-        CreateMap<Trip, TripHistoryItemDto>()
-                .ForMember(dest => dest.PickupZone, opt => opt.MapFrom(src => src.PickupLocation!.Zone!.ZoneName ?? "Unknown Zone"))
-                .ForMember(dest => dest.DropoffZone, opt => opt.MapFrom(src => src.DropoffLocation!.Zone!.ZoneName ?? "Unknown Zone"))
-                .ForMember(dest => dest.TotalFare, opt => opt.MapFrom(src => src.ActualFare))
-                .ForMember(dest => dest.DurationMinutes, opt => opt.MapFrom(src => 
-                    src.StartedAt.HasValue && src.EndedAt.HasValue
-                        ? (int)(src.EndedAt.Value - src.StartedAt.Value).TotalMinutes 
-                        : (src.StartedAt.HasValue? (int) (DateTime.UtcNow - src.StartedAt.Value).TotalMinutes : 0)))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.EndedAt.HasValue? "Completed" : "In-Progress"));
+            // ===== Trips - GetTripHistory =====
+            CreateMap<Trip, TripHistoryItemDto>()
+                    .ForMember(dest => dest.PickupZone, opt => opt.MapFrom(src => src.PickupLocation!.Zone!.ZoneName ?? "Unknown Zone"))
+                    .ForMember(dest => dest.DropoffZone, opt => opt.MapFrom(src => src.DropoffLocation!.Zone!.ZoneName ?? "Unknown Zone"))
+                    .ForMember(dest => dest.TotalFare, opt => opt.MapFrom(src => src.ActualFare))
+                    .ForMember(dest => dest.DurationMinutes, opt => opt.MapFrom(src =>
+                        src.StartedAt.HasValue && src.EndedAt.HasValue
+                            ? (int)(src.EndedAt.Value - src.StartedAt.Value).TotalMinutes
+                            : (src.StartedAt.HasValue ? (int)(DateTime.UtcNow - src.StartedAt.Value).TotalMinutes : 0)))
+                    .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.EndedAt.HasValue ? "Completed" : "In-Progress"));
 
             // ===== Trips - GetLiveDispatchFeed =====
             CreateMap<Trip, DispatchFeedItemDto>()
-                .ForMember(dest => dest.DispatchId, opt => opt.MapFrom(src => 
+                .ForMember(dest => dest.DispatchId, opt => opt.MapFrom(src =>
                     $"DSP-{src.TripId:D6}-{new DateTimeOffset(src.StartedAt ?? DateTime.UtcNow).ToUnixTimeSeconds()}"))
                 .ForMember(dest => dest.DriverName, opt => opt.MapFrom(src => src.Driver!.Fullname ?? "Unknown Driver"))
                 .ForMember(dest => dest.PickupZone, opt => opt.MapFrom(src => src.PickupLocation!.Zone!.ZoneName ?? "Unknown Zone"))
@@ -62,7 +61,7 @@ namespace NYCTaxiData.Application.Common.Mappings
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => DetermineDispatchStatus(src)))
                 .ForMember(dest => dest.DispatchedAt, opt => opt.MapFrom(src => src.StartedAt ?? DateTime.UtcNow))
                 .ForMember(dest => dest.TimeElapsed, opt => opt.MapFrom(src => FormatTimeElapsed(src.StartedAt ?? DateTime.UtcNow)));
-            }
+        }
 
         /// <summary>
         /// Determines the current status of a dispatch based on trip state

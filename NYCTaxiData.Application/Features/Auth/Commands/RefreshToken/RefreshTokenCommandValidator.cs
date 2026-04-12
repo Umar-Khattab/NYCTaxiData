@@ -6,8 +6,8 @@ public class RefreshTokenCommandValidator : AbstractValidator<RefreshTokenComman
 {
     public RefreshTokenCommandValidator()
     {
-        RuleFor(x => x.PhoneNumber).NotEmpty();
-        RuleFor(x => x.Role).NotEmpty();
-        RuleFor(x => x.FullName).NotEmpty();
+        RuleFor(x => x.OldToken)
+            .NotEmpty()
+            .WithMessage("Token is required");
     }
 }

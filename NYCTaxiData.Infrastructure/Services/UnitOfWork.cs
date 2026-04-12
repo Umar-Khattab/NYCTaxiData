@@ -59,19 +59,37 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<Weathersnapshot> WeatherSnapshots
         => _weatherSnapshots ??= new GenericRepository<Weathersnapshot>(_context);
 
-    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        => await _context.SaveChangesAsync(cancellationToken);
-
-    public async Task ExecuteInTransactionAsync(Func<Task> action)
-    {
-        await action();
-        await _context.SaveChangesAsync();
-    }
-
     public void Dispose()
     {
-        _transaction?.Dispose();
         _context.Dispose();
+        GC.SuppressFinalize(this);
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        await _context.DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
+
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.SaveChangesAsync(cancellationToken);
+    }
+    // داخل UnitOfWork.cs
+    public async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken ct)
+    {
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            // 👈 السر هنا: await using بدلاً من using العادية
+            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+            try
+            {
+                var result = await operation(ct);
+                await transaction.CommitAsync(ct);
+                return result;
+            }
+            catch { await transaction.RollbackAsync(ct); throw; }
+        });
+    }
 }

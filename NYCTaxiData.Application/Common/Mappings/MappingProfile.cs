@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using NYCTaxiData.Domain.DTOs.Identity;
+using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Infrastructure;
 using NYCTaxiData.Application.Features.Trips.Commands.StartTrip;
@@ -49,6 +49,14 @@ namespace NYCTaxiData.Application.Common.Mappings
                 .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role))
                 .ForMember(dest => dest.EmployeeId, opt => opt.Ignore())
                 .ForMember(dest => dest.Department, opt => opt.Ignore());
+
+            // في MappingProfile.cs
+            CreateMap<User1, UserResultDto>()
+                .ForMember(dest => dest.IsSuccess, opt => opt.MapFrom(_ => true))
+                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.Firstname} {src.Lastname}"))
+                .ForMember(dest => dest.Role, opt => opt.MapFrom(src =>
+                    src.Driver != null ? "Driver" :
+                    src.Manager != null ? "Manager" : "User"));
         }
     }
 }

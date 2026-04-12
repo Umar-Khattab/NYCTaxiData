@@ -3,8 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NYCTaxiData.Application.Common.Interfaces.Identity;
-using NYCTaxiData.Domain.Common.Interfaces;
-using NYCTaxiData.Domain.DTOs.Identity;
+using NYCTaxiData.Domain.Common.Interfaces; 
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure.Data;
 using NYCTaxiData.Infrastructure.Data.Contexts;
@@ -27,8 +26,7 @@ namespace NYCTaxiData.Infrastructure
                 {
                     npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorCodesToAdd: null);
                 }));
-
-            services.AddScoped<IAuthService, AuthService>();
+             services.AddScoped<JwtTokenService>();
             services.AddScoped<ICacheService, CacheService>();
             services.AddScoped<IDbInitializer, DbInitializer>();
             services.AddScoped<ISmsService, WhatsAppSmsService>();

@@ -1,6 +1,5 @@
 ﻿using MediatR;
-using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
-using NYCTaxiData.Domain.DTOs.Identity;
+using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces; 
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
 {

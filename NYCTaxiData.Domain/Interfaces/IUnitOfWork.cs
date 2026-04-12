@@ -31,7 +31,7 @@ namespace NYCTaxiData.Domain.Interfaces
         IGenericRepository<Weathersnapshot> WeatherSnapshots { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-         
-        Task ExecuteInTransactionAsync(Func<Task> operations);
+
+        Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken cancellationToken = default);
     }
 }

@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using AutoMapper;
 using System.Linq.Expressions;
-using NYCTaxiData.Application.Common.Interfaces;
+using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
 
 namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed

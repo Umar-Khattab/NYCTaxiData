@@ -1,5 +1,8 @@
 ﻿using MediatR;
- using NYCTaxiData.Domain.DTOs.Identity;
+ using NYCTaxiData.Application.DTOs.Identity;
 
-public record VerifyOtpCommand(string PhoneNumber, string OtpCode)
-    : IRequest<VerifyOtpResultDto>;
+
+public record VerifyOtpCommand(
+    string PhoneNumber,
+    string OtpCode
+) : IRequest<VerifyOtpResultDto>;

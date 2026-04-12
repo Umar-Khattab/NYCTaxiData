@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Domain.Common.Interfaces;
+using NYCTaxiData.Domain.Interfaces.Specifications;
 using NYCTaxiData.Infrastructure.Data.Contexts;
+using NYCTaxiData.Infrastructure.Services.Specifications;
 using System.Linq.Expressions;
 
 namespace NYCTaxiData.Infrastructure.Data.Repository
@@ -19,11 +21,28 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
             _dbSet = context.Set<T>();
         }
 
+        public async Task<IEnumerable<T>> GetAllBySpecAsync(ISpecification<T> spec)
+     => await SpecificationEvaluator<T>
+         .GetQuery(_dbSet.AsNoTracking(), spec) // ✅ AsNoTracking دايماً
+         .ToListAsync();
+
         public async Task<IEnumerable<T>> GetAllAsync()
             => await _dbSet.ToListAsync();
 
         public async Task<T?> GetByIdAsync(object id)
-            => await _dbSet.FindAsync(id);
+        {
+            // نجيب الـ Primary Key Property
+            var keyName = _context.Model
+                .FindEntityType(typeof(T))!
+                .FindPrimaryKey()!
+                .Properties
+                .Select(x => x.Name)
+                .First();
+
+            return await _dbSet
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => EF.Property<object>(e, keyName).Equals(id));
+        }
 
         public async Task<IEnumerable<T>> FindByConditionAsync(Expression<Func<T, bool>> predicate)
             => await _dbSet.Where(predicate).ToListAsync();
@@ -113,6 +132,33 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
             return (items, totalCount);
         }
 
+        public async Task<T?> GetBySpecAsync(ISpecification<T> spec, CancellationToken cancellationToken = default)
+        {
+            // 👈 شيلنا AsNoTracking عشان الـ Change Tracker يشتغل
+            return await SpecificationEvaluator<T>
+                .GetQuery(_dbSet.AsQueryable(), spec)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<bool> AnyAsync(ISpecification<T> spec)
+        {
+            return await SpecificationEvaluator<T>
+                .GetQuery(_dbSet.AsQueryable(), spec)
+                .AnyAsync();
+        }
+
+        public async Task<int> CountBySpecAsync(ISpecification<T> spec)
+        {
+            return await SpecificationEvaluator<T>
+                .GetQuery(_dbSet.AsQueryable(), spec)
+                .CountAsync();
+        }
+
+        public async Task<bool> AnyWithSpecAsync(ISpecification<T> spec, CancellationToken ct = default)
+        { 
+            return await ApplySpecification(spec).AnyAsync(ct);
+        }
+
         public async Task<IEnumerable<T>> FindByConditionWithIncludesAsync(
             Expression<Func<T, bool>> predicate,
             params Expression<Func<T, object>>[] includes)
@@ -121,5 +167,11 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
             query = includes.Aggregate(query, (current, include) => current.Include(include));
             return await query.ToListAsync();
         }
+
+        private IQueryable<T> ApplySpecification(ISpecification<T> spec)
+        { 
+            return SpecificationEvaluator<T>.GetQuery(_dbSet.AsQueryable(), spec);
+        }
+         
     }
 }

@@ -1,6 +1,8 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
+using NYCTaxiData.Application.Features.Trips.Commands.StartTrip;
 using NYCTaxiData.Domain.Interfaces;
+using NYCTaxiData.Infrastructure.Services;
 
 namespace NYCTaxiData.Application.Behaviors
 {
@@ -11,7 +13,7 @@ namespace NYCTaxiData.Application.Behaviors
     /// </summary>
     /// <typeparam name="TRequest">The type of the request.</typeparam>
     /// <typeparam name="TResponse">The type of the response.</typeparam>
-    internal class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    internal class TransactionBehavior<TRequest, TResponse>  : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
         private readonly ILogger<TransactionBehavior<TRequest, TResponse>> _logger;
@@ -39,50 +41,22 @@ namespace NYCTaxiData.Application.Behaviors
         /// <returns>The response.</returns>
         public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
         {
-            var requestName = typeof(TRequest).Name;
-
-            // Only apply transaction to commands (requests that modify state)
-            // Queries should not use transactions as they don't modify data
-            if (!IsTransactionalRequest(requestName))
-            {
-                _logger.LogDebug("Request {RequestName} is not transactional, skipping transaction wrapper", requestName);
+            if (!IsTransactionalRequest(typeof(TRequest).Name))
                 return await next();
-            }
 
-            _logger.LogDebug("Beginning database transaction for request {RequestName}", requestName);
-
-            try
+            return await _unitOfWork.ExecuteInTransactionAsync(async (ct) =>
             {
-                // Execute the request within transaction
-                await _unitOfWork.ExecuteInTransactionAsync(async () =>
-                {
-                    await next();
-                });
-
-                // Save changes after transaction completes
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-                _logger.LogInformation("Database transaction committed successfully for request {RequestName}", requestName);
-
-                // Execute again to get the response (response is generated during the actual execution)
+                // 1. نفذ الـ Handler (تغيير الداتا في الـ Memory)
                 var response = await next();
-                return response;
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex, "Database transaction cancelled for request {RequestName}", requestName);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Database transaction failed for request {RequestName}. Error: {ErrorMessage}. Transaction will be rolled back.",
-                    requestName,
-                    ex.Message);
 
-                throw;
-            }
+                // 2. الحفظ الفعلي في الداتابيز 
+                // السطر ده هو "الوحيد" اللي يحفظ، وامسحه من الـ Handler خالص
+                await _unitOfWork.SaveChangesAsync(ct);
+
+                return response;
+
+                // 👈 شيل سطر الـ transaction.CommitAsync من هنا لأن الـ UoW بيعمله أوتوماتيك
+            }, cancellationToken);
         }
 
         /// <summary>

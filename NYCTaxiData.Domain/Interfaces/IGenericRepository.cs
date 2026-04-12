@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NYCTaxiData.Domain.Interfaces.Specifications;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
@@ -40,7 +41,16 @@ namespace NYCTaxiData.Domain.Common.Interfaces
 
         Task DeleteRangeAsync(IEnumerable<T> entities);
 
-         Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+        Task<T?> GetBySpecAsync(ISpecification<T> spec, CancellationToken cancellationToken = default);
+        Task<bool> AnyAsync(ISpecification<T> spec);
+
+        Task<IEnumerable<T>> GetAllBySpecAsync(ISpecification<T> spec);  
+
+        Task<int> CountBySpecAsync(ISpecification<T> spec); 
+
+        Task<bool> AnyWithSpecAsync(ISpecification<T> spec, CancellationToken ct = default);
+
+        Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
             int pageNumber = 1,
             int pageSize = 10,
             Expression<Func<T, bool>>? predicate = null,

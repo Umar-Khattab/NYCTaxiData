@@ -1,6 +1,6 @@
 ﻿using MediatR;
 using AutoMapper;
-using NYCTaxiData.Application.Common.Interfaces;
+using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Infrastructure;
 
