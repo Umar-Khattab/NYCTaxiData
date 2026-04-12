@@ -1,10 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MediatR;
+using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
+using NYCTaxiData.Domain.DTOs.Identity;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
 {
-    internal class StartTripCommand
+    public record StartTripCommand(
+        Guid DriverId,
+        int PickupLocationId,
+        int DropoffLocationId
+    ) : IRequest<TripStartResultDto>, ITransactionalCommand, ISecureRequest
     {
+    }
+
+    public class TripStartResultDto
+    {
+        public int TripId { get; set; }
+        public Guid DriverId { get; set; }
+        public string Status { get; set; } = "In-Progress";
+        public DateTime StartedAt { get; set; }
+        public int PickupLocationId { get; set; }
+        public int DropoffLocationId { get; set; }
     }
 }
