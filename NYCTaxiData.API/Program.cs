@@ -1,67 +1,44 @@
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
-using NYCTaxiData.Domain.Common.Interfaces;
-using NYCTaxiData.Domain.DTOs.Identity;
-using NYCTaxiData.Domain.Enums;
-using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Data;
-using NYCTaxiData.Infrastructure.Data.Contexts;
-using NYCTaxiData.Infrastructure.Data.Repository;
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Twilio;
-using System.Reflection;
-using NYCTaxiData.Application.Common.Mappings;
+using NYCTaxiData.API.MiddleWares;
+using NYCTaxiData.Application; // للوصول لـ AddApplicationServices
+using NYCTaxiData.Infrastructure; // للوصول لـ AddInfrastructureServices (ستقوم بإنشائه)
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. Controllers & API Docs
 builder.Services.AddControllers();
-
-// OpenAPI & Exception Handling
 builder.Services.AddOpenApi();
-builder.Services.AddExceptionHandler<NYCTaxiData.API.MiddleWares.GlobalExceptionHandler>();
+
+// 2. Exception Handling
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
- 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<TaxiDbContext>(options =>
-    options.UseNpgsql(connectionString, npgsqlOptions =>
-    {
-        npgsqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 3,
-            maxRetryDelay: TimeSpan.FromSeconds(5),
-            errorCodesToAdd: null);
-    }));
 
-// --- نهاية الجزء المصحح ---
+// 3. Layer Registrations (Here is the Clean Architecture Magic ✨)
+// بدلاً من كتابة 50 سطراً هنا، نستدعي الطبقات لتعرف نفسها
+builder.Services.AddApplicationServices(); // هذا سيقوم بتسجيل MediatR والـ Behaviors والـ AutoMapper
+builder.Services.AddInfrastructureServices(builder.Configuration); // هذا سيسجل الـ DbContext والـ Repositories
 
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ICacheService, CacheService>();
-builder.Services.AddScoped<IDbInitializer, DbInitializer>();
-builder.Services.AddScoped<ISmsService, WhatsAppSmsService>();
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-builder.Services.Configure<TwilioSettings>(builder.Configuration.GetSection("Twilio"));
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-// تأكد إنك عامل using AutoMapper; فوق
-builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(MappingProfile).Assembly));
-
-builder.Services.AddMediatR(cfg => {
-    cfg.RegisterServicesFromAssembly(typeof(NYCTaxiData.Application.Features.Auth.Commands.Login.LoginCommandHandler).Assembly);
-});
 var app = builder.Build();
 
+// 4. Run Database Initializer (Seeding) safely on startup
+using (var scope = app.Services.CreateScope())
+{
+    var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+    dbInitializer.Initialize(); // سيقوم بعمل Migrate و Seed
+}
 
+// 5. HTTP Request Pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-} 
+    app.MapOpenApi(); // Note: You might want to add Scalar or SwaggerUI here for visual testing
+}
 
 app.UseExceptionHandler(); 
+
+// 6. Security Pipeline (ORDER IS CRITICAL)
+app.UseAuthentication(); // 👈 يجب أن يكون قبل Authorization!
 app.UseAuthorization();
 
-// -----------------------
-// 8️⃣ Map Controllers
-// -----------------------
+// 7. Map Endpoints
 app.MapControllers();
-
 
 app.Run();
