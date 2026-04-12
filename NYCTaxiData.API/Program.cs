@@ -1,65 +1,52 @@
+using NYCTaxiData.Infrastructure; // ãåã ÌÏÇğ ÚÔÇä íÔæİ AddInfrastructureServices
+using NYCTaxiData.Application.Common.Mappings;
 using NYCTaxiData.API.MiddleWares;
-using NYCTaxiData.Application; 
-using NYCTaxiData.Infrastructure;
-using NYCTaxiData.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// =========================================================
-// 1. Controllers & API Documentation
-// =========================================================
+// 1. ===== Controllers & Essentials =====
 builder.Services.AddControllers();
-builder.Services.AddOpenApi(); // ÙŠÙ…ÙƒÙ†Ùƒ Ù„Ø§Ø­Ù‚Ø§Ù‹ Ø¥Ø¶Ø§ÙØ© Swagger UI Ø£Ùˆ Scalar
-
-// =========================================================
-// 2. Global Exception Handling
-// =========================================================
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddOpenApi(); // áæ ÈÊÓÊÎÏã .NET 9/10 ÇáÌÏíÏ
 builder.Services.AddProblemDetails();
 
-// =========================================================
-// 3. Register Application & Infrastructure Layers
-// (Clean Architecture Entry Point âœ¨)
-// =========================================================
-
-// âœ… Ù…Ù‡Ù…: ØªÙ…Ø±ÙŠØ± Configuration Ø¹Ø´Ø§Ù† Ø§Ù„Ù€ license keys ØªØ´ØªØºÙ„
-builder.Services.AddApplicationServices(builder.Configuration);
-
-// Infrastructure (DbContext, Repositories, External Services)
+// 2. ===== Infrastructure Layer (Database, Repositories, UnitOfWork) ===== 
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
+// 3. ===== AutoMapper ===== 
+builder.Services.AddAutoMapper(cfg => 
+{ 
+    cfg.AddProfile<MappingProfile>();
+
+    cfg.AddProfile<MappingTrips>(); 
+});
+
+// 4. ===== MediatR ===== 
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(NYCTaxiData.Application.Features.Auth.Commands.Login.LoginCommandHandler).Assembly);
+});
+
+// 5. ===== Global Exception Handling =====
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var app = builder.Build();
 
-// =========================================================
-// 4. Database Initialization (Migrate + Seed)
-// ÙŠØªÙ… ØªØ´ØºÙŠÙ„Ù‡ Ù…Ø±Ø© ÙˆØ§Ø­Ø¯Ø© Ø¹Ù†Ø¯ startup
-// =========================================================
-using (var scope = app.Services.CreateScope())
-{
-    var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
-    await dbInitializer.InitializeAsync();
-}
+// 6. ===== Middlewares Pipeline =====
 
-// =========================================================
-// 5. HTTP Request Pipeline
-// =========================================================
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    // áæ ÈÊÓÊÎÏã SwaggerUI Öíİå åäÇ
 }
 
-// Global exception handler middleware
+app.UseHttpsRedirection();
+
+// ÊİÚíá ÇáÜ Exception Handling Middleware
 app.UseExceptionHandler();
 
-// =========================================================
-// 6. Security Pipeline (ORDER IS CRITICAL)
-// =========================================================
-app.UseAuthentication(); // Ù„Ø§Ø²Ù… Ù‚Ø¨Ù„ Authorization
+// ÊİÚíá ÇáÜ Routing æÇáÜ Auth
 app.UseAuthorization();
 
-// =========================================================
-// 7. Endpoints Mapping
-// =========================================================
 app.MapControllers();
 
 app.Run();

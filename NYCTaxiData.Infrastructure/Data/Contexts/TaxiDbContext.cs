@@ -114,6 +114,20 @@ public partial class TaxiDbContext : DbContext
             v => (UserRole)Enum.Parse(typeof(UserRole), v)  
         );
 
+        modelBuilder.Entity<Driver>(entity =>
+        { 
+            entity.Property(e => e.Status)
+                  .HasColumnName("status");
+        });
+        modelBuilder.Entity<Driver>(entity =>
+        {
+            entity.Property(e => e.Status)
+                .HasConversion(
+                    v => v.ToString(),                    // من C# للداتابيز (بيبعت "On_Trip")
+                    v => (CurrentStatus)Enum.Parse(typeof(CurrentStatus), v) // من الداتابيز للكود
+                )
+                .HasColumnName("status"); // تأكد إنه مكتوب سمول هنا
+        });
         base.OnModelCreating(modelBuilder);
         modelBuilder.Entity<User1>()
     .Property(u => u.Role)
