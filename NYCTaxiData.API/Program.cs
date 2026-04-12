@@ -1,44 +1,64 @@
 using NYCTaxiData.API.MiddleWares;
-using NYCTaxiData.Application; // للوصول لـ AddApplicationServices
-using NYCTaxiData.Infrastructure; // للوصول لـ AddInfrastructureServices (ستقوم بإنشائه)
+using NYCTaxiData.Application; 
+using NYCTaxiData.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Controllers & API Docs
+// =========================================================
+// 1. Controllers & API Documentation
+// =========================================================
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(); // يمكنك لاحقاً إضافة Swagger UI أو Scalar
 
-// 2. Exception Handling
+// =========================================================
+// 2. Global Exception Handling
+// =========================================================
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-// 3. Layer Registrations (Here is the Clean Architecture Magic ✨)
-// بدلاً من كتابة 50 سطراً هنا، نستدعي الطبقات لتعرف نفسها
-builder.Services.AddApplicationServices(); // هذا سيقوم بتسجيل MediatR والـ Behaviors والـ AutoMapper
-builder.Services.AddInfrastructureServices(builder.Configuration); // هذا سيسجل الـ DbContext والـ Repositories
+// =========================================================
+// 3. Register Application & Infrastructure Layers
+// (Clean Architecture Entry Point ✨)
+// =========================================================
+
+// ✅ مهم: تمرير Configuration عشان الـ license keys تشتغل
+builder.Services.AddApplicationServices(builder.Configuration);
+
+// Infrastructure (DbContext, Repositories, External Services)
+builder.Services.AddInfrastructureServices(builder.Configuration);
 
 var app = builder.Build();
 
-// 4. Run Database Initializer (Seeding) safely on startup
+// =========================================================
+// 4. Database Initialization (Migrate + Seed)
+// يتم تشغيله مرة واحدة عند startup
+// =========================================================
 using (var scope = app.Services.CreateScope())
 {
     var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
-    dbInitializer.Initialize(); // سيقوم بعمل Migrate و Seed
+    dbInitializer.Initialize();
 }
 
+// =========================================================
 // 5. HTTP Request Pipeline
+// =========================================================
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi(); // Note: You might want to add Scalar or SwaggerUI here for visual testing
+    app.MapOpenApi();
 }
 
-app.UseExceptionHandler(); 
+// Global exception handler middleware
+app.UseExceptionHandler();
 
+// =========================================================
 // 6. Security Pipeline (ORDER IS CRITICAL)
-app.UseAuthentication(); // 👈 يجب أن يكون قبل Authorization!
+// =========================================================
+app.UseAuthentication(); // لازم قبل Authorization
 app.UseAuthorization();
 
-// 7. Map Endpoints
+// =========================================================
+// 7. Endpoints Mapping
+// =========================================================
 app.MapControllers();
 
 app.Run();
