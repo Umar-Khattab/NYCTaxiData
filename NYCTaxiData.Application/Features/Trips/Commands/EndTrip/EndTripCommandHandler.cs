@@ -1,11 +1,12 @@
 ﻿using MediatR;
+using AutoMapper;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Infrastructure;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
 {
-    public class EndTripCommandHandler(IUnitOfWork _unitOfWork)
+    public class EndTripCommandHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
         : IRequestHandler<EndTripCommand, TripEndResultDto>
     {
         public async Task<TripEndResultDto> Handle(
@@ -26,10 +27,6 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
             if (trip.EndedAt != null)
                 throw new ConflictException("Trip has already ended");
 
-            // Calculate trip duration in minutes
-            var duration = DateTime.UtcNow - trip.StartedAt.Value;
-            var durationMinutes = (int)duration.TotalMinutes;
-
             // Calculate total fare
             var totalFare = request.BaseFare * request.SurgeMultiplier;
 
@@ -40,16 +37,11 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
             await _unitOfWork.Trips.UpdateAsync(trip);
             await _unitOfWork.SaveChangesAsync();
 
-            return new TripEndResultDto
-            {
-                TripId = trip.TripId,
-                DurationMinutes = durationMinutes,
-                BaseFare = request.BaseFare,
-                SurgeMultiplier = request.SurgeMultiplier,
-                TotalFare = totalFare,
-                EndedAt = trip.EndedAt.Value,
-                Status = "Completed"
-            };
+            var result = _mapper.Map<TripEndResultDto>(trip);
+            result.BaseFare = request.BaseFare;
+            result.SurgeMultiplier = request.SurgeMultiplier;
+
+            return result;
         }
     }
 }

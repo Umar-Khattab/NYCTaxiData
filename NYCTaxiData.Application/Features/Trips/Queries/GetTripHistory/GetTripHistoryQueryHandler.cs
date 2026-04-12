@@ -1,11 +1,12 @@
 ﻿using MediatR;
+using AutoMapper;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Infrastructure;
 
 namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory
 {
-    public class GetTripHistoryQueryHandler(IUnitOfWork _unitOfWork)
+    public class GetTripHistoryQueryHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
         : IRequestHandler<GetTripHistoryQuery, TripHistoryResultDto>
     {
         public async Task<TripHistoryResultDto> Handle(
@@ -36,38 +37,8 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory
                 };
             }
 
-            // Map trips to DTOs with zone information
-            var tripItems = new List<TripHistoryItemDto>();
-
-            foreach (var trip in trips)
-            {
-                var pickupZone = trip.PickupLocation?.Zone?.ZoneName ?? "Unknown Zone";
-                var dropoffZone = trip.DropoffLocation?.Zone?.ZoneName ?? "Unknown Zone";
-
-                var durationMinutes = 0;
-                if (trip.StartedAt.HasValue && trip.EndedAt.HasValue)
-                {
-                    durationMinutes = (int)(trip.EndedAt.Value - trip.StartedAt.Value).TotalMinutes;
-                }
-                else if (trip.StartedAt.HasValue)
-                {
-                    durationMinutes = (int)(DateTime.UtcNow - trip.StartedAt.Value).TotalMinutes;
-                }
-
-                var status = trip.EndedAt.HasValue ? "Completed" : "In-Progress";
-
-                tripItems.Add(new TripHistoryItemDto
-                {
-                    TripId = trip.TripId,
-                    PickupZone = pickupZone,
-                    DropoffZone = dropoffZone,
-                    TotalFare = trip.ActualFare,
-                    DurationMinutes = durationMinutes,
-                    StartedAt = trip.StartedAt ?? DateTime.UtcNow,
-                    EndedAt = trip.EndedAt,
-                    Status = status
-                });
-            }
+            // Map trips to DTOs using AutoMapper
+            var tripItems = _mapper.Map<List<TripHistoryItemDto>>(trips);
 
             var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
 

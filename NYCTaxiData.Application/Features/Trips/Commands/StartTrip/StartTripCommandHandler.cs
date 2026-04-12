@@ -1,11 +1,12 @@
 ﻿using MediatR;
+using AutoMapper;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Infrastructure;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
 {
-    public class StartTripCommandHandler(IUnitOfWork _unitOfWork)
+    public class StartTripCommandHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
         : IRequestHandler<StartTripCommand, TripStartResultDto>
     {
         public async Task<TripStartResultDto> Handle(
@@ -41,15 +42,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
             await _unitOfWork.Trips.AddAsync(trip);
             await _unitOfWork.SaveChangesAsync();
 
-            return new TripStartResultDto
-            {
-                TripId = trip.TripId,
-                DriverId = trip.DriverId.Value,
-                Status = "In-Progress",
-                StartedAt = trip.StartedAt.Value,
-                PickupLocationId = trip.PickupLocationId.Value,
-                DropoffLocationId = trip.DropoffLocationId.Value
-            };
+            return _mapper.Map<TripStartResultDto>(trip);
         }
     }
 }

@@ -1,11 +1,12 @@
 ﻿using MediatR;
+using AutoMapper;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Infrastructure;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
 {
-    public class ManualDispatchCommandHandler(IUnitOfWork _unitOfWork)
+    public class ManualDispatchCommandHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
         : IRequestHandler<ManualDispatchCommand, DispatchResultDto>
     {
         public async Task<DispatchResultDto> Handle(
@@ -56,19 +57,12 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
             await _unitOfWork.Trips.AddAsync(trip);
             await _unitOfWork.SaveChangesAsync();
 
-            // Generate dispatch ID
-            var dispatchId = $"DSP-{trip.TripId:D6}-{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+            var result = _mapper.Map<DispatchResultDto>(trip);
+            result.PickupZoneId = request.PickupZoneId;
+            result.DropoffZoneId = request.DropoffZoneId;
+            result.PassengerName = request.PassengerName;
 
-            return new DispatchResultDto
-            {
-                DispatchId = dispatchId,
-                DriverId = request.DriverId,
-                PickupZoneId = request.PickupZoneId,
-                DropoffZoneId = request.DropoffZoneId,
-                Status = "Sent",
-                DispatchedAt = DateTime.UtcNow,
-                PassengerName = request.PassengerName
-            };
+            return result;
         }
     }
 }
