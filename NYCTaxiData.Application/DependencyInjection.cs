@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using NYCTaxiData.Application.Behaviors;
@@ -19,38 +19,35 @@ namespace NYCTaxiData.Application
                 // Register all Handlers and Commands/Queries automatically
                 config.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
 
-                // Register Pipeline Behaviors (Order is STRICTLY important)
-                // 1. Metrics - collect performance/operational metrics
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(MetricsBehavior<,>));
+                // =======================================================================
+                // PIPELINE BEHAVIORS (Order is STRICTLY important - Outermost to Innermost)
+                // =======================================================================
 
-                // 2. Performance - detect slow requests / degradation
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
-
-                // 3. Logging - request tracing and structured logs
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-
-                // 4. Caching - short-circuit queries with cached results
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
-
-                // 5. Validation - validate requests via FluentValidation
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
-                // 6. Authorization - enforce permissions/roles
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
-
-                // 7. Idempotency - prevent duplicate side-effecting operations
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
-
-                // 8. Retry - retry transient failures where appropriate
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(RetryBehavior<,>));
-
-                // 9. Timeout - enforce request time limits and cancel
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TimeoutBehavior<,>));
-
-                // 10. Exception Handling - centralized exception categorization
+                // 1. Exception Handling (Outermost to catch exceptions from ANY inner behavior)
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ExceptionHandlingBehavior<,>));
 
-                // 11. Transaction - manage DB transactions (inner-most)
+                // 2. Telemetry & Observability
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(MetricsBehavior<,>));
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+
+                // 3. Security FIRST (Gatekeeper)
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
+
+                // 4. Validation (Bouncer - check data only for authorized users)
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+                // 5. Caching (Return fast, but ONLY for authorized & valid requests)
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
+
+                // 6. Idempotency (Ensure we don't process duplicate side-effects)
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
+
+                // 7. Resilience (Retry & Timeout wrapping the actual database execution)
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(RetryBehavior<,>));
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TimeoutBehavior<,>));
+
+                // 8. Transaction (Innermost - ensures atomic DB operations right before the Handler)
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
             });
 
