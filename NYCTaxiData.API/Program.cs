@@ -37,7 +37,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
-    dbInitializer.InitializeAsync();
+    await dbInitializer.InitializeAsync();
 }
 
 // =========================================================
