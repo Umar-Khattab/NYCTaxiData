@@ -2,6 +2,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NYCTaxiData.Application.Common.Interfaces.Identity;
+using NYCTaxiData.Domain.Common.Interfaces;
+using NYCTaxiData.Domain.DTOs.Identity;
+using NYCTaxiData.Domain.Interfaces;
+using NYCTaxiData.Infrastructure.Data;
+using NYCTaxiData.Infrastructure.Data.Contexts;
+using NYCTaxiData.Infrastructure.Data.Repository;
+using NYCTaxiData.Infrastructure.Services;
+using NYCTaxiData.Infrastructure.Services.Twilio;
+
 // ... (باقي الـ usings)
 
 namespace NYCTaxiData.Infrastructure
@@ -24,8 +34,8 @@ namespace NYCTaxiData.Infrastructure
             services.AddScoped<ISmsService, WhatsAppSmsService>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-            
-            services.Configure<TwilioSettings>(configuration.GetSection("Twilio"));
+
+            //services.Configure<TwilioSettings>(configuration.GetSection("Twilio"));
 
             return services;
         }

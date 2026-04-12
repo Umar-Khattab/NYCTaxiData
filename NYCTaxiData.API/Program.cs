@@ -1,6 +1,7 @@
 using NYCTaxiData.API.MiddleWares;
 using NYCTaxiData.Application; 
 using NYCTaxiData.Infrastructure;
+using NYCTaxiData.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,7 +37,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
-    dbInitializer.Initialize();
+    dbInitializer.InitializeAsync();
 }
 
 // =========================================================
