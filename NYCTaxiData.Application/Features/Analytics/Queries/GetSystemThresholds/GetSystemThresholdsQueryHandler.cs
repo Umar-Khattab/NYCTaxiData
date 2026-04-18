@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
 using NYCTaxiData.Application.Common;
-using NYCTaxiData.Application.Features.Analytics.Common;
 using NYCTaxiData.Domain.Interfaces;
 using System.Text.Json;
 

@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
 using NYCTaxiData.Application.Common;
-using NYCTaxiData.Application.Features.Analytics.Common;
 using NYCTaxiData.Application.Features.Analytics.Queries.GetSystemThresholds;
 using System.Text.Json;
 

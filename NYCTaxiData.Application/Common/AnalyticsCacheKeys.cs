@@ -1,4 +1,4 @@
-namespace NYCTaxiData.Application.Features.Analytics.Common;
+namespace NYCTaxiData.Application.Common;
 
 public static class AnalyticsCacheKeys
 {
