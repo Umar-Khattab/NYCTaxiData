@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using NYCTaxiData.Application.Common;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
@@ -9,7 +10,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
         int DropoffZoneId,
         string PassengerName,
         string PassengerPhone
-    ) : IRequest<DispatchResultDto>, ITransactionalCommand, ISecureRequest
+    ) : IRequest<Result<DispatchResultDto>>, ITransactionalCommand, ISecureRequest
     {
     }
 

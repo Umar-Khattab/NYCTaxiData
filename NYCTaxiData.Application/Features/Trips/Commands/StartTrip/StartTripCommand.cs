@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using NYCTaxiData.Application.Common;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces; 
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
@@ -7,7 +8,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
         Guid DriverId,
         int PickupLocationId,
         int DropoffLocationId
-    ) : IRequest<TripStartResultDto>, ITransactionalCommand, ISecureRequest
+    ) : IRequest<Result<TripStartResultDto>>, ITransactionalCommand, ISecureRequest
     {
     }
 

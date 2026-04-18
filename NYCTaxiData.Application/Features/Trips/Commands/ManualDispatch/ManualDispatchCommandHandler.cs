@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using AutoMapper;
+using NYCTaxiData.Application.Common;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Infrastructure;
@@ -7,9 +8,9 @@ using NYCTaxiData.Infrastructure;
 namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
 {
     public class ManualDispatchCommandHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
-        : IRequestHandler<ManualDispatchCommand, DispatchResultDto>
+        : IRequestHandler<ManualDispatchCommand, Result<DispatchResultDto>>
     {
-        public async Task<DispatchResultDto> Handle(
+        public async Task<Result<DispatchResultDto>> Handle(
             ManualDispatchCommand request,
             CancellationToken cancellationToken)
         {
@@ -62,7 +63,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
             result.DropoffZoneId = request.DropoffZoneId;
             result.PassengerName = request.PassengerName;
 
-            return result;
+            return Result<DispatchResultDto>.Success(result);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using NYCTaxiData.Application.Common;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
 namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
@@ -6,7 +7,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
     public record GetLiveDispatchFeedQuery(
         int Limit = 20,
         int MinutesWindow = 60
-    ) : IRequest<LiveDispatchFeedResultDto>, ISecureRequest
+    ) : IRequest<Result<LiveDispatchFeedResultDto>>, ISecureRequest
     {
     }
 

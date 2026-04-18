@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using NYCTaxiData.Application.Common;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
 namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory
@@ -7,7 +8,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory
         Guid DriverId,
         int PageNumber = 1,
         int PageSize = 10
-    ) : IRequest<TripHistoryResultDto>, ISecureRequest
+    ) : IRequest<Result<TripHistoryResultDto>>, ISecureRequest
     {
     }
 
