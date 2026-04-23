@@ -26,16 +26,18 @@ namespace NYCTaxiData.Infrastructure
                 {
                     npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorCodesToAdd: null);
                 }));
-             services.AddScoped<JwtTokenService>();
+            services.AddScoped<JwtTokenService>();
             services.AddScoped<ICacheService, CacheService>();
             services.AddScoped<IDbInitializer, DbInitializer>();
             services.AddScoped<ISmsService, WhatsAppSmsService>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddDistributedMemoryCache();
 
             //services.Configure<TwilioSettings>(configuration.GetSection("Twilio"));
 
             return services;
         }
+
     }
 }
