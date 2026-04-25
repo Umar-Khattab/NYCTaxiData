@@ -23,8 +23,6 @@ public class TripsController : ControllerBase
     /// Starts a new trip.
     /// </summary>
     [HttpPost("start")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> StartTrip([FromBody] StartTripCommand command)
     {
         var result = await _sender.Send(command);
@@ -35,8 +33,6 @@ public class TripsController : ControllerBase
     /// Ends an active trip.
     /// </summary>
     [HttpPost("end")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> EndTrip([FromBody] EndTripCommand command)
     {
         var result = await _sender.Send(command);
@@ -47,8 +43,6 @@ public class TripsController : ControllerBase
     /// Retrieves trip history based on query filters.
     /// </summary>
     [HttpGet("history")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetTripHistory([FromQuery] GetTripHistoryQuery query)
     {
         var result = await _sender.Send(query);
@@ -59,8 +53,6 @@ public class TripsController : ControllerBase
     /// Retrieves the live dispatch feed.
     /// </summary>
     [HttpGet("live-dispatch")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetLiveDispatchFeed([FromQuery] GetLiveDispatchFeedQuery query)
     {
         var result = await _sender.Send(query);
@@ -70,10 +62,7 @@ public class TripsController : ControllerBase
     /// <summary>
     /// Creates a manual dispatch.
     /// </summary>
-    /// 
     [HttpPost("dispatch")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ManualDispatch([FromBody] ManualDispatchCommand command)
     {
         var result = await _sender.Send(command);
