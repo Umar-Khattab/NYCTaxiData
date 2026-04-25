@@ -1,3 +1,4 @@
+
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using NYCTaxiData.Application.Features.Drivers.Commands.SyncOfflineData;
@@ -96,6 +97,7 @@ public class DriversController : ControllerBase
         var result = await _sender.Send(command);
         return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
     }
+    public sealed record UpdateDriverStatusRequest(string Status, double CurrentLat, double CurrentLng);
 }
 
-public sealed record UpdateDriverStatusRequest(string Status, double CurrentLat, double CurrentLng);
+

@@ -15,6 +15,11 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
 
         protected readonly DbSet<T> _dbSet;
 
+        public async Task<int> CountAsync(ISpecification<T> spec)
+        { 
+            return await ApplySpecification(spec).CountAsync();
+        }
+
         public GenericRepository(TaxiDbContext context)
         {
             _context = context;
@@ -30,8 +35,7 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
             => await _dbSet.ToListAsync();
 
         public async Task<T?> GetByIdAsync(object id)
-        {
-            // نجيب الـ Primary Key Property
+        { 
             var keyName = _context.Model
                 .FindEntityType(typeof(T))!
                 .FindPrimaryKey()!
@@ -133,8 +137,7 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
         }
 
         public async Task<T?> GetBySpecAsync(ISpecification<T> spec, CancellationToken cancellationToken = default)
-        {
-            // 👈 شيلنا AsNoTracking عشان الـ Change Tracker يشتغل
+        { 
             return await SpecificationEvaluator<T>
                 .GetQuery(_dbSet.AsQueryable(), spec)
                 .FirstOrDefaultAsync(cancellationToken);

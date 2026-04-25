@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
+using NYCTaxiData.Infrastructure.Interceptors;
 using System;
 using System.Collections.Generic;
 
@@ -8,12 +9,29 @@ namespace NYCTaxiData.Infrastructure.Data.Contexts;
 
 public partial class TaxiDbContext : DbContext
 {
+    private readonly AuditableEntityInterceptor? _auditableInterceptor;
+    private readonly AuditLogInterceptor? _auditLogInterceptor;
 
-    public TaxiDbContext(DbContextOptions<TaxiDbContext> options)
+    public TaxiDbContext(
+        DbContextOptions<TaxiDbContext> options,
+        AuditableEntityInterceptor? auditableInterceptor = null, // اختياري عشان الـ Migration متضربش
+        AuditLogInterceptor? auditLogInterceptor = null)
         : base(options)
     {
+        _auditableInterceptor = auditableInterceptor;
+        _auditLogInterceptor = auditLogInterceptor;
     }
-    
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // أضف الـ Interceptors لو تم حقنهم في الـ Constructor
+        if (_auditableInterceptor != null)
+            optionsBuilder.AddInterceptors(_auditableInterceptor);
+
+        if (_auditLogInterceptor != null)
+            optionsBuilder.AddInterceptors(_auditLogInterceptor);
+
+        base.OnConfiguring(optionsBuilder);
+    }
 
     public virtual DbSet<AuditLogEntry> AuditLogEntries { get; set; }
 
@@ -123,15 +141,43 @@ public partial class TaxiDbContext : DbContext
         {
             entity.Property(e => e.Status)
                 .HasConversion(
-                    v => v.ToString(),                    // من C# للداتابيز (بيبعت "On_Trip")
-                    v => (CurrentStatus)Enum.Parse(typeof(CurrentStatus), v) // من الداتابيز للكود
+                    v => v.ToString(),                    
+                    v => (CurrentStatus)Enum.Parse(typeof(CurrentStatus), v)  
                 )
-                .HasColumnName("status"); // تأكد إنه مكتوب سمول هنا
+                .HasColumnName("status");  
         });
         base.OnModelCreating(modelBuilder);
         modelBuilder.Entity<User1>()
     .Property(u => u.Role)
-    .HasColumnName("role");  
+    .HasColumnName("role");
+
+        modelBuilder.Entity<Trip>(entity =>
+        {
+            entity.HasKey(e => e.TripId).HasName("trips_pkey");
+            entity.ToTable("trips");
+
+            entity.Property(e => e.TripId).HasColumnName("trip_id");
+
+            // ✅ لازم الأسماء هنا تطابق اللي في Supabase بالظبط (PascalCase)
+            entity.Property(e => e.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false);
+            entity.Property(e => e.DeletedAt).HasColumnName("DeletedAt");
+            entity.Property(e => e.DeletedBy).HasColumnName("DeletedBy");
+            entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
+            entity.Property(e => e.CreatedBy).HasColumnName("CreatedBy");
+            entity.Property(e => e.LastUpdatedAt).HasColumnName("LastUpdatedAt");
+            entity.Property(e => e.LastUpdatedBy).HasColumnName("LastUpdatedBy");
+
+            entity.Property(e => e.ActualFare).HasColumnName("actual_fare").HasPrecision(10, 2);
+            entity.Property(e => e.DriverId).HasColumnName("driver_id");
+            entity.Property(e => e.DropoffLocationId).HasColumnName("dropoff_location_id");
+            entity.Property(e => e.EndedAt).HasColumnName("ended_at");
+            entity.Property(e => e.PickupLocationId).HasColumnName("pickup_location_id");
+            entity.Property(e => e.SimulationId).HasColumnName("simulation_id");
+            entity.Property(e => e.StartedAt).HasColumnName("started_at");
+
+            entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
 
         modelBuilder
             .HasPostgresEnum("auth", "aal_level", new[] { "aal1", "aal2", "aal3" })

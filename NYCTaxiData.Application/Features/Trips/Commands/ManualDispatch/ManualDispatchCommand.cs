@@ -5,14 +5,14 @@ using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
 {
     public record ManualDispatchCommand(
-        Guid DriverId,
-        int PickupZoneId,
-        int DropoffZoneId,
-        string PassengerName,
-        string PassengerPhone
-    ) : IRequest<Result<DispatchResultDto>>, ITransactionalCommand, ISecureRequest
-    {
-    }
+    Guid DriverId,
+    int PickupZoneId,
+    int DropoffZoneId,
+    string PassengerName,
+    string PassengerPhone
+) : MediatR.IRequest<NYCTaxiData.Application.Common.Plumping.Result<DispatchResultDto>>, // المسار الكامل هنا
+    ITransactionalCommand,
+    ISecureRequest;
 
     public class DispatchResultDto
     {

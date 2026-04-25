@@ -6,25 +6,21 @@ namespace NYCTaxiData.Infrastructure.Services.Specifications.Trips
 {
     public class TripHistorySpec : BaseSpecification<Trip>
     {
-        // كل الـ trips مع pagination
-        public TripHistorySpec(int page, int limit)
+        // Constructor واحد عبقري بيقوم بالمهمتين
+        public TripHistorySpec(Guid? driverId, int page, int limit)
+            : base(t => !driverId.HasValue || t.DriverId == driverId.Value)
         {
+            // الـ Includes ثابتة في الحالتين عشان الداتا تطلع كاملة
             AddInclude(t => t.Driver!);
             AddInclude(t => t.PickupLocation!);
             AddInclude(t => t.DropoffLocation!);
-            AddOrderByDescending(t => t.StartedAt!);
-            ApplyPaging((page - 1) * limit, limit);
-        }
 
-        // trips لسائق معين مع pagination
-        public TripHistorySpec(Guid driverId, int page, int limit)
-            : base(t => t.DriverId == driverId)
-        {
-            AddInclude(t => t.Driver!);
+            AddOrderByDescending(t => t.StartedAt!); 
+            // تطبيق الـ Pagination
+            ApplyPaging((page - 1) * limit, limit);
             AddInclude(t => t.PickupLocation!);
             AddInclude(t => t.DropoffLocation!);
-            AddOrderByDescending(t => t.StartedAt!);
-            ApplyPaging((page - 1) * limit, limit);
+
         }
     }
 }
