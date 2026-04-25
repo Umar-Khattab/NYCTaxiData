@@ -1,5 +1,4 @@
- 
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NYCTaxiData.Application.Features.Analytics.Commands.UpdateSystemThresholds;

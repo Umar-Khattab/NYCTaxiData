@@ -67,7 +67,7 @@ public class AuthController : BaseController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
     {
-        var result = await _mediator.Send(command);
+        var result = await Mediator.Send(command);
         if (!result.IsSuccess)
             return BadRequest(new { message = result.Message });
         return Accepted(result);

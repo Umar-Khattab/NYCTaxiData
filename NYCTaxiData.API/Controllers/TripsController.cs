@@ -74,7 +74,7 @@ public class TripsController
     [HttpGet("live-dispatch")]
     public async Task<IActionResult> GetLiveDispatchFeed([FromQuery] GetLiveDispatchFeedQuery query)
     {
-        var data = await Mediator.Send(new GetLiveDispatchFeedQuery(limit, minutesWindow));
+        var data = await Mediator.Send(new GetLiveDispatchFeedQuery(query.Limit, query.MinutesWindow));
         return HandleResult(Result.Success(data));
     }
 
