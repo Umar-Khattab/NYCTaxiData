@@ -1,124 +1,101 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using NYCTaxiData.API.Contracts;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using NYCTaxiData.Application.Features.Drivers.Commands.SyncOfflineData;
+using NYCTaxiData.Application.Features.Drivers.Commands.UpdateDriverStatus;
+using NYCTaxiData.Application.Features.Drivers.Queries.GetActiveFleet;
+using NYCTaxiData.Application.Features.Drivers.Queries.GetDriverList;
+using NYCTaxiData.Application.Features.Drivers.Queries.GetDriverProfile;
+using NYCTaxiData.Application.Features.Drivers.Queries.GetShiftStatistics;
 
-namespace NYCTaxiData.API.Controllers
+namespace NYCTaxiData.API.Controllers;
+
+[ApiController]
+[Route("api/v1/[controller]")]
+public class DriversController : ControllerBase
 {
-    [ApiController]
-    [Route("api/v1/[controller]")]
-    public class DriversController : ControllerBase
+    private readonly ISender _sender;
+
+    public DriversController(ISender sender)
     {
-        // --------------------------------------------------------
-        // 1. Update Driver Status
-        // --------------------------------------------------------
-        [HttpPut("{id}/status")]
-        public IActionResult UpdateStatus(string id, [FromBody] UpdateDriverStatusRequest request)
-        {
-            // Mock Data Response
-            return Ok(new APIResponse<object>
-            {
-                IsSuccess = true,
-                Message = "Driver status updated successfully",
-                Data = new
-                {
-                    driverId = id,
-                    status = request.Status,
-                    updatedAt = DateTime.UtcNow
-                }
-            });
-        }
-
-        // --------------------------------------------------------
-        // 2. Get Active Fleet
-        // --------------------------------------------------------
-        [HttpGet("active")]
-        public IActionResult GetActiveFleet()
-        {
-            // Mock Data Response
-            return Ok(new APIResponse<object>
-            {
-                IsSuccess = true,
-                Message = "Active fleet retrieved",
-                Data = new[]
-                {
-                    new { driverId = "DRV-1024", name = "Mostafa Ibrahim", status = "Available", vehicle = "NY-7721", lat = 40.7580, lng = -73.9855 },
-                    new { driverId = "DRV-2055", name = "Mohammed Ahmed", status = "On-Trip", vehicle = "NY-E442", lat = 40.6928, lng = -73.9903 },
-                    new { driverId = "DRV-3088", name = "Omar Khattab", status = "Available", vehicle = "NY-X901", lat = 40.7128, lng = -74.0060 }
-                }
-            });
-        }
-
-        // --------------------------------------------------------
-        // 3. Get Shift Statistics
-        // --------------------------------------------------------
-        [HttpGet("{id}/shift-stats")]
-        public IActionResult GetShiftStatistics(string id)
-        {
-            // Mock Data Response
-            return Ok(new APIResponse<object>
-            {
-                IsSuccess = true,
-                Message = "Shift statistics retrieved",
-                Data = new
-                {
-                    shiftId = "SHF-88992",
-                    driverId = id,
-                    startTime = DateTime.UtcNow.AddHours(-6.5), // بدأ من 6 ساعات ونص
-                    hoursActive = 6.5,
-                    totalEarnings = 185.50,
-                    tripsCompleted = 12,
-                    idleTimeMinutes = 45
-                }
-            });
-        }
-
-        // --------------------------------------------------------
-        // 4. Offline Data Batch Sync
-        // --------------------------------------------------------
-        [HttpPost("sync-offline")]
-        public IActionResult SyncOfflineTrips([FromBody] SyncOfflineRequest request)
-        {
-            // هنا في المستقبل سنقوم بفتح Transaction في قاعدة البيانات لحفظ كل الرحلات
-
-            // Mock Data Response
-            return Ok(new APIResponse<object>
-            {
-                IsSuccess = true,
-                Message = "Offline data synchronized successfully",
-                Data = new
-                {
-                    syncedTripsCount = request.OfflineTrips.Count,
-                    failedTrips = Array.Empty<string>() // لا يوجد رحلات فشلت في هذا السيناريو
-                }
-            });
-        }
+        _sender = sender;
     }
 
-    // ========================================================================
-    // 📦 Request DTOs (Data Transfer Objects)
-    // نضعها هنا مؤقتاً في Sprint 1 لكي يقرأها Swagger.
-    // في Sprint 2، يجب نقل هذه الـ Records إلى طبقة الـ Application (مثلاً مجلد Features/Drivers/Commands)
-    // ========================================================================
+    /// <summary>
+    /// Retrieves a paginated list of drivers with optional status and zone filters.
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetDriverList([FromQuery] GetDriverListQuery query)
+    {
+        var result = await _sender.Send(query);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
 
-    public record UpdateDriverStatusRequest(
-        string Status,
-        double CurrentLat,
-        double CurrentLng
-    );
+    /// <summary>
+    /// Retrieves a paginated list of active fleet drivers (non-offline).
+    /// </summary>
+    [HttpGet("active")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetActiveFleet([FromQuery] GetActiveFleetQuery query)
+    {
+        var result = await _sender.Send(query);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
 
-    public record SyncOfflineRequest(
-        string DriverId,
-        List<OfflineTripDto> OfflineTrips
-    );
+    /// <summary>
+    /// Retrieves detailed profile information and current statistics for a single driver.
+    /// </summary>
+    [HttpGet("{driverId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetDriverProfile(Guid driverId)
+    {
+        var result = await _sender.Send(new GetDriverProfileQuery(driverId));
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
 
-    public record OfflineTripDto(
-        string LocalTripId,
-        double PickupLat,
-        double PickupLng,
-        double DropoffLat,
-        double DropoffLng,
-        DateTime StartTime,
-        DateTime EndTime,
-        decimal CalculatedFare,
-        double DistanceMiles
-    );
+    /// <summary>
+    /// Retrieves shift statistics for a driver within a time window.
+    /// </summary>
+    [HttpGet("{driverId:guid}/shift-stats")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetShiftStatistics(
+        Guid driverId,
+        [FromQuery] DateTime? shiftStartUtc,
+        [FromQuery] DateTime? shiftEndUtc)
+    {
+        var query = new GetShiftStatisticsQuery(driverId, shiftStartUtc, shiftEndUtc);
+        var result = await _sender.Send(query);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
+
+    /// <summary>
+    /// Updates driver availability status and location coordinates.
+    /// </summary>
+    [HttpPut("{driverId:guid}/status")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateStatus(Guid driverId, [FromBody] UpdateDriverStatusRequest request)
+    {
+        var command = new UpdateDriverStatusCommand(driverId, request.Status, request.CurrentLat, request.CurrentLng);
+        var result = await _sender.Send(command);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
+
+    /// <summary>
+    /// Synchronizes batched offline trip data for a driver.
+    /// </summary>
+    [HttpPost("sync-offline")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SyncOffline([FromBody] SyncOfflineDataCommand command)
+    {
+        var result = await _sender.Send(command);
+        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+    }
 }
+
+public sealed record UpdateDriverStatusRequest(string Status, double CurrentLat, double CurrentLng);
