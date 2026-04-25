@@ -14,6 +14,8 @@ namespace NYCTaxiData.API.Controllers;
 public class AuthController(IMediator _mediator) : ControllerBase
 {
     [HttpPost("login")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
     {
         var result = await _mediator.Send(command);
@@ -23,6 +25,8 @@ public class AuthController(IMediator _mediator) : ControllerBase
     }
 
     [HttpPost("register/driver")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RegisterDriver([FromBody] RegisterDriverCommand command)
     {
         var result = await _mediator.Send(command);
@@ -32,6 +36,8 @@ public class AuthController(IMediator _mediator) : ControllerBase
     }
 
     [HttpPost("register/manager")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RegisterManager([FromBody] RegisterManagerCommand command)
     {
         var result = await _mediator.Send(command);
@@ -41,6 +47,8 @@ public class AuthController(IMediator _mediator) : ControllerBase
     }
 
     [HttpPost("otp/send")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpCommand command)
     {
         var result = await _mediator.Send(command);
@@ -50,6 +58,8 @@ public class AuthController(IMediator _mediator) : ControllerBase
     }
 
     [HttpPost("otp/verify")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpCommand command)
     {
         var result = await _mediator.Send(command);
@@ -59,15 +69,19 @@ public class AuthController(IMediator _mediator) : ControllerBase
     }
 
     [HttpPost("password/reset")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
     {
         var result = await _mediator.Send(command);
         if (!result.IsSuccess)
             return BadRequest(new { message = result.Message });
-        return Ok(result);
+        return Accepted(result);
     }
 
     [HttpPost("token/refresh")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command)
     {
         var result = await _mediator.Send(command);
@@ -77,6 +91,8 @@ public class AuthController(IMediator _mediator) : ControllerBase
     }
 
     [HttpGet("profile/{phoneNumber}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProfile([FromRoute] string phoneNumber)
     {
         var result = await _mediator.Send(new GetProfileQuery(phoneNumber));
