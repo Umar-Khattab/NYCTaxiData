@@ -1,15 +1,16 @@
 ﻿using MediatR;
 using AutoMapper;
 using System.Linq.Expressions;
+using NYCTaxiData.Application.Common;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
 
 namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
 {
     public class GetLiveDispatchFeedQueryHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
-        : IRequestHandler<GetLiveDispatchFeedQuery, LiveDispatchFeedResultDto>
+        : IRequestHandler<GetLiveDispatchFeedQuery, Result<LiveDispatchFeedResultDto>>
     {
-        public async Task<LiveDispatchFeedResultDto> Handle(
+        public async Task<Result<LiveDispatchFeedResultDto>> Handle(
             GetLiveDispatchFeedQuery request,
             CancellationToken cancellationToken)
         {
@@ -33,12 +34,12 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
                 .Select(trip => _mapper.Map<DispatchFeedItemDto>(trip))
                 .ToList();
 
-            return new LiveDispatchFeedResultDto
+            return Result<LiveDispatchFeedResultDto>.Success(new LiveDispatchFeedResultDto
             {
                 Items = dispatchItems,
                 TotalCount = dispatchItems.Count,
                 RetrievedAt = DateTime.UtcNow
-            };
+            });
         }
     }
 }

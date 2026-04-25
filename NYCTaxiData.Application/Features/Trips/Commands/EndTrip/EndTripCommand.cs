@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using NYCTaxiData.Application.Common;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
@@ -7,7 +8,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
         int TripId,
         decimal BaseFare = 2.50m,
         decimal SurgeMultiplier = 1.0m
-    ) : IRequest<TripEndResultDto>, ITransactionalCommand, ISecureRequest
+    ) : IRequest<Result<TripEndResultDto>>, ITransactionalCommand, ISecureRequest
     {
     }
 

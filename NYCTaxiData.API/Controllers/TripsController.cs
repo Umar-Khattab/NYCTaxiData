@@ -19,6 +19,8 @@ using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsTrip;
 
 namespace NYCTaxiData.API.Controllers;
 
+[ApiController]
+[Route("api/v1/[controller]")]
 public class TripsController
     (IUnitOfWork _unitOfWork,
      IMapper _mapper,
@@ -30,8 +32,7 @@ public class TripsController
     public async Task<IActionResult> StartTrip([FromBody] StartTripCommand command)
     {
         var data = await Mediator.Send(command);
-        var result = Result.Success(data);
-        return HandleResult(result);
+        return HandleResult(Result.Success(data));
     }
 
     // 2. End Trip
@@ -39,8 +40,7 @@ public class TripsController
     public async Task<IActionResult> EndTrip([FromBody] EndTripCommand command)
     {
         var data = await Mediator.Send(command);
-        var result = Result.Success(data);
-        return HandleResult(result);
+        return HandleResult(Result.Success(data));
     }
 
     // 3. Get Trip History (Pagination)
@@ -48,11 +48,10 @@ public class TripsController
     public async Task<IActionResult> GetTrips([FromQuery] Guid? driverId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         var data = await Mediator.Send(new GetTripHistoryQuery(driverId, pageNumber, pageSize));
-        var result = Result.Success(data);
-        return HandleResult(result);
+        return HandleResult(Result.Success(data));
     }
 
-    // 4. Get Online Drivers
+    // 4. Get Online Drivers (Specification Pattern)
     [HttpGet("online")]
     public async Task<IActionResult> GetOnlineDrivers([FromQuery] int page = 1, [FromQuery] int limit = 100)
     {
@@ -62,8 +61,7 @@ public class TripsController
         var driverDtos = _mapper.Map<List<DriverListDto>>(drivers);
 
         var data = PaginatedList<DriverListDto>.Create(driverDtos, totalCount, page, limit);
-        var result = Result.Success(data);
-        return HandleResult(result);
+        return HandleResult(Result.Success(data));
     }
 
     // 5. Get Live Dispatch Feed
@@ -71,8 +69,7 @@ public class TripsController
     public async Task<IActionResult> GetLiveDispatchFeed([FromQuery] int limit = 5, [FromQuery] int minutesWindow = 60)
     {
         var data = await Mediator.Send(new GetLiveDispatchFeedQuery(limit, minutesWindow));
-        var result = Result.Success(data);
-        return HandleResult(result);
+        return HandleResult(Result.Success(data));
     }
 
     // 6. Manual Dispatch
@@ -80,11 +77,10 @@ public class TripsController
     public async Task<IActionResult> ManualDispatch([FromBody] ManualDispatchCommand command)
     {
         var data = await Mediator.Send(command);
-        var result = Result.Success(data);
-        return HandleResult(result);
+        return HandleResult(Result.Success(data));
     }
 
-    // 7. Test Audit (Direct Context)
+    // 7. Test Audit (Direct Context for testing Interceptors)
     [HttpPost("test-audit")]
     public async Task<IActionResult> TestAudit()
     {
@@ -100,15 +96,14 @@ public class TripsController
             UserFromToken = _currentUserService.UserName ?? "System"
         };
 
-        var result = Result.Success(responseData);
-        return HandleResult(result);
+        return HandleResult(Result.Success(responseData));
     }
 
-    // 8. Delete Trip (Soft Delete)
+    // 8. Delete Trip (Soft Delete Test)
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTrip(int id)
-    {
-        var trip = await _context.Trips.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.TripId == id);
+    { 
+        var trip = await _context.Trips.FirstOrDefaultAsync(t => t.TripId == id);
 
         if (trip == null)
             return HandleResult(Result.Failure($"Trip {id} not found", "NotFound"));
@@ -116,7 +111,6 @@ public class TripsController
         _context.Trips.Remove(trip);
         await _context.SaveChangesAsync();
 
-        var result = Result.Success(new { trip.TripId, trip.DeletedBy, trip.DeletedAt });
-        return HandleResult(result);
+        return HandleResult(Result.Success(new { trip.TripId, trip.DeletedBy, trip.DeletedAt }));
     }
 }

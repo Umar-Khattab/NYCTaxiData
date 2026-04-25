@@ -58,6 +58,7 @@ builder.Services.AddMediatR(cfg =>
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<IDispatchNotificationService, DispatchNotification>();
+builder.Services.AddScoped<JwtTokenService>();
 var app = builder.Build();
 
 // ===== 2. إعداد الـ Middleware Pipeline (بعد الـ Build) =====

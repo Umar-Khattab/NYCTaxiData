@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using AutoMapper;
+using NYCTaxiData.Application.Common;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Infrastructure;
@@ -7,9 +8,9 @@ using NYCTaxiData.Infrastructure;
 namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
 {
     public class StartTripCommandHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
-        : IRequestHandler<StartTripCommand, TripStartResultDto>
+        : IRequestHandler<StartTripCommand, Result<TripStartResultDto>>
     {
-        public async Task<TripStartResultDto> Handle(
+        public async Task<Result<TripStartResultDto>> Handle(
             StartTripCommand request,
             CancellationToken cancellationToken)
         {
@@ -42,7 +43,8 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
             await _unitOfWork.Trips.AddAsync(trip);
             await _unitOfWork.SaveChangesAsync();
 
-            return _mapper.Map<TripStartResultDto>(trip);
+            var result = _mapper.Map<TripStartResultDto>(trip);
+            return Result<TripStartResultDto>.Success(result);
         }
     }
 }

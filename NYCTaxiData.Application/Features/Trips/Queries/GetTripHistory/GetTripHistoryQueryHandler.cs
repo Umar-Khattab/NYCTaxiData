@@ -1,52 +1,47 @@
-﻿using AutoMapper;
+using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Application.Common.Models;
+using NYCTaxiData.Application.Common.Plumping;
 using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services.Specifications.Trips; 
+using NYCTaxiData.Infrastructure.Services.Specifications.Trips;
 
 namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
 
 public class GetTripHistoryQueryHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
-    : IRequestHandler<GetTripHistoryQuery, TripHistoryResultDto>
+    : IRequestHandler<GetTripHistoryQuery, Result<PaginatedList<TripHistoryItemDto>>>
 {
-    public async Task<TripHistoryResultDto> Handle(
-      GetTripHistoryQuery request,
-      CancellationToken cancellationToken)
+    public async Task<Result<PaginatedList<TripHistoryItemDto>>> Handle(
+        GetTripHistoryQuery request,
+        CancellationToken cancellationToken)
     {
-        // 1. فحص السائق (فقط لو الـ DriverId مبعوث)
+        // 1. التحقق من وجود السائق لو الـ DriverId مبعوث
         if (request.DriverId.HasValue)
         {
-            var driver = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId.Value); // .Value حلت المشكلة هنا
+            var driver = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId.Value);
             if (driver == null)
-                throw new NotFoundException($"Driver with ID {request.DriverId} not found");
+            {
+                return Result<PaginatedList<TripHistoryItemDto>>.Failure($"Driver with ID {request.DriverId} not found");
+            }
         }
 
-        // 2. حساب العدد الإجمالي (باستخدام الـ Spec المرنة اللي عملناها)
-        // ملاحظة: تأكد إن TripHistorySpec دلوقتي بتقبل Guid? زي ما عدلناها سوا
+        // 2. استخدام الـ Specification Pattern اللي إنت لسه عامله
         var spec = new TripHistorySpec(request.DriverId, request.PageNumber, request.PageSize);
 
-        // يفضل تستخدم CountAsync(spec) مباشرة لو متاحة في الـ Repository
+        // 3. جلب العدد الكلي والبيانات
         var totalCount = await _unitOfWork.Trips.CountAsync(spec);
-
-        if (totalCount == 0)
-        {
-            return new TripHistoryResultDto();
-        }
-
-        // 3. جلب البيانات
         var trips = await _unitOfWork.Trips.GetAllBySpecAsync(spec);
 
+        // 4. عمل Mapping للـ DTOs
         var tripItems = _mapper.Map<List<TripHistoryItemDto>>(trips);
 
-        // 4. التغليف في الـ PaginatedList
+        // 5. التغليف في الـ PaginatedList والرد بـ Result.Success
         var paginatedData = PaginatedList<TripHistoryItemDto>.Create(
             tripItems,
             totalCount,
             request.PageNumber,
             request.PageSize);
 
-        return TripHistoryResultDto.FromPaginatedList(paginatedData);
+        return Result<PaginatedList<TripHistoryItemDto>>.Success(paginatedData);
     }
 }
