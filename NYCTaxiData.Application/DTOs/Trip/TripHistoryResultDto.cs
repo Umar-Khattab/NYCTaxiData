@@ -1,14 +1,27 @@
-﻿using NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
-using System;
-using System.Collections.Generic;
-using System.Text;
-namespace NYCTaxiData.Application.DTOs.Trip
+﻿using System.Linq;
+using NYCTaxiData.Application.Common.Models;
+
+namespace NYCTaxiData.Application.DTOs.Trip;
+
+public class TripHistoryResultDto
 {
-    public class TripHistoryResultDto
+    public int CurrentPage { get; set; }
+    public int TotalPages { get; set; }
+    public int TotalCount { get; set; }
+    public List<TripHistoryItemDto> Items { get; set; } = new();
+    
+    // Null-safe factory accepting the paginated result
+    public static TripHistoryResultDto FromPaginatedList(PaginatedList<TripHistoryItemDto>? list)
     {
-        public int CurrentPage { get; set; }
-        public int TotalPages { get; set; }
-        public int TotalCount { get; set; }
-        public List<Features.Trips.Queries.GetTripHistory.TripHistoryItemDto> Items { get; set; } = [];
+        if (list == null)
+            return new TripHistoryResultDto();
+
+        return new TripHistoryResultDto
+        {
+            CurrentPage = list.PageNumber,
+            TotalPages = list.TotalPages,
+            TotalCount = list.TotalCount,
+            Items = list.Items?.ToList() ?? new List<TripHistoryItemDto>()
+        };
     }
 }

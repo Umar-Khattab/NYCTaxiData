@@ -1,27 +1,25 @@
-﻿using MediatR;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using NYCTaxiData.API.Controllers.Base;
+using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Auth.Commands.Login;
 using NYCTaxiData.Application.Auth.Commands.RegisterDriver;
 using NYCTaxiData.Application.Auth.Commands.RegisterManager;
 using NYCTaxiData.Application.Auth.Commands.RefreshToken;
 using NYCTaxiData.Application.Auth.Queries.GetProfile;
-using NYCTaxiData.Application.Auth.Commands.Login;
-using NYCTaxiData.Application.Features.Auth.Commands.ResetPassword;
+using NYCTaxiData.Application.Features.Auth.Commands.ResetPassword; 
 
 namespace NYCTaxiData.API.Controllers;
 
-[ApiController]
-[Route("api/v1/auth")]
-public class AuthController(IMediator _mediator) : ControllerBase
+public class AuthController : BaseController
 {
     [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
     {
-        var result = await _mediator.Send(command);
-        if (!result.IsSuccess)
-            return Unauthorized(new { message = "Invalid phone number or password" });
-        return Ok(result);
+        var data = await Mediator.Send(command);
+        var result = Result.Success(data); // لف الداتا يدوياً
+        return HandleResult(result);
     }
 
     [HttpPost("register/driver")]
@@ -29,10 +27,9 @@ public class AuthController(IMediator _mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RegisterDriver([FromBody] RegisterDriverCommand command)
     {
-        var result = await _mediator.Send(command);
-        if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message ?? "Registration failed" });
-        return CreatedAtAction(nameof(GetProfile), new { phoneNumber = result.FullName }, result);
+        var data = await Mediator.Send(command);
+        var result = Result.Success(data);
+        return HandleResult(result);
     }
 
     [HttpPost("register/manager")]
@@ -40,10 +37,9 @@ public class AuthController(IMediator _mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RegisterManager([FromBody] RegisterManagerCommand command)
     {
-        var result = await _mediator.Send(command);
-        if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message ?? "Registration failed" });
-        return CreatedAtAction(nameof(GetProfile), new { phoneNumber = result.FullName }, result);
+        var data = await Mediator.Send(command);
+        var result = Result.Success(data);
+        return HandleResult(result);
     }
 
     [HttpPost("otp/send")]
@@ -51,10 +47,9 @@ public class AuthController(IMediator _mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpCommand command)
     {
-        var result = await _mediator.Send(command);
-        if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message });
-        return Ok(new { message = result.Message });
+        var data = await Mediator.Send(command);
+        var result = Result.Success(data);
+        return HandleResult(result);
     }
 
     [HttpPost("otp/verify")]
@@ -62,10 +57,9 @@ public class AuthController(IMediator _mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpCommand command)
     {
-        var result = await _mediator.Send(command);
-        if (!result.IsSuccess)
-            return BadRequest(new { message = result.Message });
-        return Ok(result);
+        var data = await Mediator.Send(command);
+        var result = Result.Success(data);
+        return HandleResult(result);
     }
 
     [HttpPost("password/reset")]
@@ -84,10 +78,9 @@ public class AuthController(IMediator _mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command)
     {
-        var result = await _mediator.Send(command);
-        if (!result.IsSuccess)
-            return Unauthorized(new { message = result.Message });
-        return Ok(result);
+        var data = await Mediator.Send(command);
+        var result = Result.Success(data);
+        return HandleResult(result);
     }
 
     [HttpGet("profile/{phoneNumber}")]
@@ -95,9 +88,8 @@ public class AuthController(IMediator _mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProfile([FromRoute] string phoneNumber)
     {
-        var result = await _mediator.Send(new GetProfileQuery(phoneNumber));
-        if (!result.IsSuccess)
-            return NotFound(new { message = "User not found" });
-        return Ok(result);
+        var data = await Mediator.Send(new GetProfileQuery(phoneNumber));
+        var result = Result.Success(data);
+        return HandleResult(result);
     }
 }

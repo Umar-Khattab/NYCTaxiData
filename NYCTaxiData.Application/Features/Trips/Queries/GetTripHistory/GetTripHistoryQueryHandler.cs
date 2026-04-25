@@ -1,55 +1,47 @@
-﻿using MediatR;
 using AutoMapper;
-using NYCTaxiData.Application.Common;
+using MediatR;
+using NYCTaxiData.Application.Common.Models;
+using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Application.Common.Exceptions;
-using NYCTaxiData.Infrastructure;
+using NYCTaxiData.Infrastructure.Services.Specifications.Trips;
 
-namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory
+namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
+
+public class GetTripHistoryQueryHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
+    : IRequestHandler<GetTripHistoryQuery, Result<PaginatedList<TripHistoryItemDto>>>
 {
-    public class GetTripHistoryQueryHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
-        : IRequestHandler<GetTripHistoryQuery, Result<TripHistoryResultDto>>
+    public async Task<Result<PaginatedList<TripHistoryItemDto>>> Handle(
+        GetTripHistoryQuery request,
+        CancellationToken cancellationToken)
     {
-        public async Task<Result<TripHistoryResultDto>> Handle(
-            GetTripHistoryQuery request,
-            CancellationToken cancellationToken)
+        // 1. التحقق من وجود السائق لو الـ DriverId مبعوث
+        if (request.DriverId.HasValue)
         {
-            // Verify driver exists
-            var driver = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId);
-
+            var driver = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId.Value);
             if (driver == null)
-                throw new NotFoundException($"Driver with ID {request.DriverId} not found");
-
-            // Get paginated trips for the driver
-            var (trips, totalCount) = await _unitOfWork.Trips.GetPagedAsync(
-                pageNumber: request.PageNumber,
-                pageSize: request.PageSize,
-                predicate: t => t.DriverId == request.DriverId,
-                orderBy: q => q.OrderByDescending(t => t.StartedAt));
-
-            if (!trips.Any())
             {
-                return Result<TripHistoryResultDto>.Success(new TripHistoryResultDto
-                {
-                    CurrentPage = request.PageNumber,
-                    TotalPages = 0,
-                    TotalCount = 0,
-                    Items = []
-                });
+                return Result<PaginatedList<TripHistoryItemDto>>.Failure($"Driver with ID {request.DriverId} not found");
             }
-
-            // Map trips to DTOs using AutoMapper
-            var tripItems = _mapper.Map<List<TripHistoryItemDto>>(trips);
-
-            var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
-
-            return Result<TripHistoryResultDto>.Success(new TripHistoryResultDto
-            {
-                CurrentPage = request.PageNumber,
-                TotalPages = totalPages,
-                TotalCount = totalCount,
-                Items = tripItems
-            });
         }
+
+        // 2. استخدام الـ Specification Pattern اللي إنت لسه عامله
+        var spec = new TripHistorySpec(request.DriverId, request.PageNumber, request.PageSize);
+
+        // 3. جلب العدد الكلي والبيانات
+        var totalCount = await _unitOfWork.Trips.CountAsync(spec);
+        var trips = await _unitOfWork.Trips.GetAllBySpecAsync(spec);
+
+        // 4. عمل Mapping للـ DTOs
+        var tripItems = _mapper.Map<List<TripHistoryItemDto>>(trips);
+
+        // 5. التغليف في الـ PaginatedList والرد بـ Result.Success
+        var paginatedData = PaginatedList<TripHistoryItemDto>.Create(
+            tripItems,
+            totalCount,
+            request.PageNumber,
+            request.PageSize);
+
+        return Result<PaginatedList<TripHistoryItemDto>>.Success(paginatedData);
     }
 }

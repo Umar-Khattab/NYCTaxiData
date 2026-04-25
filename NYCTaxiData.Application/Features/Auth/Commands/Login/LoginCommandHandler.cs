@@ -30,8 +30,15 @@ namespace NYCTaxiData.Application.Features.Auth.Commands.Login
 
 			// ✅ استخدم JwtTokenService
 			var token = _jwt.GenerateToken(user.Phonenumber, role, fullName);
-			var result= mapper.Map<UserResultDto>(user);
-			return result;
-		}
+            var result = mapper.Map<UserResultDto>(user);
+
+            // 3. ✅ تعبئة الحقول اللي مش موجودة في الـ User Entity يدويًا
+            result.Token = token;
+            result.IsSuccess = true;
+            result.Role = role;
+            result.FullName = fullName;
+
+            return result;
+        }
 	}
 }

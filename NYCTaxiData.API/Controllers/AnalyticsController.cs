@@ -1,3 +1,4 @@
+ 
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -77,4 +78,4 @@ namespace NYCTaxiData.API.Controllers
             return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
         }
     }
-}
+} 

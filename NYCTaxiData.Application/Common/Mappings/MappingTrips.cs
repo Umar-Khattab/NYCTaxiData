@@ -1,11 +1,13 @@
 ﻿using AutoMapper; 
-using NYCTaxiData.Domain.Entities;
-using NYCTaxiData.Infrastructure;
-using NYCTaxiData.Application.Features.Trips.Commands.StartTrip;
+using NYCTaxiData.Application.DTOs.Identity;
+using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Application.Features.Trips.Commands.EndTrip;
 using NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch;
-using NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
+using NYCTaxiData.Application.Features.Trips.Commands.StartTrip;
 using NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed;
+using NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
+using NYCTaxiData.Domain.Entities;
+using NYCTaxiData.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,13 +18,19 @@ namespace NYCTaxiData.Application.Common.Mappings
     {
         public MappingTrips()
         {
+            // في ملف MappingProfile.cs
+            CreateMap<Driver, DriverListDto>()
+    .ForMember(d => d.DriverId, o => o.MapFrom(s => s.Id))
+    .ForMember(d => d.FirstName, o => o.MapFrom(s => s.Fullname))
+    .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+
             // ===== Trips - StartTripCommand =====
-            CreateMap<Trip, TripStartResultDto>()
+            CreateMap<Trip, DTOs.Trip.TripStartResultDto>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => "In-Progress"))
                 .ForMember(dest => dest.DriverId, opt => opt.MapFrom(src => src.DriverId.Value));
 
             // ===== Trips - EndTripCommand =====
-            CreateMap<Trip, TripEndResultDto>()
+            CreateMap<Trip, DTOs.Trip.TripEndResultDto>()
                 .ForMember(dest => dest.DurationMinutes, opt => opt.MapFrom(src =>
                     src.StartedAt.HasValue && src.EndedAt.HasValue
                         ? (int)(src.EndedAt.Value - src.StartedAt.Value).TotalMinutes
@@ -31,7 +39,7 @@ namespace NYCTaxiData.Application.Common.Mappings
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => "Completed"));
 
             // ===== Trips - ManualDispatchCommand =====
-            CreateMap<Trip, DispatchResultDto>()
+            CreateMap<Trip, DTOs.Trip.DispatchResultDto>()
                 .ForMember(dest => dest.DispatchId, opt => opt.MapFrom(src =>
                     $"DSP-{src.TripId:D6}-{new DateTimeOffset(src.StartedAt ?? DateTime.UtcNow).ToUnixTimeSeconds()}"))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => "Sent"))
@@ -52,7 +60,7 @@ namespace NYCTaxiData.Application.Common.Mappings
                     .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.EndedAt.HasValue ? "Completed" : "In-Progress"));
 
             // ===== Trips - GetLiveDispatchFeed =====
-            CreateMap<Trip, DispatchFeedItemDto>()
+            CreateMap<Trip, DTOs.Trip.DispatchFeedItemDto>()
                 .ForMember(dest => dest.DispatchId, opt => opt.MapFrom(src =>
                     $"DSP-{src.TripId:D6}-{new DateTimeOffset(src.StartedAt ?? DateTime.UtcNow).ToUnixTimeSeconds()}"))
                 .ForMember(dest => dest.DriverName, opt => opt.MapFrom(src => src.Driver!.Fullname ?? "Unknown Driver"))
