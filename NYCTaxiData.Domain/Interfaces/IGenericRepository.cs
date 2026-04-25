@@ -10,6 +10,7 @@ namespace NYCTaxiData.Domain.Common.Interfaces
     { 
         Task<IEnumerable<T>> GetAllAsync();
 
+        Task<int> CountAsync(ISpecification<T> spec);
         Task<T?> GetByIdAsync(object id);
 
         Task<IEnumerable<T>> FindByConditionAsync(Expression<Func<T, bool>> predicate);

@@ -2,75 +2,55 @@
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
-namespace NYCTaxiData.Application.Behaviors
+namespace NYCTaxiData.Application.Behaviors;
+
+public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : notnull
 {
-    /// <summary>
-    /// MediatR pipeline behavior for logging all requests and responses.
-    /// Logs request details, execution time, and outcomes for monitoring and debugging.
-    /// </summary>
-    /// <typeparam name="TRequest">The type of the request.</typeparam>
-    /// <typeparam name="TResponse">The type of the response.</typeparam>
-    internal class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-        where TRequest : notnull
+    private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
+
+    public LoggingBehavior(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
     {
-        private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
+        _logger = logger;
+    }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="LoggingBehavior{TRequest, TResponse}"/> class.
-        /// </summary>
-        /// <param name="logger">The logger instance.</param>
-        public LoggingBehavior(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
+    public async Task<TResponse> Handle(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
+    {
+        var requestName = typeof(TRequest).Name;
+        var timer = Stopwatch.StartNew();
+
+        // 1. بداية التنفيذ مع تسجيل الـ Request Object بالكامل (Destructuring)
+        // علامة الـ @ بتخلي الـ Logger يسجل الـ Properties بتاعة الأوبجكت كـ JSON
+        _logger.LogInformation(
+            "[START] Handling Request: {RequestName} | Data: {@Request}",
+            requestName, request);
+
+        try
         {
-            _logger = logger;
-        }
+            // 2. الانتقال للخطوة اللي بعدها في الـ Pipeline (مثلاً الـ Validation)
+            var response = await next();
+            timer.Stop();
 
-        /// <summary>
-        /// Handles the request with logging before and after execution.
-        /// </summary>
-        /// <param name="request">The request.</param>
-        /// <param name="next">The next request handler.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The response.</returns>
-        public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
-        {
-            var requestName = typeof(TRequest).Name;
-            var stopwatch = Stopwatch.StartNew();
-
+            // 3. تسجيل النجاح مع الوقت المستغرق
             _logger.LogInformation(
-                "Starting request execution: {RequestName}",
-                requestName);
+                "[END] {RequestName} completed successfully | Elapsed: {ElapsedMs}ms",
+                requestName, timer.ElapsedMilliseconds);
 
-            _logger.LogDebug(
-                "Request details - Name: {RequestName}, Type: {RequestType}",
-                requestName,
-                typeof(TRequest).FullName);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            timer.Stop();
 
-            try
-            {
-                var response = await next();
+            // 4. تسجيل الكوارث (Errors) مع تفاصيل الاستثناء
+            _logger.LogError(ex,
+                "[ERROR] {RequestName} failed after {ElapsedMs}ms | Message: {ErrorMessage}",
+                requestName, timer.ElapsedMilliseconds, ex.Message);
 
-                stopwatch.Stop();
-
-                _logger.LogInformation(
-                    "Request completed successfully: {RequestName} - Execution time: {ExecutionTime}ms",
-                    requestName,
-                    stopwatch.ElapsedMilliseconds);
-
-                return response;
-            }
-            catch (Exception ex)
-            {
-                stopwatch.Stop();
-
-                _logger.LogError(
-                    ex,
-                    "Request execution failed: {RequestName} - Execution time: {ExecutionTime}ms - Error: {ErrorMessage}",
-                    requestName,
-                    stopwatch.ElapsedMilliseconds,
-                    ex.Message);
-
-                throw;
-            }
+            throw; // بنعمل re-throw عشان الـ GlobalExceptionHandler يلقطها
         }
     }
 }
