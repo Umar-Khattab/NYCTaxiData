@@ -50,6 +50,6 @@ public sealed class GetDriverProfileQueryHandler : IRequestHandler<GetDriverProf
             LastTripEndedAt = lastTripEndedAt
         };
 
-        return Result<DriverProfileDto>.Success(profile);
+        return Result<DriverProfileDto>.Success(profile, "Driver profile retrieved successfully");
     }
 }

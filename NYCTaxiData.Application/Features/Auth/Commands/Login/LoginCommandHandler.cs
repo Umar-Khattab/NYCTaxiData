@@ -1,18 +1,18 @@
 ﻿using AutoMapper;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using NYCTaxiData.Application.Auth.Commands.Login;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
+using NYCTaxiData.Application.Common.Specifications.Auth;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
+using NYCTaxiData.Application.Common.Interfaces.Services;
+using Org.BouncyCastle.Crypto.Generators;
+using BCrypt.Net;
 
 namespace NYCTaxiData.Application.Features.Auth.Commands.Login
 {
 
 	// LoginCommandHandler
-	public class LoginCommandHandler(IUnitOfWork _uow, JwtTokenService _jwt,IMapper mapper)
+ public class LoginCommandHandler(IUnitOfWork _uow, IJwtTokenService _jwt,IMapper mapper)
 		: IRequestHandler<LoginCommand, UserResultDto>
 	{
 		public async Task<UserResultDto> Handle(LoginCommand request, CancellationToken cancellationToken)

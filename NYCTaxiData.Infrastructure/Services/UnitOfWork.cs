@@ -9,7 +9,7 @@ using NYCTaxiData.Infrastructure.Data.Repository;
 
 namespace NYCTaxiData.Infrastructure.Services;
 
-public class UnitOfWork : IUnitOfWork
+public class UnitOfWork : Application.Common.Interfaces.IUnitOfWork
 {
     private readonly TaxiDbContext _context;
     private IDbContextTransaction? _transaction;

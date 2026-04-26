@@ -1,16 +1,15 @@
 ﻿using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Auth.Commands.RegisterDriver;
+using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Specifications.Auth;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure; // ده مهم عشان يشوف User1
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
 
 namespace NYCTaxiData.Application.Auth.Commands.RegisterDriver
 {
-	public class RegisterDriverCommandHandler(IUnitOfWork _uow, IMapper _mapper, JwtTokenService _jwt)
+  public class RegisterDriverCommandHandler(IUnitOfWork _uow, IMapper _mapper, IJwtTokenService _jwt)
 	  : IRequestHandler<RegisterDriverCommand, UserResultDto>
 	{
 		public async Task<UserResultDto> Handle(RegisterDriverCommand request, CancellationToken cancellationToken)

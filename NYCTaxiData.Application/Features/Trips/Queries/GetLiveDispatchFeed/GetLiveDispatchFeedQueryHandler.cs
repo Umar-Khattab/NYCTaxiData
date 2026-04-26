@@ -39,7 +39,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
                 Items = dispatchItems,
                 TotalCount = dispatchItems.Count,
                 RetrievedAt = DateTime.UtcNow
-            });
+            }, "Live dispatch feed retrieved successfully");
         }
     }
 }

@@ -31,7 +31,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Commands.UpdateDriverStatus
 
             await _unitOfWork.Drivers.UpdateAsync(driver);
 
-            return Result<Unit>.Success(Unit.Value);
+            return Result<Unit>.Success(Unit.Value, "Driver status updated successfully.");
         }
     }
 }

@@ -42,7 +42,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
             result.BaseFare = request.BaseFare;
             result.SurgeMultiplier = request.SurgeMultiplier;
 
-            return Result<TripEndResultDto>.Success(result);
+            return Result<TripEndResultDto>.Success(result, "Trip ended successfully");
         }
     }
 }

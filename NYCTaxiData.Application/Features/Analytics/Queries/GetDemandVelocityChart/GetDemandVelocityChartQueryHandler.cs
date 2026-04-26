@@ -35,7 +35,7 @@ namespace NYCTaxiData.Application.Features.Analytics.Queries.GetDemandVelocityCh
                 ToUtc: toUtc,
                 Points: chartPoints);
 
-            return Result<DemandVelocityChartDto>.Success(response);
+            return Result<DemandVelocityChartDto>.Success(response, "Demand velocity chart generated successfully");
         }
     }
 }

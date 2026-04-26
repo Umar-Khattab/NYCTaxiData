@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using NYCTaxiData.Infrastructure;
 
 namespace NYCTaxiData.Application.Common.Interfaces
 {
-    internal interface IApplicationDbContext
+    public interface IApplicationDbContext
     {
+        IQueryable<User1> Users1 { get; }
+
+        Task<User1?> GetUserByPhoneAsync(string phoneNumber, CancellationToken cancellationToken = default);
+
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

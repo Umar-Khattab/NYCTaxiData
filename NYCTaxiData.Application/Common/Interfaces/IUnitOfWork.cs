@@ -20,9 +20,7 @@ namespace NYCTaxiData.Application.Common.Interfaces
         IGenericRepository<Demandprediction> DemandPredictions { get; }
         IGenericRepository<Weathersnapshot> WeatherSnapshots { get; }
 
-        Task<int> SaveChangesAsync();
-        Task BeginTransactionAsync();
-        Task CommitTransactionAsync();
-        Task RollbackTransactionAsync();
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+        Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken ct = default);
     }
 }

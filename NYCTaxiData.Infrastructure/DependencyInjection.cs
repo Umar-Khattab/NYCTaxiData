@@ -1,15 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
+using Microsoft.Extensions.Http;
+using NYCTaxiData.Application.Common.Interfaces.Services;
 using NYCTaxiData.Domain.Common.Interfaces;
-using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure.Data;
 using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Data.Repository;
 using NYCTaxiData.Infrastructure.Interceptors;
 using NYCTaxiData.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
+using Polly.Extensions.Http;
+using Polly;
+using NYCTaxiData.Application.Common.Interfaces;
 
 namespace NYCTaxiData.Infrastructure
 {
@@ -29,6 +32,7 @@ namespace NYCTaxiData.Infrastructure
             services.AddScoped<ICacheService, CacheService>();
             services.AddScoped<IDbInitializer, DbInitializer>();
             services.AddScoped<ISmsService, WhatsAppSmsService>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddDistributedMemoryCache();
 
             // 2. تسجيل الـ DbContext مع الـ Interceptors والـ Retry Logic
@@ -50,6 +54,16 @@ namespace NYCTaxiData.Infrastructure
             // 3. تسجيل أنماط البيانات (Data Patterns)
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IAiPredictionService, AiPredictionService>();
+            services.AddHttpClient("MlService", client =>
+            {
+                client.BaseAddress = new Uri(configuration["MlService:BaseUrl"]!);
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .AddPolicyHandler(HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .WaitAndRetryAsync(3, retryAttempt =>
+            TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))));
 
             return services;
         }

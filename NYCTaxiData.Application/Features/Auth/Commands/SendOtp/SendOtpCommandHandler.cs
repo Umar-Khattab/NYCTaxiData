@@ -1,8 +1,8 @@
 ﻿using MediatR;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
+using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Specifications.Auth;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
 
 public class SendOtpCommandHandler(
 	IUnitOfWork _uow,
