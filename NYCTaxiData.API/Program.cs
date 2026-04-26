@@ -11,6 +11,11 @@ using NYCTaxiData.Application.Features.Auth.Commands.Login;
 using NYCTaxiData.Infrastructure;
 using NYCTaxiData.Infrastructure.Interceptors;
 using NYCTaxiData.Infrastructure.Services;
+using Microsoft.Extensions.Http;
+using Polly;
+using NYCTaxiData.Application.Features.AI;
+using Polly.Extensions.Http;
+using NYCTaxiData.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +27,7 @@ builder.Services.AddProblemDetails();
 
 // تسجيل خدمات الـ Infrastructure
 builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddApplicationServices(builder.Configuration);
 
 // ? لازم هنا: تسجيل الـ Authentication و SignalR قبل الـ Build
 builder.Services.AddJwtAuthentication(builder.Configuration);
@@ -41,6 +47,7 @@ builder.Services.AddMediatR(cfg =>
                     typeof(ValidationBehavior<,>));
 });
 
+
 // ===== FluentValidation =====
 builder.Services.AddValidatorsFromAssembly(
     typeof(LoginCommandHandler).Assembly);
@@ -49,6 +56,7 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<MappingProfile>();
     cfg.AddProfile<MappingTrips>();
+    cfg.AddProfile<AIMappingProfile>();
 });
 
 builder.Services.AddMediatR(cfg =>
