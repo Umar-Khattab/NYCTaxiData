@@ -1,17 +1,12 @@
 ﻿using AutoMapper;
 using MediatR;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
+using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Specifications.Auth;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text;
 // VerifyOtpCommandHandler
-public class VerifyOtpCommandHandler(IUnitOfWork _uow, ICacheService _cache, JwtTokenService _jwt,IMapper mapper)
+public class VerifyOtpCommandHandler(IUnitOfWork _uow, ICacheService _cache, IJwtTokenService _jwt,IMapper mapper)
 	: IRequestHandler<VerifyOtpCommand, VerifyOtpResultDto>
 {
 	public async Task<VerifyOtpResultDto> Handle(VerifyOtpCommand request, CancellationToken cancellationToken)

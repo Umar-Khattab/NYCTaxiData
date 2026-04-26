@@ -1,12 +1,11 @@
 ﻿using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Common.Interfaces.Identity; 
+using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Specifications.Auth;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Org.BouncyCastle.Crypto.Generators;
+using BCrypt.Net;
 
 namespace NYCTaxiData.Application.Features.Auth.Commands.ResetPassword
 {

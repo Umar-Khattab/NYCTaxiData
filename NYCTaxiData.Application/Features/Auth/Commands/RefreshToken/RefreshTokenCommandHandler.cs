@@ -1,20 +1,17 @@
 ﻿using AutoMapper;
 using MediatR;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
+using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Specifications.Auth;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text; // تأكد من الـ Namespace ده
 
 namespace NYCTaxiData.Application.Auth.Commands.RefreshToken {
 
 
 	// RefreshTokenCommandHandler
-	public class RefreshTokenCommandHandler(IUnitOfWork _uow, JwtTokenService _jwt, IMapper mapper)
+ public class RefreshTokenCommandHandler(IUnitOfWork _uow, IJwtTokenService _jwt, IMapper mapper)
 		: IRequestHandler<RefreshTokenCommand, UserResultDto>
 	{
 		public async Task<UserResultDto> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)

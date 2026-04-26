@@ -44,7 +44,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
             await _unitOfWork.SaveChangesAsync();
 
             var result = _mapper.Map<TripStartResultDto>(trip);
-            return Result<TripStartResultDto>.Success(result);
+            return Result<TripStartResultDto>.Success(result, "Trip started successfully");
         }
     }
 }

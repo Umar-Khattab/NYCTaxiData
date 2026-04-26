@@ -1,19 +1,16 @@
 ﻿using AutoMapper;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
+using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Specifications.Auth;
+using NYCTaxiData.Application.Common.Specifications.Managers;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
-using NYCTaxiData.Infrastructure.Data.Contexts;
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Specifications.Managers;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
 
 namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
 {
 
-	public class RegisterManagerCommandHandler(IUnitOfWork _uow, IMapper _mapper, JwtTokenService _jwt)
+ public class RegisterManagerCommandHandler(IUnitOfWork _uow, IMapper _mapper, IJwtTokenService _jwt)
 	: IRequestHandler<RegisterManagerCommand, UserResultDto>
 	{
 		public async Task<UserResultDto> Handle(RegisterManagerCommand request, CancellationToken cancellationToken)

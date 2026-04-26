@@ -54,6 +54,6 @@ public sealed class GetDriverListQueryHandler
             request.PageNumber,
             request.PageSize);
 
-        return Result<PaginatedList<DriverDto>>.Success(result);
+        return Result<PaginatedList<DriverDto>>.Success(result, "Driver list retrieved successfully");
     }
 }
