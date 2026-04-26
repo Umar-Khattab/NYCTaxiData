@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Infrastructure.Interceptors;
@@ -7,7 +8,7 @@ using System.Collections.Generic;
 
 namespace NYCTaxiData.Infrastructure.Data.Contexts;
 
-public partial class TaxiDbContext : DbContext
+public partial class TaxiDbContext : DbContext, IApplicationDbContext
 {
     private readonly AuditableEntityInterceptor? _auditableInterceptor;
     private readonly AuditLogInterceptor? _auditLogInterceptor;
@@ -109,6 +110,9 @@ public partial class TaxiDbContext : DbContext
 
     public virtual DbSet<User1> Users1 { get; set; }
 
+    public Task<User1?> GetUserByPhoneAsync(string phoneNumber, CancellationToken cancellationToken = default)
+        => Users1.FirstOrDefaultAsync(u => u.Phonenumber == phoneNumber, cancellationToken);
+
     public virtual DbSet<VectorIndex> VectorIndexes { get; set; }
 
     public virtual DbSet<Weathersnapshot> Weathersnapshots { get; set; }
@@ -118,6 +122,8 @@ public partial class TaxiDbContext : DbContext
     public virtual DbSet<WebauthnCredential> WebauthnCredentials { get; set; }
 
     public virtual DbSet<Zone> Zones { get; set; }
+
+    IQueryable<User1> IApplicationDbContext.Users1 => Users1;
 
     ////    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     ////#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.

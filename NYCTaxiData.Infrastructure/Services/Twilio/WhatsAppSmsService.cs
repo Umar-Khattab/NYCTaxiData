@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
+using NYCTaxiData.Application.Common.Interfaces.Services;
 using System.Net.Http.Json;
 
 public class WhatsAppSmsService : ISmsService
