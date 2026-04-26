@@ -1,1135 +1,655 @@
-# NYC Taxi Data — Complete Project Documentation
+# NYC Taxi Data — Technical Documentation
 
-> **Repository:** https://github.com/Umar-Khattab/NYCTaxiData  
-> **Framework:** .NET 10  
-> **Architecture:** Clean Architecture (Domain → Application → Infrastructure → API)  
-> **Database:** PostgreSQL  
-> **Status:** Production Ready ✅
+> **Repository**: https://github.com/Umar-Khattab/NYCTaxiData  
+> **Framework**: .NET 10  
+> **Last Updated**: April 26, 2026  
+> **Document Version**: 1.4
 
 ---
 
 ## Table of Contents
 
-1. [What Is This Project?](#1-what-is-this-project)
-2. [Architecture & Design Philosophy](#2-architecture--design-philosophy)
-3. [Technology Stack](#3-technology-stack)
-4. [Project Structure Explained](#4-project-structure-explained)
-5. [Getting Started](#5-getting-started)
-6. [Core Features Deep Dive](#6-core-features-deep-dive)
-7. [Authentication & Authorization](#7-authentication--authorization)
-8. [Database Design](#8-database-design)
-9. [API Reference](#9-api-reference)
-10. [Performance Monitoring](#10-performance-monitoring)
-11. [Development Guide](#11-development-guide)
-12. [Deployment](#12-deployment)
-13. [Troubleshooting](#13-troubleshooting)
+1. [Project Overview](#1-project-overview)
+2. [Architecture Overview](#2-architecture-overview)
+3. [Project Structure](#3-project-structure)
+4. [Code Flow](#4-code-flow)
+5. [Branch Analysis](#5-branch-analysis)
+6. [Key Components Explanation](#6-key-components-explanation)
+7. [Configuration & Setup](#7-configuration--setup)
+8. [Dependencies & Integrations](#8-dependencies--integrations)
+9. [Best Practices & Observations](#9-best-practices--observations)
 
 ---
 
-## 1. What Is This Project?
+## 1. Project Overview
 
-**NYC Taxi Data** is a full-stack, enterprise-grade backend system designed to manage and optimize New York City taxi operations. Think of it as the "brain" of a modern taxi fleet — it handles everything from dispatching trips and tracking drivers to predicting demand using machine learning.
+### Purpose of the System
 
-### What Problems Does It Solve?
+The **NYCTaxiData** project is a comprehensive backend system for managing NYC taxi operations. It serves as a centralized platform that orchestrates:
 
-| Problem | Solution |
-|---|---|
-| **Manual dispatching is slow** | Real-time trip dispatching with live fleet tracking |
-| **Drivers waste time waiting** | AI-powered demand forecasting tells drivers where to go |
-| **No visibility into operations** | Analytics dashboards with KPIs and heatmaps |
-| **Security concerns** | Multi-method authentication (password, OTP, OAuth, SAML, biometrics) |
-| **System slowdowns go unnoticed** | Built-in real-time performance monitoring with automatic alerts |
+- **Fleet Management**: Real-time driver status tracking, shift statistics, and active fleet monitoring
+- **Trip Dispatch**: Manual and AI-assisted trip assignment, live dispatch feeds, and trip lifecycle management
+- **Analytics & KPIs**: System thresholds, demand velocity charts, and top-level performance metrics
+- **AI/ML Intelligence**: Demand forecasting, dispatch recommendations, optimal driver scheduling, revenue prediction, and operational simulations
+- **Authentication & Authorization**: Multi-method auth (password, OTP, OAuth, SAML, WebAuthn) with role-based access control
+- **Real-time Communication**: SignalR hubs for live tracking and dispatch notifications
 
-### Who Is It For?
+### Main Features
 
-- **Fleet Managers** — Monitor drivers, view analytics, configure alert thresholds
-- **Drivers** — Update status, manage trips, sync offline data
-- **Data Scientists / AI Engineers** — Demand forecasting, operational simulations
-- **System Administrators** — Monitor performance, manage security
+| Feature Domain | Capabilities |
+|----------------|-------------|
+| **Authentication** | Login/Register (Driver/Manager), OTP via WhatsApp (Twilio), Password Reset, Refresh Tokens, Role-based access |
+| **Driver Management** | Active fleet queries, driver profiles, shift statistics, offline data sync, status updates |
+| **Trip Management** | Start/End trips, manual dispatch, live dispatch feed, trip history with pagination |
+| **Zone Management** | Zone listings, live demand heatmaps, zone-specific insights |
+| **Analytics** | Top-level KPIs, system thresholds configuration, demand velocity visualization |
+| **AI/ML** | Demand forecasting (15min/6h), ETA prediction, revenue prediction, stock-out prediction, causal impact estimation, zone profit ranking, fleet expansion simulation, voice assistant, model retraining |
+| **Real-time** | SignalR hubs for dispatch notifications and live driver tracking |
+| **Performance** | 11 MediatR pipeline behaviors for monitoring, caching, validation, authorization, idempotency, retry, timeout, transactions |
 
----
+### Technologies Used
 
-## 2. Architecture & Design Philosophy
-
-This project follows **Clean Architecture**, a design pattern that ensures the codebase remains maintainable, testable, and independent of external frameworks. The core idea is simple: **business logic should not depend on databases, web frameworks, or UI.**
-
-### 2.1 The Four Layers
-
-Imagine the system as a set of concentric circles, where the inner circles know nothing about the outer circles:
-
-```
-┌─────────────────────────────────────────┐
-│    4. Presentation Layer (API)          │
-│    Controllers, DTOs, Middleware        │
-│    Depends on: Application, Domain      │
-├─────────────────────────────────────────┤
-│    3. Application Layer                 │
-│    CQRS Commands/Queries, Behaviors,    │
-│    Business Logic Orchestration         │
-│    Depends on: Domain                   │
-├─────────────────────────────────────────┤
-│    2. Infrastructure Layer              │
-│    Database access, External services   │
-│    (Twilio, OAuth providers, etc.)      │
-│    Depends on: Domain                   │
-├─────────────────────────────────────────┤
-│    1. Domain Layer (Core)               │
-│    Entities, Enums, Interfaces, DTOs    │
-│    Depends on: NOTHING                  │
-└─────────────────────────────────────────┘
-```
-
-**Why this matters:** You could swap PostgreSQL for SQL Server, or swap Twilio for another SMS provider, and the business logic in the Domain and Application layers would not need to change.
-
-### 2.2 CQRS Pattern — Separating Reads from Writes
-
-**CQRS** stands for **Command Query Responsibility Segregation**. It's a pattern where:
-
-- **Commands** = "Do something" (create a trip, update a driver, send an OTP)
-- **Queries** = "Give me data" (list active drivers, get trip history, show KPIs)
-
-Each command or query has its own dedicated **Handler** — a class that contains the exact logic for that operation.
-
-**Example:** When a driver logs in:
-1. The API receives a `LoginCommand`
-2. MediatR routes it to `LoginCommandHandler`
-3. The handler validates credentials, generates tokens, and returns the result
-
-This separation makes the code easier to understand, test, and optimize.
-
-### 2.3 The Pipeline — Automatic Cross-Cutting Concerns
-
-When any command or query is executed, it passes through a **pipeline** of behaviors. These behaviors handle concerns that would otherwise clutter your business logic:
-
-```
-REQUEST enters the system
-    ↓
-[1] MetricsBehavior        → Start a stopwatch
-[2] PerformanceBehavior    → Track if this request is slow
-[3] LoggingBehavior        → Write to logs: "Processing LoginCommand"
-[4] CachingBehavior        → Return cached result if available
-[5] ValidationBehavior     → Check input using FluentValidation
-[6] AuthorizationBehavior  → Verify the user has permission
-[7] IdempotencyBehavior    → Prevent duplicate processing
-[8] RetryBehavior          → Retry if database is temporarily down
-[9] TimeoutBehavior        → Cancel if taking too long
-[10] TransactionBehavior   → Wrap in a database transaction
-    ↓
-HANDLER executes the actual business logic
-    ↓
-RESPONSE returns to the caller
-```
-
-**The beauty of this:** Your `LoginCommandHandler` only contains login logic. It doesn't need to worry about logging, validation, transactions, or retries — the pipeline handles all of that automatically.
-
-### 2.4 Repository Pattern — Database Abstraction
-
-Instead of writing raw SQL or EF Core queries everywhere, the project uses the **Repository Pattern**:
-
-- **`IGenericRepository<T>`** — Defines standard operations: `GetById`, `GetAll`, `Add`, `Update`, `Delete`
-- **`GenericRepository<T>`** — Implements these using Entity Framework Core
-- **`IUnitOfWork`** — Manages saving changes across multiple repositories in a single transaction
-
-**Benefit:** The Application layer says "I need a user" without caring whether that user comes from PostgreSQL, a mock database for testing, or even a file.
+- **.NET 10** — Primary framework
+- **Entity Framework Core** — ORM with PostgreSQL provider (Npgsql)
+- **MediatR** — CQRS and mediator pattern implementation
+- **FluentValidation** — Request validation
+- **AutoMapper** — Object-to-object mapping
+- **SignalR** — Real-time bidirectional communication
+- **Twilio** — WhatsApp SMS/OTP integration
+- **JWT** — Token-based authentication
+- **xUnit/MSTest** — Testing framework (implied by test project structure)
 
 ---
 
-## 3. Technology Stack
+## 2. Architecture Overview
 
-| Category | Technology | Purpose |
-|---|---|---|
-| **Framework** | .NET 10 | Core runtime and web framework |
-| **ORM** | Entity Framework Core | Maps C# objects to database tables |
-| **Database** | PostgreSQL (via Npgsql) | Primary data store |
-| **CQRS Mediator** | MediatR | Routes commands/queries to handlers |
-| **Validation** | FluentValidation | Declarative input validation |
-| **Object Mapping** | AutoMapper | Converts between Entities and DTOs |
-| **SMS/WhatsApp** | Twilio | Sends OTP codes to users |
-| **Caching** | Microsoft.Extensions.Caching | In-memory response caching |
-| **Authentication** | Custom + OAuth + SAML + WebAuthn | Multiple login methods |
+### Architecture Style: Clean Architecture
+
+The project strictly follows **Clean Architecture** principles with four distinct layers:
+
+```
+┌─────────────────────────────────────┐
+│  Presentation Layer (API)         │  ← Controllers, Hubs, Middleware
+├─────────────────────────────────────┤
+│  Application Layer                │  ← CQRS Handlers, Behaviors, DTOs
+├─────────────────────────────────────┤
+│  Infrastructure Layer             │  ← DbContext, Repositories, Services
+├─────────────────────────────────────┤
+│  Domain Layer                     │  ← Entities, Interfaces, Enums
+└─────────────────────────────────────┘
+```
+
+**Dependency Direction**: Domain → Application → Infrastructure → API (inward-only dependencies)
+
+### Layer Responsibilities
+
+| Layer | Responsibility |
+|-------|---------------|
+| **Domain** | Core business entities, value objects, domain interfaces, enums. No external dependencies. |
+| **Application** | Business logic orchestration via CQRS handlers, DTOs, validation rules, pipeline behaviors, mapping profiles. Depends only on Domain. |
+| **Infrastructure** | Data access (EF Core, repositories), external service integrations (Twilio, JWT, AI prediction), interceptors. Depends on Domain and Application. |
+| **API** | HTTP endpoints (REST controllers), SignalR hubs, middleware, DI configuration. Depends on all inner layers. |
+
+### Design Patterns Used
+
+1. **CQRS (Command Query Responsibility Segregation)** — Separates read (Queries) and write (Commands) operations via MediatR
+2. **Repository Pattern** — `IGenericRepository<T>` abstracts data access; `GenericRepository<T>` implements EF Core queries
+3. **Unit of Work** — `IUnitOfWork` coordinates multiple repository operations within a single transaction
+4. **Specification Pattern** — `ISpecification<T>` encapsulates query criteria (e.g., `UserByPhoneSpec`, `ActiveTripsSpec`)
+5. **Pipeline Behaviors (Middleware Chain)** — 11 cross-cutting MediatR behaviors wrap every request
+6. **Dependency Injection** — Constructor injection throughout; service registration in `Program.cs` and `DependencyInjection.cs`
+7. **Marker Interfaces** — `ICacheableQuery`, `IIdempotentCommand`, `ITransactionalCommand`, `ISecureRequest` for declarative behavior configuration
+8. **Result Pattern** — `Result<T>` and `Error` classes for functional error handling
 
 ---
 
-## 4. Project Structure Explained
+## 3. Project Structure
+
+### Solution Layout
 
 ```
 NYCTaxiData/
+├── NYCTaxiData.Domain/              # Core business logic
+│   ├── Entities/                    # 30+ domain models
+│   ├── Enums/                       # Status, Role, RiskLevel, etc.
+│   ├── Interfaces/                  # IGenericRepository, IUnitOfWork, ISpecifications
+│   └── DTOs/                        # Common DTOs (DemandPredictionDtos, etc.)
 │
-├── NYCTaxiData.Domain/              ← The "Heart" — pure business concepts
-│   ├── Entities/                    ← Database table definitions
-│   │   ├── Trip.cs                  ← A taxi trip (pickup, dropoff, fare)
-│   │   ├── Driver.cs                ← Driver profile, status, vehicle
-│   │   ├── Zone.cs                  ← NYC geographic zones
-│   │   ├── User.cs                  ← Base user account
-│   │   ├── Manager.cs               ← Manager profile & permissions
-│   │   ├── DemandPrediction.cs      ← ML forecast results
-│   │   ├── WeatherSnapshot.cs       ← Weather data for AI correlation
-│   │   ├── SimulationRequest.cs     ← "What-if" scenario parameters
-│   │   ├── SimulationResult.cs      ← Simulation outputs
-│   │   └── ... (OAuth, SAML, WebAuthn entities)
-│   ├── DTOs/                        ← Data Transfer Objects
-│   │   └── Identity/
-│   │       ├── LoginDto.cs          ← What the API expects for login
-│   │       ├── RegistrationDto.cs   ← What the API expects for signup
-│   │       ├── SendOtpDto.cs        ← Phone number for OTP
-│   │       └── ...
-│   ├── Enums/                       ← Fixed sets of values
-│   │   ├── CurrentStatus.cs         ← Available, Busy, Offline, etc.
-│   │   └── UserRole.cs              ← Manager, Driver
-│   └── Interfaces/                  ← Contracts that other layers implement
-│       ├── IGenericRepository.cs    ← "I promise I can do CRUD"
-│       ├── IUnitOfWork.cs           ← "I promise I can save changes"
-│       └── Identity/
-│           ├── IAuthService.cs      ← "I promise I can authenticate users"
-│           ├── ISmsService.cs       ← "I promise I can send SMS"
-│           └── ICacheService.cs     ← "I promise I can cache data"
+├── NYCTaxiData.Application/         # Business logic orchestration
+│   ├── Behaviors/                   # 11 pipeline behaviors + extensive README docs
+│   ├── Common/
+│   │   ├── Interfaces/              # IApplicationDbContext, ICurrentUserService, IAiPredictionService
+│   │   ├── Specifications/            # Query specs (Auth, Trips, Managers)
+│   │   ├── Mappings/                # AutoMapper profiles
+│   │   ├── Exceptions/              # ValidationException, NotFoundException, etc.
+│   │   └── Models/                  # PaginatedList, PaginationParams, Result/Error
+│   ├── DTOs/
+│   │   ├── Identity/                # LoginDto, RegisterDto, OTP DTOs
+│   │   ├── Trip/                    # Trip result DTOs
+│   │   └── Tracking/                # Dispatch/location DTOs
+│   ├── Features/                    # CQRS features organized by domain
+│   │   ├── Auth/                    # Login, Register, OTP, ResetPassword, RefreshToken
+│   │   ├── Drivers/                 # UpdateStatus, SyncOfflineData, GetActiveFleet, GetShiftStatistics
+│   │   ├── Trips/                   # StartTrip, EndTrip, ManualDispatch, GetLiveDispatchFeed, GetTripHistory
+│   │   ├── Zones/                   # GetAllZones, GetLiveDemandHeatmap, GetSpecificZoneInsights
+│   │   ├── Analytics/               # GetTopLevelKpis, GetSystemThresholds, GetDemandVelocityChart, UpdateSystemThresholds
+│   │   └── AI/                      # 15+ AI commands and queries
+│   └── DependencyInjection.cs       # Service registration (MediatR, AutoMapper, FluentValidation, Behaviors)
 │
-├── NYCTaxiData.Application/         ← The "Brain" — orchestrates everything
-│   ├── Behaviors/                   ← Pipeline behaviors (see section 2.3)
-│   │   ├── MetricsBehavior.cs
-│   │   ├── PerformanceBehavior.cs   ⭐ Real-time monitoring
-│   │   ├── LoggingBehavior.cs
-│   │   ├── CachingBehavior.cs
-│   │   ├── ValidationBehavior.cs
-│   │   ├── AuthorizationBehavior.cs
-│   │   ├── IdempotencyBehavior.cs
-│   │   ├── RetryBehavior.cs
-│   │   ├── TimeoutBehavior.cs
-│   │   ├── TransactionBehavior.cs
-│   │   └── ExceptionHandlingBehavior.cs
-│   ├── Features/                    ← Organized by business domain
-│   │   ├── Auth/                    ← Login, Register, OTP, Password Reset
-│   │   │   ├── Commands/            ← Actions that change state
-│   │   │   │   ├── Login/
-│   │   │   │   │   ├── LoginCommand.cs
-│   │   │   │   │   ├── LoginCommandHandler.cs
-│   │   │   │   │   └── LoginCommandValidator.cs
-│   │   │   │   ├── Register/
-│   │   │   │   ├── SendOtp/
-│   │   │   │   └── ...
-│   │   │   └── Queries/             ← Actions that read state
-│   │   │       └── GetProfile/
-│   │   ├── Analytics/               ← Dashboards, KPIs, Charts
-│   │   │   ├── Queries/
-│   │   │   │   ├── GetTopLevelKpis/
-│   │   │   │   ├── GetSystemThresholds/
-│   │   │   │   └── GetDemandVelocityChart/
-│   │   │   └── Commands/
-│   │   │       └── UpdateSystemThresholds/
-│   │   ├── AI/                      ← Machine Learning features
-│   │   │   ├── Queries/
-│   │   │   │   ├── GetDemandForecast/
-│   │   │   │   ├── GetDispatchRecommendation/
-│   │   │   │   ├── GetOptimalDriverSchedule/
-│   │   │   │   └── GetExplainableAiInsight/
-│   │   │   └── Commands/
-│   │   │       ├── ProcessVoiceAssistantQuery/
-│   │   │       ├── RunOperationalSimulation/
-│   │   │       ├── RunStrategicSimulation/
-│   │   │       └── TriggerModelRetraining/
-│   │   ├── Trips/                   ← Trip lifecycle management
-│   │   │   ├── Commands/
-│   │   │   │   ├── StartTrip/
-│   │   │   │   ├── EndTrip/
-│   │   │   │   └── ManualDispatch/
-│   │   │   └── Queries/
-│   │   │       ├── GetLiveDispatchFeed/
-│   │   │       └── GetTripHistory/
-│   │   ├── Drivers/                 ← Driver fleet management
-│   │   │   ├── Commands/
-│   │   │   │   ├── UpdateDriverStatus/
-│   │   │   │   └── SyncOfflineTrips/
-│   │   │   └── Queries/
-│   │   │       ├── GetActiveFleet/
-│   │   │       └── GetShiftStatistics/
-│   │   └── Zones/                   ← Geographic zone analytics
-│   │       └── Queries/
-│   │           ├── GetAllZones/
-│   │           ├── GetLiveDemandHeatmap/
-│   │           └── GetSpecificZoneInsights/
-│   ├── Common/                      ← Shared utilities
-│   │   ├── Interfaces/
-│   │   │   ├── IApplicationDbContext.cs
-│   │   │   ├── ICurrentUserService.cs
-│   │   │   ├── IIdempotencyService.cs
-│   │   │   ├── IAiPredictionService.cs
-│   │   │   └── MarkerInterfaces/    ← "Tags" that enable behaviors
-│   │   │       ├── IIdempotentCommand.cs
-│   │   │       ├── ITransactionalCommand.cs
-│   │   │       ├── ISecureRequest.cs
-│   │   │       └── ICacheableQuery.cs
-│   │   ├── Exceptions/              ← Custom error types
-│   │   │   ├── ValidationException.cs
-│   │   │   ├── UnauthorizedException.cs
-│   │   │   ├── NotFoundException.cs
-│   │   │   └── ConflictException.cs
-│   │   ├── Attributes/
-│   │   │   └── AuthorizeAttribute.cs
-│   │   └── Mappings/
-│   │       └── MappingProfile.cs    ← AutoMapper configuration
-│   └── DependencyInjection.cs       ← Registers Application services
-│
-├── NYCTaxiData.Infrastructure/      ← The "Muscle" — talks to the outside world
+├── NYCTaxiData.Infrastructure/        # Data access & external services
 │   ├── Data/
-│   │   ├── Contexts/
-│   │   │   └── TaxiDbContext.cs     ← EF Core database context
-│   │   ├── Repository/
-│   │   │   └── GenericRepository.cs ← CRUD implementation
-│   │   └── Initializers/
-│   │       ├── IDbInitializers.cs
-│   │       └── DbInitializers.cs    ← Seed data on first run
-│   └── Services/
-│       ├── AuthService.cs           ← Password hashing, token generation
-│       ├── CacheService.cs          ← In-memory caching
-│       ├── UnitOfWork.cs            ← Transaction management
-│       └── Twilio/
-│           ├── TwilioSettings.cs
-│           └── WhatsAppSmsService.cs ← OTP delivery
+│   │   ├── Contexts/TaxiDbContext.cs # EF Core DbContext (~78KB, all entity mappings)
+│   │   ├── Repository/GenericRepository.cs
+│   │   └── Initializers/            # Db seeding
+│   ├── Interceptors/                # Audit logging, auditable entity tracking, current user service
+│   ├── Services/
+│   │   ├── Specifications/          # Infrastructure-level specs + SpecificationEvaluator
+│   │   ├── Twilio/                  # WhatsAppSmsService, TwilioSettings
+│   │   ├── AiPredictionService.cs   # ML prediction service implementation
+│   │   ├── CacheService.cs          # In-memory caching
+│   │   ├── JwtTokenService.cs       # JWT generation
+│   │   └── UnitOfWork.cs            # Transaction coordination
+│   └── DependencyInjection.cs       # Infrastructure service registration
 │
-└── NYCTaxiData.API/                 ← The "Face" — HTTP endpoints
-    ├── Controllers/
-    │   ├── AuthController.cs        ← /api/auth/*
-    │   ├── DriversController.cs     ← /api/drivers/*
-    │   ├── TripsController.cs       ← /api/trips/*
-    │   ├── AnalyticsController.cs   ← /api/analytics/*
-    │   ├── AiController.cs          ← /api/ai/*
-    │   └── ZonesController.cs       ← /api/zones/*
-    ├── MiddleWares/
-    │   └── GlobalExceptionHandler.cs ← Catches all errors, returns nice responses
-    ├── Contracts/
-    │   └── APIResponse.cs           ← Standard wrapper for all responses
-    ├── appsettings.json             ← Configuration (connection strings, API keys)
-    └── Program.cs                   ← Application entry point
+├── NYCTaxiData.API/                 # REST API & real-time layer
+│   ├── Controllers/                 # Auth, Drivers, Trips, Analytics, AI, Zones
+│   │   └── Base/BaseController.cs   # Common controller functionality
+│   ├── Hups/                        # SignalR hubs
+│   │   ├── Dispatch/DispatchHub.cs  # Dispatch notifications hub
+│   │   ├── LiveTrackingHub.cs       # Real-time driver tracking
+│   │   └── TaxiHub.cs               # General taxi operations hub
+│   ├── MiddleWares/
+│   │   └── GlobalExceptionHandler.cs
+│   ├── Extensions/
+│   │   ├── QueryableExtensions.cs   # Pagination helpers
+│   │   └── SignalRJwtExtension.cs   # JWT auth for SignalR
+│   ├── Contracts/APIResponse.cs     # Standard API response wrapper
+│   └── Program.cs                   # App configuration & DI setup
+│
+├── .github/workflows/dotnet.yml     # CI/CD pipeline
+├── .postman/                        # Postman configuration
+├── postman/                         # Postman globals
+└── README.md                        # Project README (45KB, very detailed)
+```
+
+### Key File Sizes (Indicators of Complexity)
+
+| File | Size | Significance |
+|------|------|-------------|
+| `TaxiDbContext.cs` | ~78 KB | Large EF Core context with 30+ entity mappings |
+| `PerformanceBehavior.cs` | ~12.6 KB | Real-time performance monitoring with rolling windows |
+| `CachingBehavior.cs` | ~9 KB | Sophisticated response caching logic |
+| `IdempotencyBehavior.cs` | ~8.5 KB | Duplicate request detection and handling |
+| `MetricsBehavior.cs` | ~9.2 KB | Metrics collection infrastructure |
+| `ExceptionHandlingBehavior.cs` | ~7.3 KB | Global exception wrapping |
+| `RetryBehavior.cs` | ~7.4 KB | Automatic retry with backoff |
+| `README.md` | ~46 KB | Extensive project documentation |
+| `TRIPS_CQRS_README.md` | ~18 KB | Detailed trips module documentation |
+
+---
+
+## 4. Code Flow
+
+### End-to-End Request Lifecycle
+
+A typical request (e.g., `POST /api/auth/login`) flows through the system as follows:
+
+```
+1. HTTP Request → API Controller (AuthController)
+   ↓
+2. Controller creates LoginCommand and calls _sender.Send(command)
+   ↓
+3. MediatR Pipeline Behaviors execute in order:
+
+   [1] MetricsBehavior        → Start timing, collect request metrics
+   [2] PerformanceBehavior      → Monitor for slow operations (>500ms queries, >1000ms commands)
+   [3] LoggingBehavior          → Log request/response details
+   [4] CachingBehavior          → Check cache (skip for commands, use for cacheable queries)
+   [5] ValidationBehavior       → Run FluentValidation rules
+   [6] AuthorizationBehavior    → Check ISecureRequest marker, verify permissions
+   [7] IdempotencyBehavior      → Check IIdempotentCommand, prevent duplicates
+   [8] RetryBehavior            → Retry on transient failures (max 3 attempts)
+   [9] TimeoutBehavior          → Enforce operation timeouts
+   [10] TransactionBehavior     → Begin DB transaction for ITransactionalCommand
+   ↓
+4. Handler Execution (LoginCommandHandler)
+   - Uses IUnitOfWork / IGenericRepository to query User entity
+   - Verifies password via domain logic
+   - Generates JWT tokens via IJwtTokenService
+   - Returns Result<LoginResponse>
+   ↓
+5. TransactionBehavior commits (if successful)
+   ↓
+6. PerformanceBehavior checks thresholds, logs if degraded
+   ↓
+7. Response flows back through behaviors
+   ↓
+8. Controller wraps in APIResponse<T> and returns HTTP 200
+```
+
+### Interaction Between Layers
+
+```
+API Controller
+    ↓ (calls)
+Application Handler (CQRS)
+    ↓ (uses)
+Application Interfaces (IUnitOfWork, IGenericRepository, IJwtTokenService)
+    ↓ (implemented by)
+Infrastructure Services (UnitOfWork, GenericRepository, JwtTokenService)
+    ↓ (uses)
+Domain Entities (User, Driver, Trip, etc.)
+    ↓ (persisted via)
+EF Core + PostgreSQL
 ```
 
 ---
 
-## 5. Getting Started
+## 5. Branch Analysis
 
-### 5.1 Prerequisites
+### Branch Inventory
 
-Before you begin, ensure you have:
+| Branch | Status | Relative to Master | Last Activity |
+|--------|--------|-------------------|---------------|
+| `master` | Default | — | Apr 26, 2026 |
+| `AI-Changes` | Active / Diverged | 1 commit ahead | Apr 26, 2026 |
+| `Spec_Repo_Auht` | Stale | 40 commits behind | Apr 12, 2026 |
+| `feat/identity-uow-impl` | Stale | 79 commits behind | Apr 9, 2026 |
+| `infra-signalr-plumbing` | Merged (PR #4) | 18 commits behind | Apr 25, 2026 |
+| `copilot/add-detailed-readme-file` | Merged | Same as master | Apr 26, 2026 |
 
-| Requirement | Version | Why |
-|---|---|---|
-| .NET SDK | 10.0+ | The runtime and compiler |
-| PostgreSQL | 14+ | The database |
-| Twilio Account | Any (free tier works) | For OTP/SMS features |
-| Git | Any | To clone the repository |
+---
 
-### 5.2 Installation Steps
+### 5.1 Branch: `master` (Default)
 
-**Step 1: Clone the repository**
+**Purpose**: Primary development and production branch
+
+**Current State**: Contains all merged features including AI module, SignalR infrastructure, and full CQRS implementation.
+
+**Recent Evolution (last 20 commits)**:
+- **Apr 26**: Merged PR #5 (`AI-Changes`) — AI controller and features
+- **Apr 26**: Service interface refactoring — all services now implement proper interfaces for Application layer consumption
+- **Apr 26**: Controller standardization — replaced `IMediator` with `ISender` for cleaner dependency injection
+- **Apr 25**: Merged PR #4 (`infra-signalr-plumbing`) — SignalR hubs and real-time infrastructure
+- **Apr 25**: README update with comprehensive documentation
+
+---
+
+### 5.2 Branch: `AI-Changes`
+
+**Purpose**: Feature branch for AI/ML controller and service integration
+
+**Status**: Diverged from master (1 commit ahead). The branch contains a commit that deletes `COMPLETE_PROJECT_CONTEXT.md` — this appears to be a cleanup commit after the AI features were merged into master via PR #5.
+
+**Key Changes Compared to Master**:
+- Removal of `COMPLETE_PROJECT_CONTEXT.md` (a large documentation file that was previously in the repo)
+- The AI controller implementation and service registrations were already merged into master via PR #5
+
+**Impact**: Minimal architectural impact — primarily documentation cleanup.
+
+---
+
+### 5.3 Branch: `Spec_Repo_Auht`
+
+**Purpose**: Implementation of Specification Pattern, Generic Repository, and Unit of Work
+
+**Status**: 40 commits behind master (stale). Last commit: "implement specification pattern, generic repository, and unit of work" (Apr 12, 2026, by Mohammedyassin22).
+
+**Key Changes Compared to Master**:
+- Introduced `ISpecification<T>` interface and `BaseSpecification<T>` implementation
+- Added `SpecificationEvaluator` to translate specs into EF Core queries
+- Created domain-level specs: `UserByPhoneSpec`, `UserForLoginSpec`, `TripHistorySpec`, etc.
+- Established `IGenericRepository<T>` with `GetAsync(ISpecification)` overloads
+- Implemented `UnitOfWork` for transaction management
+
+**Impact on Architecture**: This branch laid the foundational data access patterns that were subsequently merged into master. The specification pattern enables type-safe, composable query criteria without exposing IQueryable outside the infrastructure layer.
+
+**Notable**: This branch appears to have been superseded by master — its patterns were integrated but the branch itself was not deleted.
+
+---
+
+### 5.4 Branch: `feat/identity-uow-impl`
+
+**Purpose**: Authentication flow and repository pattern implementation
+
+**Status**: 79 commits behind master (very stale). Last commit: "feat: implement auth flow and repository patterns" (Apr 9, 2026, by Mohammedyassin22).
+
+**Key Changes Compared to Master**:
+- Initial authentication commands: Login, Register, OTP
+- Basic repository pattern setup
+- Identity-related DTOs and validators
+- Early Unit of Work implementation
+
+**Impact on Architecture**: This was the **foundational branch** for the entire identity system. All auth features in master (Login, Register, OTP, Password Reset, Refresh Token) trace their origin to this branch.
+
+**Notable**: Being 79 commits behind indicates this branch was merged early and development continued on other branches. It represents the project's initial architectural bootstrap.
+
+---
+
+### 5.5 Branch: `infra-signalr-plumbing`
+
+**Purpose**: Real-time communication infrastructure via SignalR
+
+**Status**: Merged into master via PR #4 (Apr 25, 2026). Currently 18 commits behind master.
+
+**Key Changes Compared to Pre-Merge Master**:
+- **SignalR Hubs**:
+  - `DispatchHub` — Real-time dispatch notifications with group-based routing
+  - `LiveTrackingHub` — Driver location tracking with JWT authentication
+  - `TaxiHub` — General taxi operations hub
+- **JWT SignalR Extension** (`SignalRJwtExtension.cs`) — Enables JWT token validation for WebSocket connections
+- **Dispatch Notification Service** — `IDispatchNotificationService` interface for sending real-time alerts
+- **AI Dispatch Order DTO** — Structured data for AI-driven dispatch recommendations delivered via SignalR
+
+**Impact on Architecture**: Transformed the system from a purely request-response API into a real-time platform. The SignalR infrastructure enables:
+- Live driver tracking on maps
+- Instant dispatch notifications to drivers
+- Real-time demand heatmap updates
+- AI recommendation push delivery
+
+**Merge Resolution**: The final commit on this branch ("fix: resolve all merge conflicts and finalize infrastructure plumbing") indicates significant merge conflict resolution, suggesting parallel development with other feature branches.
+
+---
+
+### 5.6 Branch: `copilot/add-detailed-readme-file`
+
+**Purpose**: Documentation enhancement via GitHub Copilot
+
+**Status**: Merged into master. Currently identical to master (same HEAD commit).
+
+**Key Changes**: Added comprehensive `README.md` (45KB) with detailed project description, architecture diagrams, and setup instructions.
+
+---
+
+## 🔀 Cross-Branch Insights
+
+### How the Project Evolved
+
+The repository shows a clear **branch-per-feature** workflow with the following evolutionary timeline:
+
+```
+Apr 9  → feat/identity-uow-impl     [Foundation: Auth + Repositories]
+   ↓
+Apr 12 → Spec_Repo_Auht            [Pattern: Specifications + UoW]
+   ↓
+Apr 25 → infra-signalr-plumbing     [Real-time: SignalR Hubs]
+   ↓        ↓
+   └────────┘→ master (merge PR #4)
+   ↓
+Apr 26 → AI-Changes                 [Intelligence: AI/ML Features]
+   ↓
+        → master (merge PR #5)
+```
+
+### Major Refactors
+
+1. **Controller Standardization** (Apr 26): All controllers migrated from `IMediator` to `ISender` — a more focused interface that reduces coupling to MediatR internals.
+
+2. **Service Interface Extraction** (Apr 26): Infrastructure services (JWT, Cache, AI Prediction) had their interfaces moved to the Application layer (`Common/Interfaces/Services/`), enabling proper dependency inversion. Previously, Application handlers likely depended directly on Infrastructure implementations.
+
+3. **Behavior Pipeline Completion**: The project evolved from basic CQRS to a comprehensive 11-behavior pipeline, with each behavior documented by its own README, quick reference, and implementation summary.
+
+### Architectural Shifts
+
+| Phase | Branch | Shift |
+|-------|--------|-------|
+| Foundation | `feat/identity-uow-impl` | From monolithic to layered architecture |
+| Data Access | `Spec_Repo_Auht` | From direct DbContext to Repository + Specification patterns |
+| Real-time | `infra-signalr-plumbing` | From REST-only to REST + WebSocket hybrid |
+| Intelligence | `AI-Changes` | From CRUD to AI-augmented decision making |
+
+### Patterns Introduced or Removed
+
+**Introduced**:
+- Specification Pattern (via `Spec_Repo_Auht`)
+- Marker Interfaces for declarative behavior (`ICacheableQuery`, `IIdempotentCommand`, etc.)
+- Result/Error functional pattern (replacing exception-based flow in some areas)
+- SignalR JWT authentication extension
+- AI prediction service abstraction (`IAiPredictionService`)
+
+**Removed/Deprecated**:
+- `COMPLETE_PROJECT_CONTEXT.md` (removed in `AI-Changes` branch after being merged)
+- Direct `IMediator` usage in controllers (replaced with `ISender`)
+
+---
+
+## 6. Key Components Explanation
+
+### Services
+
+| Service | Layer | Role |
+|---------|-------|------|
+| **AuthService** | Infrastructure | Orchestrates login, registration, OTP verification, token generation. Implements domain auth logic. |
+| **JwtTokenService** | Infrastructure | Generates and validates JWT access/refresh tokens. |
+| **CacheService** | Infrastructure | In-memory caching for frequently accessed data (e.g., analytics KPIs). |
+| **WhatsAppSmsService** | Infrastructure | Twilio integration for OTP delivery via WhatsApp. |
+| **AiPredictionService** | Infrastructure | ML model invocation for demand forecasting, ETA prediction, revenue optimization. |
+| **UnitOfWork** | Infrastructure | Coordinates `SaveChangesAsync()` across multiple repositories within a transaction scope. |
+| **CurrentUserService** | Infrastructure | Extracts user identity from HTTP context for audit logging. |
+| **DispatchNotificationService** | Infrastructure | Sends real-time notifications via SignalR to drivers and dispatchers. |
+
+### Interfaces
+
+| Interface | Purpose |
+|-----------|---------|
+| `IGenericRepository<T>` | CRUD operations + specification-based queries. Decouples Application from EF Core. |
+| `IUnitOfWork` | Transaction boundary abstraction. Ensures atomic operations across multiple aggregates. |
+| `ISpecification<T>` | Encapsulates query criteria (Where, Include, OrderBy) as reusable objects. |
+| `IApplicationDbContext` | Abstraction over `DbContext` for unit testing and loose coupling. |
+| `ICurrentUserService` | Provides current user ID/name without direct HTTP context dependency in handlers. |
+| `IAiPredictionService` | Gateway to ML models — allows swapping prediction backends without handler changes. |
+| `IIdempotencyService` | Checks and stores idempotency keys to prevent duplicate command execution. |
+| `IDispatchNotificationService` | Abstraction for real-time notification delivery (SignalR, push, SMS). |
+| **Marker Interfaces** | |
+| `ICacheableQuery` | Marks a query for CachingBehavior processing |
+| `IIdempotentCommand` | Marks a command for IdempotencyBehavior processing |
+| `ITransactionalCommand` | Marks a command for TransactionBehavior processing |
+| `ISecureRequest` | Marks a request for AuthorizationBehavior processing |
+
+### Repositories
+
+- **GenericRepository<T>** — Base implementation using EF Core. Supports:
+  - `GetAllAsync()`, `GetByIdAsync()`
+  - `GetAsync(ISpecification<T>)` — specification-driven queries
+  - `AddAsync()`, `Update()`, `Delete()`
+  - `CountAsync()`, `AnyAsync()`
+
+### Specifications
+
+Specifications encapsulate query logic and enable composition:
+
+| Specification | Criteria |
+|--------------|----------|
+| `UserByPhoneSpec` | Filter users by phone number |
+| `UserForLoginSpec` | Include roles/claims for login query |
+| `ActiveTripsSpec` | Filter trips with "Active" status |
+| `TripHistorySpec` | Filter by driver + date range + pagination |
+| `AvailableDriversSpec` | Filter drivers with "Available" status |
+| `DispatchFeedSpec` | Filter pending trips with zone/driver includes |
+
+### Middleware
+
+- **GlobalExceptionHandler** — Catches unhandled exceptions, logs them, and returns standardized `APIResponse` with appropriate HTTP status codes. Integrates with the ExceptionHandlingBehavior for consistent error formatting.
+
+---
+
+## 7. Configuration & Setup
+
+### Clone the Repository
+
 ```bash
 git clone https://github.com/Umar-Khattab/NYCTaxiData.git
 cd NYCTaxiData
 ```
 
-**Step 2: Configure the database connection**
+### Required Tools
 
-Open `NYCTaxiData.API/appsettings.json` and update the connection string:
+- .NET 10 SDK
+- PostgreSQL 14+ (or compatible)
+- Twilio account (for WhatsApp OTP)
+- Optional: Postman (collection configuration included in `.postman/`)
 
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=nyctaxi;Username=your_username;Password=your_password"
-  },
-  "Twilio": {
-    "AccountSid": "your_account_sid",
-    "AuthToken": "your_auth_token",
-    "FromNumber": "your_twilio_number"
-  }
-}
-```
+### Environment Setup
 
-**Step 3: Create the database**
-
-```bash
-cd NYCTaxiData.API
-dotnet ef database update
-```
-
-This command reads the migration files and creates all tables in PostgreSQL.
-
-**Step 4: Build the solution**
-
-```bash
-dotnet build
-```
-
-**Step 5: Run the API**
-
-```bash
-cd NYCTaxiData.API
-dotnet run
-```
-
-The API will start, typically at `https://localhost:5000` or `http://localhost:5001`.
-
-### 5.3 Verify Everything Works
-
-Test the login endpoint (even if it fails with "invalid credentials," a response means the API is running):
-
-```bash
-curl -X POST https://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test","password":"test"}'
-```
-
-You should receive a JSON response, confirming the API is operational.
-
----
-
-## 6. Core Features Deep Dive
-
-### 6.1 Authentication & User Management
-
-The system supports **six different ways to log in**, making it suitable for everything from casual drivers to enterprise fleet managers:
-
-| Method | How It Works | Best For |
-|---|---|---|
-| **Password** | Username + password, hashed with BCrypt | Primary login for most users |
-| **OTP** | 6-digit code sent via SMS or WhatsApp | Quick verification, passwordless login |
-| **OAuth 2.0** | "Sign in with Google/GitHub" | Social login convenience |
-| **SAML 2.0** | Corporate single sign-on (SSO) | Enterprise fleet management |
-| **WebAuthn** | Fingerprint, Face ID, or security key | Maximum security, passwordless |
-| **MFA** | Combine any two methods above | High-security accounts |
-
-**User Roles:**
-- **`Manager`** — Full access: analytics, driver management, system settings, AI simulations
-- **`Driver`** — Limited access: trip management, status updates, personal statistics, offline sync
-
-### 6.2 Trip Management
-
-The lifecycle of a taxi trip in the system:
-
-1. **Start Trip** — A manager or the system assigns a pickup location, driver, and zone. The trip status becomes "Active."
-2. **Live Tracking** — The trip appears in the live dispatch feed, visible to managers in real time.
-3. **End Trip** — The driver or system records the drop-off location, final fare, and distance. Status becomes "Completed."
-4. **Manual Dispatch** — Managers can override the system and manually assign trips to specific drivers.
-5. **Offline Sync** — Drivers in areas with poor connectivity can record trips locally. When they reconnect, all data syncs to the server automatically.
-
-### 6.3 Driver Management
-
-- **Active Fleet View** — See all drivers currently on the road, their status, and location
-- **Status Updates** — Drivers can set themselves as `Available`, `Busy`, `Offline`, or `On Break`
-- **Shift Statistics** — Track hours worked, trips completed, earnings, and average ratings per shift
-- **Offline Trip Upload** — Batch upload trips recorded without internet
-
-### 6.4 Analytics & KPIs
-
-The analytics module turns raw trip data into actionable insights:
-
-- **Top-Level KPIs** — Total revenue today, total trips, active drivers right now, average customer wait time
-- **System Thresholds** — Configurable alert limits (e.g., "Alert me if average wait time exceeds 5 minutes")
-- **Demand Velocity Chart** — A time-series graph showing how taxi demand rises and falls throughout the day
-- **Live Demand Heatmap** — A geographic map showing which NYC zones currently need the most taxis
-- **Zone Insights** — Drill down into a specific zone to see historical trends, popular pickup times, and revenue potential
-
-### 6.5 AI / Machine Learning
-
-This is where the system goes beyond simple CRUD operations:
-
-| Feature | What It Does | Business Value |
-|---|---|---|
-| **Demand Forecasting** | Predicts how many taxis will be needed in each zone for the next 2-24 hours | Drivers know where to position themselves |
-| **Dispatch Recommendations** | Suggests the optimal driver for each incoming trip request | Reduces customer wait time |
-| **Optimal Driver Scheduling** | Recommends shift start/end times based on predicted demand | Maximizes driver earnings |
-| **Operational Simulations** | "What if it rains tomorrow?" — Simulates the impact of weather/events | Proactive planning |
-| **Strategic Simulations** | "What if we add 50 more drivers to Zone 5?" — Long-term planning | Fleet expansion decisions |
-| **Voice Assistant** | Drivers can ask "Where should I go?" and get a spoken recommendation | Hands-free operation |
-| **Explainable AI** | Tells you *why* the AI recommended a specific action | Builds trust, enables debugging |
-| **Model Retraining** | Trigger fresh training with the latest data | Keeps predictions accurate |
-
-### 6.6 Performance Monitoring ⭐
-
-Unlike most projects that require external tools like Prometheus or New Relic, this system has **built-in performance monitoring**:
-
-**What It Tracks:**
-- How long every single API request takes
-- Rolling average of the last 100 requests per endpoint
-- Whether performance is getting worse over time (degradation detection)
-
-**Alert Levels:**
-
-| Level | Query Threshold | Command Threshold | Meaning |
-|---|---|---|---|
-| 🟡 **SLOW** | > 500ms | > 1000ms | Worth investigating |
-| 🟠 **WARNING** | > 1000ms | > 2000ms | Needs attention |
-| 🔴 **CRITICAL** | > 5000ms | > 5000ms | System is struggling |
-
-**Degradation Detection:** If the average response time for an endpoint increases by more than 20% compared to its historical average, the system flags it as "degrading."
-
-**Accessing Data Programmatically:**
-
-```csharp
-// Get all operations that exceeded thresholds
-var slowOps = PerformanceBehavior<object, object>.GetSlowOperations();
-
-// Get operations that are getting slower over time
-var degrading = PerformanceBehavior<object, object>.GetDegradingOperations();
-
-// Get full history for a specific endpoint
-var history = PerformanceBehavior<object, object>.GetPerformanceHistory("LoginCommand");
-
-// Reset statistics (useful after a deployment)
-PerformanceBehavior<object, object>.ResetPerformanceHistories();
-```
-
----
-
-## 7. Authentication & Authorization
-
-### 7.1 How a Login Request Flows Through the System
-
-```
-1. User sends POST /api/auth/login
-   { "username": "john_doe", "password": "SecurePass123!" }
-
-2. AuthController creates a LoginCommand and sends it to MediatR
-
-3. The Pipeline processes it automatically:
-   ├─ ValidationBehavior checks: Is username provided? Is password at least 6 chars?
-   ├─ AuthorizationBehavior skips (login is public)
-   ├─ TransactionBehavior starts a database transaction
-   └─ ...
-
-4. LoginCommandHandler executes:
-   ├─ Queries the database for user "john_doe"
-   ├─ Verifies the password hash using BCrypt
-   ├─ Generates a JWT access token (expires in 15 minutes)
-   ├─ Generates a refresh token (expires in 7 days)
-   ├─ Stores the refresh token in the database
-   └─ Returns the user profile + both tokens
-
-5. TransactionBehavior commits the transaction
-
-6. PerformanceBehavior checks: Did this take longer than 500ms?
-
-7. Response returns to the user:
+1. **Database Configuration**:
+   Update `NYCTaxiData.API/appsettings.json`:
+   ```json
    {
-     "success": true,
-     "data": {
-       "accessToken": "eyJhbG...",
-       "refreshToken": "dGhpcyBpcyBh...",
-       "user": { "id": "...", "role": "Driver" }
+     "ConnectionStrings": {
+       "DefaultConnection": "Host=localhost;Database=NYCTaxiData;Username=postgres;Password=your_password"
      }
    }
-```
+   ```
+
+2. **Twilio Configuration** (for OTP):
+   Update `NYCTaxiData.Infrastructure/Services/Twilio/TwilioSettings` or use UserSecrets:
+   ```json
+   {
+     "Twilio": {
+       "AccountSid": "your_account_sid",
+       "AuthToken": "your_auth_token",
+       "FromNumber": "your_twilio_number"
+     }
+   }
+   ```
+
+3. **JWT Configuration**:
+   Add to `appsettings.json`:
+   ```json
+   {
+     "Jwt": {
+       "Key": "your_super_secret_key_min_32_chars",
+       "Issuer": "NYCTaxiData",
+       "Audience": "NYCTaxiData.Client",
+       "ExpiryMinutes": 60
+     }
+   }
+   ```
+
+### Run the Project
 
-### 7.2 Token Management
-
-- **Access Token (JWT)** — Short-lived (15 minutes), used for every API call. Sent in the `Authorization: Bearer <token>` header.
-- **Refresh Token** — Long-lived (7 days), stored in the database. Used to get a new access token when the old one expires.
-- **OTP Token** — Single-use, expires quickly (typically 5 minutes). Sent via SMS/WhatsApp.
-- **Session Tracking** — Every active login is recorded in the database, allowing managers to see who is logged in and revoke sessions if needed.
-
-### 7.3 Authorization
-
-There are two ways to protect endpoints:
-
-1. **`[Authorize]` Attribute** — Placed on controllers or individual actions. Requires a valid JWT token.
-2. **`ISecureRequest` Marker Interface** — When a Command or Query implements this interface, the `AuthorizationBehavior` automatically checks for a valid user before the handler runs.
-
-**Example:**
-```csharp
-public class GetManagerDashboardQuery : IRequest<DashboardDto>, ISecureRequest
-{
-    // This query will fail with 401 if the user is not authenticated
-}
-```
-
----
-
-## 8. Database Design
-
-### 8.1 Entity Overview
-
-The database is organized into logical groups:
-
-#### User Management & Security
-| Entity | Purpose |
-|---|---|
-| `User` | Base account (username, email, password hash) |
-| `Manager` | Extended profile for fleet managers |
-| `Driver` | Extended profile including vehicle info, license, current status |
-| `Session` | Tracks active logins |
-| `RefreshToken` | Stores token rotation for security |
-| `OneTimeToken` | OTP codes with expiration timestamps |
-
-#### Operations
-| Entity | Purpose |
-|---|---|
-| `Trip` | Complete trip record: pickup/dropoff zones, timestamps, fare, distance, status |
-| `Zone` | NYC taxi zones (official TLC zone definitions) |
-| `Location` | Geographic coordinates (latitude/longitude) |
-
-#### Analytics & AI
-| Entity | Purpose |
-|---|---|
-| `DemandPrediction` | ML model outputs: predicted demand per zone per time window |
-| `WeatherSnapshot` | Weather conditions at prediction time (rain, temperature, etc.) |
-| `SimulationRequest` | Parameters for a "what-if" scenario |
-| `SimulationResult` | Output metrics from running a simulation |
-| `BucketsAnalytic` | Pre-aggregated data for fast dashboard loading |
-| `BucketsVector` / `VectorIndex` | Vector embeddings for AI similarity search |
-
-#### Enterprise Security (SSO)
-| Entity | Purpose |
-|---|---|
-| `OauthClient` | Registered third-party OAuth applications |
-| `OauthAuthorization` | OAuth grant records |
-| `SamlProvider` | SAML identity provider configurations |
-| `SsoDomain` | Domains allowed for corporate SSO |
-| `WebauthnCredential` | Registered biometric/security key credentials |
-
-#### File Storage
-| Entity | Purpose |
-|---|---|
-| `Bucket` | S3-compatible storage container definitions |
-| `S3MultipartUpload` | Tracks large file uploads in progress |
-| `Object` | Metadata for stored files |
-
-### 8.2 Resilience Configuration
-
-The database connection is configured with automatic retry logic for transient failures:
-
-```csharp
-builder.Services.AddDbContext<TaxiDbContext>(options =>
-{
-    options.UseNpgsql(
-        connectionString,
-        npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 3,           // Try up to 3 times
-            maxRetryDelay: TimeSpan.FromSeconds(5),  // Wait 5 seconds between tries
-            errorCodesToAdd: null       // Use default transient error detection
-        )
-    );
-});
-```
-
-**When this helps:** If PostgreSQL briefly restarts or the network hiccups, your API requests won't fail immediately — they'll wait and retry automatically.
-
----
-
-## 9. API Reference
-
-All endpoints return a consistent response format:
-
-```json
-{
-  "success": true,
-  "message": "Operation completed successfully",
-  "data": { ... },
-  "errors": null,
-  "timestamp": "2026-04-25T17:38:00Z"
-}
-```
-
-### 9.1 Authentication (`/api/auth`)
-
-| Method | Endpoint | Description | Body |
-|---|---|---|---|
-| `POST` | `/api/auth/login` | Standard password login | `LoginDto` |
-| `POST` | `/api/auth/register` | Create a new driver account | `RegistrationDto` |
-| `POST` | `/api/auth/register-manager` | Create a new manager account | `ManagerRegisterDto` |
-| `POST` | `/api/auth/send-otp` | Send OTP to phone via SMS/WhatsApp | `SendOtpDto` |
-| `POST` | `/api/auth/verify-otp` | Verify OTP code and log in | `VerifyOtpDto` |
-| `POST` | `/api/auth/reset-password` | Reset forgotten password | `ResetPasswordDto` |
-| `POST` | `/api/auth/refresh-token` | Get new access token using refresh token | `RefreshTokenDto` |
-| `GET` | `/api/auth/profile` | Get current user's profile | — |
-
-### 9.2 Drivers (`/api/drivers`)
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/drivers/active` | List all currently active drivers |
-| `GET` | `/api/drivers/shift-stats` | Get statistics for the current or last shift |
-| `PUT` | `/api/drivers/status` | Update driver availability status |
-| `POST` | `/api/drivers/sync-offline` | Upload trips recorded while offline |
-
-### 9.3 Trips (`/api/trips`)
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/trips/start` | Begin a new trip |
-| `POST` | `/api/trips/end` | Complete an active trip |
-| `POST` | `/api/trips/manual-dispatch` | Manually assign a trip to a driver |
-| `GET` | `/api/trips/live-feed` | Real-time stream of active dispatches |
-| `GET` | `/api/trips/history` | Searchable trip history |
-
-### 9.4 Analytics (`/api/analytics`)
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/analytics/kpis` | Top-level key performance indicators |
-| `GET` | `/api/analytics/thresholds` | Current alert threshold settings |
-| `GET` | `/api/analytics/demand-velocity` | Time-series data for demand charts |
-| `PUT` | `/api/analytics/thresholds` | Update alert thresholds |
-
-### 9.5 AI (`/api/ai`)
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/ai/demand-forecast` | Get predicted demand for zones |
-| `GET` | `/api/ai/dispatch-recommendation` | AI-suggested driver-trip assignments |
-| `GET` | `/api/ai/driver-schedule` | Optimal shift recommendations |
-| `GET` | `/api/ai/explain` | Explanation for an AI decision |
-| `POST` | `/api/ai/voice-query` | Process a voice command |
-| `POST` | `/api/ai/simulation/operational` | Run a short-term "what-if" simulation |
-| `POST` | `/api/ai/simulation/strategic` | Run a long-term planning simulation |
-| `POST` | `/api/ai/retrain` | Trigger model retraining with latest data |
-
-### 9.6 Zones (`/api/zones`)
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/zones` | List all NYC taxi zones |
-| `GET` | `/api/zones/heatmap` | Current demand heatmap data |
-| `GET` | `/api/zones/{id}/insights` | Detailed analytics for a specific zone |
-
----
-
-## 10. Performance Monitoring
-
-### 10.1 How It Works (Under the Hood)
-
-The `PerformanceBehavior` is a MediatR pipeline behavior that wraps every request. Here's what happens:
-
-1. **Before the handler runs:** It records the current timestamp.
-2. **After the handler completes:** It calculates the duration.
-3. **It stores this measurement** in a thread-safe, fixed-size collection (last 100 measurements per endpoint).
-4. **It compares** the current duration against thresholds and historical averages.
-5. **If thresholds are exceeded,** it logs a warning with the endpoint name and duration.
-
-### 10.2 Threshold Reference
-
-```
-READ OPERATIONS (Queries):
-  🟡 SLOW     > 500ms   → Log warning
-  🟠 WARNING  > 1000ms  → Log warning, flag for investigation
-  🔴 CRITICAL > 5000ms  → Log error, immediate attention needed
-
-WRITE OPERATIONS (Commands):
-  🟡 SLOW     > 1000ms  → Log warning
-  🟠 WARNING  > 2000ms  → Log warning, flag for investigation
-  🔴 CRITICAL > 5000ms  → Log error, immediate attention needed
-
-DEGRADATION:
-  Triggered when current average exceeds historical average by 20% or more
-```
-
-### 10.3 Why This Matters
-
-Without this system, you would only know about slowdowns when users complain. With it, you can:
-- See exactly which endpoints are slow
-- Detect performance degradation before it becomes critical
-- Make data-driven optimization decisions (e.g., "LoginCommand is always slow — let's add a database index")
-
-### 10.4 Performance Overhead
-
-- **Pipeline overhead:** ~4ms total for all behaviors combined
-- **Performance tracking alone:** ~1ms per request
-- **Impact:** Less than 1% of typical request time
-- **Memory usage:** Fixed — only the last 100 measurements per endpoint are kept
-
----
-
-## 11. Development Guide
-
-### 11.1 Adding a New Feature: Step-by-Step Example
-
-Let's say you want to add a **"Cancel Trip"** feature. Here's exactly how to do it:
-
-#### Step 1: Update the Domain Entity (if needed)
-
-```csharp
-// NYCTaxiData.Domain/Entities/Trip.cs
-public class Trip
-{
-    // ... existing properties ...
-
-    public DateTime? CancelledAt { get; set; }
-    public string? CancellationReason { get; set; }
-    public TripStatus Status { get; set; } // Add 'Cancelled' to the enum
-}
-```
-
-#### Step 2: Create the Command
-
-```csharp
-// NYCTaxiData.Application/Features/Trips/CancelTrip/CancelTripCommand.cs
-public class CancelTripCommand : IRequest<APIResponse<bool>>, ITransactionalCommand
-{
-    public Guid TripId { get; set; }
-    public string Reason { get; set; } = string.Empty;
-}
-```
-
-**What this means:**
-- It returns a boolean wrapped in our standard API response
-- `ITransactionalCommand` tells the pipeline to wrap this in a database transaction
-
-#### Step 3: Create the Handler
-
-```csharp
-// NYCTaxiData.Application/Features/Trips/CancelTrip/CancelTripCommandHandler.cs
-public class CancelTripCommandHandler : IRequestHandler<CancelTripCommand, APIResponse<bool>>
-{
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IGenericRepository<Trip> _tripRepository;
-
-    public CancelTripCommandHandler(IUnitOfWork unitOfWork, IGenericRepository<Trip> tripRepository)
-    {
-        _unitOfWork = unitOfWork;
-        _tripRepository = tripRepository;
-    }
-
-    public async Task<APIResponse<bool>> Handle(CancelTripCommand request, CancellationToken cancellationToken)
-    {
-        // Find the trip
-        var trip = await _tripRepository.GetByIdAsync(request.TripId);
-
-        if (trip == null)
-            throw new NotFoundException($"Trip {request.TripId} not found");
-
-        // Business logic: Can we cancel this trip?
-        if (trip.Status == TripStatus.Completed)
-            throw new ConflictException("Cannot cancel a completed trip");
-
-        // Update the trip
-        trip.Status = TripStatus.Cancelled;
-        trip.CancellationReason = request.Reason;
-        trip.CancelledAt = DateTime.UtcNow;
-
-        _tripRepository.Update(trip);
-        await _unitOfWork.SaveChangesAsync();
-
-        return APIResponse<bool>.Success(true, "Trip cancelled successfully");
-    }
-}
-```
-
-#### Step 4: Create the Validator
-
-```csharp
-// NYCTaxiData.Application/Features/Trips/CancelTrip/CancelTripCommandValidator.cs
-public class CancelTripCommandValidator : AbstractValidator<CancelTripCommand>
-{
-    public CancelTripCommandValidator()
-    {
-        RuleFor(x => x.TripId)
-            .NotEmpty()
-            .WithMessage("Trip ID is required");
-
-        RuleFor(x => x.Reason)
-            .NotEmpty()
-            .MaximumLength(500)
-            .WithMessage("Reason is required and must be under 500 characters");
-    }
-}
-```
-
-**What this does:** Before the handler ever runs, FluentValidation checks these rules. If they fail, the pipeline returns a 400 Bad Request automatically.
-
-#### Step 5: Add the API Endpoint
-
-```csharp
-// NYCTaxiData.API/Controllers/TripsController.cs
-[HttpPost("cancel")]
-public async Task<ActionResult<APIResponse<bool>>> CancelTrip(CancelTripCommand command)
-{
-    var result = await _mediator.Send(command);
-    return Ok(result);
-}
-```
-
-#### Step 6: Register Services (usually auto-discovered)
-
-In `Program.cs`, MediatR automatically discovers handlers from the Application assembly:
-
-```csharp
-services.AddMediatR(cfg => 
-    cfg.RegisterServicesFromAssemblyContaining<ApplicationAssemblyMarker>());
-```
-
-**And you're done!** The new endpoint is live at `POST /api/trips/cancel`, fully validated, transactional, logged, and performance-monitored — all without writing any of that cross-cutting code yourself.
-
-### 11.2 Code Conventions
-
-| Element | Convention | Example |
-|---|---|---|
-| Classes | PascalCase | `CancelTripCommand` |
-| Methods | PascalCase | `HandleAsync` |
-| Properties | PascalCase | `TripId` |
-| Private fields | camelCase with `_` prefix | `_tripRepository` |
-| Files | Match class name exactly | `CancelTripCommand.cs` |
-| Namespaces | Match folder structure | `NYCTaxiData.Application.Features.Trips.CancelTrip` |
-
-### 11.3 Marker Interfaces — Your "Feature Switches"
-
-These interfaces act as tags. When a command or query implements them, specific pipeline behaviors activate automatically:
-
-| Interface | What Happens |
-|---|---|
-| `IIdempotentCommand` | The system checks if this exact request was already processed (prevents double-charging, double-booking, etc.) |
-| `ITransactionalCommand` | The handler is wrapped in a database transaction. If it fails, all changes are rolled back. |
-| `ISecureRequest` | The user must be authenticated. Returns 401 if no valid token is present. |
-| `ICacheableQuery` | The response is cached for a configured duration. Subsequent identical requests return instantly. |
-
-**Example:**
-```csharp
-public class CancelTripCommand : IRequest<APIResponse<bool>>, ITransactionalCommand, ISecureRequest
-{
-    // This will: require login, run in a transaction, and be fully monitored
-}
-```
-
----
-
-## 12. Deployment
-
-### 12.1 Docker Deployment (Recommended for Production)
-
-Create a `Dockerfile` in `NYCTaxiData.API/`:
-
-```dockerfile
-# Base image for running the app
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-WORKDIR /app
-EXPOSE 80
-EXPOSE 443
-
-# Build image with SDK
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
-
-# Copy project files and restore dependencies
-COPY ["NYCTaxiData.API/NYCTaxiData.API.csproj", "NYCTaxiData.API/"]
-COPY ["NYCTaxiData.Application/NYCTaxiData.Application.csproj", "NYCTaxiData.Application/"]
-COPY ["NYCTaxiData.Domain/NYCTaxiData.Domain.csproj", "NYCTaxiData.Domain/"]
-COPY ["NYCTaxiData.Infrastructure/NYCTaxiData.Infrastructure.csproj", "NYCTaxiData.Infrastructure/"]
-RUN dotnet restore "NYCTaxiData.API/NYCTaxiData.API.csproj"
-
-# Copy everything else and build
-COPY . .
-WORKDIR "/src/NYCTaxiData.API"
-RUN dotnet build "NYCTaxiData.API.csproj" -c Release -o /app/build
-
-# Publish
-FROM build AS publish
-RUN dotnet publish "NYCTaxiData.API.csproj" -c Release -o /app/publish
-
-# Final image
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "NYCTaxiData.API.dll"]
-```
-
-Create `docker-compose.yml` in the root:
-
-```yaml
-version: '3.8'
-
-services:
-  api:
-    build:
-      context: .
-      dockerfile: NYCTaxiData.API/Dockerfile
-    ports:
-      - "5000:80"
-    environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=nyctaxi;Username=postgres;Password=your_secure_password
-      - Twilio__AccountSid=${TWILIO_SID}
-      - Twilio__AuthToken=${TWILIO_TOKEN}
-    depends_on:
-      - postgres
-
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: nyctaxi
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: your_secure_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-```
-
-**Deploy:**
 ```bash
-docker-compose up -d
+# Restore dependencies
+dotnet restore
+
+# Build solution
+dotnet build
+
+# Run database migrations (if using EF Core migrations)
+dotnet ef database update --project NYCTaxiData.Infrastructure --startup-project NYCTaxiData.API
+
+# Or use the initializer (DbInitializers.cs seeds data on first run)
+
+# Run the API
+cd NYCTaxiData.API
+dotnet run
+
+# API will be available at:
+# https://localhost:5000 (production)
+# https://localhost:5001 (development)
 ```
 
-### 12.2 Production Checklist
+### Verify Setup
 
-Before going live, verify:
-
-- [ ] **Database Security** — Strong PostgreSQL credentials, restricted network access
-- [ ] **HTTPS** — Valid SSL certificate configured
-- [ ] **Secrets Management** — API keys and connection strings stored in environment variables, never in code
-- [ ] **Logging** — Configured to send logs to an external service (Seq, ELK, CloudWatch)
-- [ ] **Health Checks** — Endpoint to verify API and database connectivity
-- [ ] **Rate Limiting** — Prevent abuse of authentication endpoints
-- [ ] **CORS** — Restrict to specific frontend origins only
-- [ ] **Backups** — Automated PostgreSQL backups configured
-- [ ] **Monitoring** — Review performance metrics regularly
-- [ ] **Alerts** — Configure notifications for CRITICAL performance levels
+- Swagger UI: `https://localhost:5000/swagger`
+- SignalR hubs: `wss://localhost:5000/hubs/dispatch`
+- Health check: `GET /api/health` (if configured)
 
 ---
 
-## 13. Troubleshooting
+## 8. Dependencies & Integrations
 
-### 13.1 Common Issues
+### Databases
 
-| Symptom | Likely Cause | Solution |
-|---|---|---|
-| `Database connection failed` on startup | Wrong connection string or PostgreSQL not running | Check `appsettings.json`; ensure PostgreSQL service is active |
-| Pipeline behaviors not executing | Behaviors not registered in DI | Verify behavior registration in `Program.cs` |
-| Validators not catching bad input | FluentValidation not registered | Add `services.AddValidatorsFromAssemblyContaining<ApplicationAssemblyMarker>()` |
-| API responses are very slow | Missing database indexes | Add indexes on frequently queried columns (`Trip.DriverId`, `Driver.Status`, etc.) |
-| OTP messages not arriving | Invalid Twilio credentials | Verify Twilio SID, Auth Token, and From Number in configuration |
-| `401 Unauthorized` on protected endpoints | Missing or expired token | Check that `Authorization: Bearer <token>` header is present and valid |
-| Cache not working | Query doesn't implement `ICacheableQuery` | Add the interface to your query class |
+- **PostgreSQL** — Primary relational database via Npgsql EF Core provider
+- **Connection Resilience** — Configured with retry policy (3 retries, 5-second delays)
+- **Schema Migrations** — Tracked via `SchemaMigration` entity; initialization via `IDbInitializer`
 
-### 13.2 Performance Tuning Tips
+### External APIs
 
-1. **Add Database Indexes** — If `GetActiveFleet` is slow, add an index on `Driver.Status`
-2. **Use Caching** — Mark read-heavy queries with `ICacheableQuery` to avoid repeated database hits
-3. **Monitor Connection Pooling** — PostgreSQL connection pooling is enabled by default, but monitor for exhaustion under high load
-4. **Optimize Behaviors** — If you don't need performance monitoring in a specific environment, you can conditionally remove `PerformanceBehavior` from the pipeline
+| Service | Integration Point | Purpose |
+|---------|-------------------|---------|
+| **Twilio** | `WhatsAppSmsService` | OTP delivery via WhatsApp |
+| **ML Model** | `AiPredictionService` | Demand forecasting, ETA, revenue prediction |
+| **JWT Provider** | `JwtTokenService` | Token generation/validation (internal) |
 
-### 13.3 Debugging Performance Issues
+### Third-Party Services
 
-```csharp
-// In a controller, service, or startup check:
-
-// 1. See what's currently slow
-var slowOps = PerformanceBehavior<object, object>.GetSlowOperations();
-foreach (var op in slowOps)
-{
-    Console.WriteLine($"🟡 SLOW: {op.RequestName} took {op.DurationMs}ms");
-}
-
-// 2. See what's degrading over time
-var degrading = PerformanceBehavior<object, object>.GetDegradingOperations();
-foreach (var op in degrading)
-{
-    Console.WriteLine($"🔴 DEGRADING: {op.RequestName} is {op.DegradationPercentage}% slower than usual");
-}
-
-// 3. Check specific endpoint history
-var history = PerformanceBehavior<object, object>.GetPerformanceHistory("GetTopLevelKpisQuery");
-```
+- **SignalR** — Real-time communication for dispatch and tracking
+- **FluentValidation** — Request validation (11+ validators across features)
+- **AutoMapper** — Entity-to-DTO mapping (4+ mapping profiles)
+- **MediatR** — CQRS mediator and pipeline behaviors
 
 ---
 
-## Appendix A: File Naming Cheat Sheet
+## 9. Best Practices & Observations
 
-| Component | File Name Pattern | Example |
-|---|---|---|
-| Command | `{Name}Command.cs` | `CancelTripCommand.cs` |
-| Command Handler | `{Name}CommandHandler.cs` | `CancelTripCommandHandler.cs` |
-| Command Validator | `{Name}CommandValidator.cs` | `CancelTripCommandValidator.cs` |
-| Query | `{Name}Query.cs` | `GetActiveFleetQuery.cs` |
-| Query Handler | `{Name}QueryHandler.cs` | `GetActiveFleetQueryHandler.cs` |
-| DTO | `{Name}Dto.cs` | `LoginDto.cs` |
-| Entity | `{Name}.cs` | `Trip.cs` |
-| Repository | `{Name}Repository.cs` | `TripRepository.cs` |
-| Service | `{Name}Service.cs` | `AuthService.cs` |
-| Controller | `{Name}Controller.cs` | `TripsController.cs` |
-| Behavior | `{Name}Behavior.cs` | `PerformanceBehavior.cs` |
-| Exception | `{Name}Exception.cs` | `NotFoundException.cs` |
+### Good Design Decisions
 
----
+1. **Comprehensive Pipeline Behaviors** — The 11-behavior MediatR pipeline is exceptionally thorough. Each behavior is well-documented with its own README, quick reference, and implementation summary. This demonstrates production-grade concern separation.
 
-## Appendix B: Complete Request Flow Example (Login)
+2. **Specification Pattern** — Query logic is encapsulated in testable, reusable specification classes rather than scattered in handlers or repositories.
 
-Here's exactly what happens when a user logs in, from HTTP request to database and back:
+3. **Marker Interfaces** — Declarative behavior configuration (`ICacheableQuery`, `IIdempotentCommand`) allows behaviors to self-configure without explicit registration logic.
 
-```
-STEP 1: HTTP Request
-POST https://localhost:5000/api/auth/login
-Content-Type: application/json
+4. **Result Pattern** — `Result<T>` and `Error` classes provide explicit error handling without exception throwing for business logic failures.
 
-{
-  "username": "john",
-  "password": "SecurePass123!"
-}
+5. **Interface Segregation** — Application-layer interfaces (`IApplicationDbContext`, `ICurrentUserService`) prevent direct infrastructure dependencies in handlers.
 
-    ↓
+6. **SignalR JWT Integration** — The `SignalRJwtExtension.cs` properly authenticates WebSocket connections using the same JWT scheme as HTTP APIs.
 
-STEP 2: Controller Receives Request
-AuthController.Login() creates a LoginCommand and calls _mediator.Send(command)
+7. **Audit Interceptors** — `AuditLogInterceptor` and `AuditableEntityInterceptor` automatically track entity changes and user attribution.
 
-    ↓
+### Code Quality Observations
 
-STEP 3: MediatR Dispatches to Pipeline
-The request enters the behavior pipeline in order:
+| Observation | Severity | Details |
+|-------------|----------|---------|
+| Typo in folder name | Minor | `RegisrerManager` instead of `RegisterManager` in `Features/Auth/Commands/` |
+| Duplicate `Result.cs` | Minor | Both `Common/Result.cs` and `Common/Plumping/Result.cs` exist — potential confusion |
+| Duplicate `PaginatedList.cs` | Minor | Both `Common/PaginatedList.cs` and `Common/Models/PaginatedList.cs` exist |
+| Empty AI handlers | Medium | Several AI command handlers (`ProcessVoiceAssistant`, `RunOperationalSimulation`, etc.) appear to be stubs (~220 bytes each) |
+| `User1.cs` entity | Minor | Appears to be a duplicate or alternate user entity — unclear purpose |
+| `SchemaMigration1.cs` | Minor | Duplicate migration tracking entity |
+| `APIResponse.cs` in Controllers | Minor | Duplicate file in `Controllers/APIResponse.cs` (88 bytes) alongside `Contracts/APIResponse.cs` |
+| `DependencyInjection.cs` history | Note | Was previously commented out; now fully implemented |
 
-[MetricsBehavior]        → Start stopwatch
-[PerformanceBehavior]    → Initialize performance tracking for "LoginCommand"
-[LoggingBehavior]        → Log: "[INFO] Processing LoginCommand for user 'john'"
-[CachingBehavior]        → Skip (login is not cacheable)
-[ValidationBehavior]     → Validate: username is not empty, password is at least 6 chars
-[AuthorizationBehavior]  → Skip (login is a public endpoint)
-[IdempotencyBehavior]    → Skip (login doesn't need idempotency)
-[RetryBehavior]          → Stand by to retry on transient DB failures
-[TimeoutBehavior]        → Set a maximum execution time
-[TransactionBehavior]    → Begin database transaction
+### Suggested Improvements
 
-    ↓
+1. **Consolidate Duplicates** — Merge duplicate `Result.cs`, `PaginatedList.cs`, and `APIResponse.cs` files to reduce maintenance overhead.
 
-STEP 4: Handler Executes Business Logic
-LoginCommandHandler.Handle():
+2. **Complete AI Stubs** — The AI feature has excellent DTOs, enums, and validators, but several command handlers are empty stubs. These should be implemented or removed to avoid confusion.
 
-  1. Query database: SELECT * FROM "Users" WHERE "Username" = 'john'
-  2. Verify password: BCrypt.Verify("SecurePass123!", storedHash)
-  3. Generate JWT access token (15-minute expiry)
-  4. Generate refresh token (7-day expiry)
-  5. Save refresh token to database
-  6. Return new LoginResult { AccessToken, RefreshToken, UserProfile }
+3. **Behavior Registration Order** — Verify the pipeline behavior order in `DependencyInjection.cs`. The current order (Metrics → Performance → Logging → Caching → Validation → Authorization → Idempotency → Retry → Timeout → Transaction) is logical, but caching before validation means invalid requests may be cached.
 
-    ↓
+4. **SignalR Scale-Out** — Current SignalR uses in-memory backplane. For multi-instance deployment, consider Redis backplane.
 
-STEP 5: Pipeline Completes (Reverse Order)
-[TransactionBehavior]    → COMMIT transaction
-[TimeoutBehavior]        → Cancel timeout timer
-[RetryBehavior]          → No retry needed
-[PerformanceBehavior]    → Record: 45ms (OK — under 500ms threshold)
-[MetricsBehavior]        → Log: "[METRIC] LoginCommand completed in 45ms"
-[LoggingBehavior]        → Log: "[INFO] LoginCommand completed successfully"
+5. **Unit Tests** — The repository structure suggests a test project exists, but no test files were visible in the tree. Ensure comprehensive coverage for handlers and behaviors.
 
-    ↓
+6. **Database Seeding** — `DbInitializers.cs` provides seeding, but consider using EF Core migrations for schema evolution instead of `SchemaMigration` entity tracking.
 
-STEP 6: HTTP Response
-200 OK
+7. **Folder Naming** — Fix `RegisrerManager` typo and clarify `User1.cs` / `SchemaMigration1.cs` purpose.
 
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-    "refreshToken": "dGhpcyBpcyBhIHJlZnJlc2g...",
-    "user": {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "username": "john",
-      "role": "Driver",
-      "fullName": "John Doe"
-    }
-  },
-  "errors": null,
-  "timestamp": "2026-04-25T17:38:00Z"
-}
-```
+8. **Documentation Sync** — `COMPLETE_PROJECT_CONTEXT.md` was deleted in the `AI-Changes` branch but may still be referenced. Ensure all documentation is consolidated in `README.md`.
 
 ---
 
-> **Documentation Version:** 1.2  
-> **Last Updated:** April 2026  
-> **Repository:** https://github.com/Umar-Khattab/NYCTaxiData
+## Appendix: Behavior Pipeline Documentation
+
+The project includes extensive self-documentation for each pipeline behavior:
+
+| Behavior | README | Quick Ref | Implementation Summary |
+|----------|--------|-----------|----------------------|
+| Authorization | ✅ | ✅ | ✅ |
+| Caching | ✅ | ✅ | ✅ |
+| Exception Handling | ✅ | ✅ | ✅ |
+| Idempotency | ✅ | ✅ | ✅ |
+| Logging | ✅ | ✅ | ✅ |
+| Metrics | ✅ | ✅ | ✅ |
+| Performance | ✅ | ✅ | ✅ |
+| Retry | ✅ | ✅ | ✅ |
+| Timeout | ✅ | ✅ | ✅ |
+| Transaction | ✅ | ✅ | ✅ |
+| Validation | ✅ | ✅ | ✅ |
+| **Complete Report** | `ELEVEN_BEHAVIORS_COMPLETE.md` (17.8 KB) | | |
+
+*End of Documentation*
