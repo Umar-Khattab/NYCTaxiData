@@ -25,7 +25,8 @@ public class TripsController
     (IUnitOfWork _unitOfWork,
      IMapper _mapper,
      TaxiDbContext _context,
-     ICurrentUserService _currentUserService) : BaseController
+     ICurrentUserService _currentUserService,
+     ISender _mediator) : BaseController
 {
     // 1. Start Trip
     [HttpPost("start")]
@@ -43,7 +44,7 @@ public class TripsController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> EndTrip([FromBody] EndTripCommand command)
     {
-        var data = await Mediator.Send(command);
+        var data = await _mediator.Send(command);
         return HandleResult(Result.Success(data));
     }
 
@@ -51,7 +52,7 @@ public class TripsController
     [HttpGet]
     public async Task<IActionResult> GetTrips([FromQuery] Guid? driverId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        var data = await Mediator.Send(new GetTripHistoryQuery(driverId, pageNumber, pageSize));
+        var data = await _mediator.Send(new GetTripHistoryQuery(driverId, pageNumber, pageSize));
         return HandleResult(Result.Success(data));
     }
 
@@ -74,7 +75,7 @@ public class TripsController
     [HttpGet("live-dispatch")]
     public async Task<IActionResult> GetLiveDispatchFeed([FromQuery] GetLiveDispatchFeedQuery query)
     {
-        var data = await Mediator.Send(new GetLiveDispatchFeedQuery(query.Limit, query.MinutesWindow));
+        var data = await _mediator.Send(new GetLiveDispatchFeedQuery(query.Limit, query.MinutesWindow));
         return HandleResult(Result.Success(data));
     }
 
@@ -84,7 +85,7 @@ public class TripsController
     [HttpPost("dispatch")]
     public async Task<IActionResult> ManualDispatch([FromBody] ManualDispatchCommand command)
     {
-        var data = await Mediator.Send(command);
+        var data = await _mediator.Send(command);
         return HandleResult(Result.Success(data));
     }
 

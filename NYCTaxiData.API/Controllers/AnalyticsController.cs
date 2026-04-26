@@ -13,14 +13,8 @@ namespace NYCTaxiData.API.Controllers
     [Authorize(Roles = "Admin,Dispatcher")] // هذه البيانات استراتيجية ويجب حمايتها
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class AnalyticsController : ControllerBase
+    public class AnalyticsController(ISender _mediator) : ControllerBase
     {
-        private readonly ISender _mediator;
-
-        public AnalyticsController(ISender mediator)
-        {
-            _mediator = mediator;
-        }
 
         /// <summary>
         /// يجلب المؤشرات الرئيسية للداشبورد (عدد السائقين، الإيرادات، وقت الانتظار)
