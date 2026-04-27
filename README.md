@@ -108,7 +108,7 @@ NYCTaxiData/
 - Repositioning optimization
 - Fleet expansion simulation start and retrieval
 
-> Note: `ZonesController` is currently commented out in source, so zone REST endpoints are intentionally inactive in the current host configuration. Treat zones as planned/incomplete API surface unless this controller is re-enabled.
+> Note: `ZonesController` is currently commented out in source, so zone REST endpoints are intentionally inactive in the current host configuration. This appears to be a planned-but-incomplete API surface (no active route mapping yet), and should be treated as under development until the controller is re-enabled.
 
 ---
 
@@ -217,19 +217,11 @@ Primary settings are under `NYCTaxiData.API/appsettings*.json`.
     "Issuer": "NYCTaxiData",
     "Audience": "NYCTaxiData"
   },
-  "MediatR": {
-    "LicenseKey": "<optional-host-config-value>"
-  },
-  "AutoMapper": {
-    "LicenseKey": "<optional-host-config-value>"
-  },
   "MlService": {
     "BaseUrl": "https://your-ml-service"
   }
 }
 ```
-
-`MediatR:LicenseKey` and `AutoMapper:LicenseKey` are optional host configuration entries currently read by DI registration in this codebase; standard usage of these libraries does not require adding paid licenses for this project setup.
 
 ### Security guidance
 - Do **not** commit real credentials/secrets.
