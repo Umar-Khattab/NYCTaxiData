@@ -60,8 +60,8 @@ public class TripsController
         var totalCount = await _unitOfWork.Drivers.CountAsync(spec);
         var driverDtos = _mapper.Map<List<DriverListDto>>(drivers);
 
-        var data = PaginatedList<DriverListDto>.Create(driverDtos, totalCount, page, limit);
-        return HandleResult(Result.Success(data));
+        var pagedData = PaginatedList<DriverListDto>.Create(driverDtos, totalCount, page, limit);
+        return PaginatedResult(pagedData, "Online drivers retrieved successfully");
     }
 
     // 5. Get Live Dispatch Feed

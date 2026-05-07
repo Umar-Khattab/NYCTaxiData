@@ -44,6 +44,7 @@ builder.Services.AddMediatR(cfg =>
 // ===== FluentValidation =====
 builder.Services.AddValidatorsFromAssembly(
     typeof(LoginCommandHandler).Assembly);
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 builder.Services.AddAutoMapper(cfg =>
 {
@@ -59,6 +60,21 @@ builder.Services.AddMediatR(cfg =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<IDispatchNotificationService, DispatchNotification>();
 builder.Services.AddScoped<JwtTokenService>();
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(
+        typeof(LoginCommandHandler).Assembly);
+
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>),
+                    typeof(LoggingBehavior<,>));
+
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>),
+                    typeof(ValidationBehavior<,>));
+
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>),
+                    typeof(ConcurrencyBehavior<,>)); // ✅ أضف ده
+});
+
 var app = builder.Build();
 
 // ===== 2. إعداد الـ Middleware Pipeline (بعد الـ Build) =====

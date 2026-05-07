@@ -4,6 +4,9 @@ using NYCTaxiData.Application.Common;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Infrastructure;
+using NYCTaxiData.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
 {
@@ -14,24 +17,25 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
             StartTripCommand request,
             CancellationToken cancellationToken)
         {
-            // Verify driver exists
+            // 1. جلب السائق والتحقق من حالته (Optimistic Concurrency)
             var driver = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId);
-
             if (driver == null)
-                throw new NotFoundException($"Driver with ID {request.DriverId} not found");
+                throw new NotFoundException("Driver", request.DriverId);
 
-            // Verify locations exist
+            // Business Validation: هل السائق مشغول فعلاً؟
+            if (driver.Status == CurrentStatus.On_Trip)
+                return Result<TripStartResultDto>.Failure("Driver is already on another trip", "Conflict");
+
+            // 2. التحقق من وجود المواقع (كود صاحبك)
             var pickupLocation = await _unitOfWork.Locations.GetByIdAsync(request.PickupLocationId);
-
             if (pickupLocation == null)
-                throw new NotFoundException($"Pickup location with ID {request.PickupLocationId} not found");
+                throw new NotFoundException("Pickup Location", request.PickupLocationId);
 
             var dropoffLocation = await _unitOfWork.Locations.GetByIdAsync(request.DropoffLocationId);
-
             if (dropoffLocation == null)
-                throw new NotFoundException($"Dropoff location with ID {request.DropoffLocationId} not found");
+                throw new NotFoundException("Dropoff Location", request.DropoffLocationId);
 
-            // Create new trip
+            // 3. إنشاء الرحلة وتحديث حالة السائق
             var trip = new Trip
             {
                 DriverId = request.DriverId,
@@ -40,11 +44,33 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
                 StartedAt = DateTime.UtcNow
             };
 
-            await _unitOfWork.Trips.AddAsync(trip);
-            await _unitOfWork.SaveChangesAsync();
+            driver.Status = CurrentStatus.On_Trip;
 
-            var result = _mapper.Map<TripStartResultDto>(trip);
-            return Result<TripStartResultDto>.Success(result);
+            try
+            {
+                // إضافة الرحلة وحفظ التغييرات (اللي هتشمل تحديث السائق والرحلة معاً)
+                await _unitOfWork.Trips.AddAsync(trip);
+
+                // الـ SaveChanges هنا هي اللي هتفحص الـ RowVersion بتاع الـ Driver
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                // لو سواق تاني خده في نفس اللحظة، الـ RowVersion هيتغير والـ Exception ده هيضرب
+                var entry = ex.Entries.First();
+                var entityName = entry.Entity.GetType().Name;
+
+                // تحديث البيانات المحلية عشان نعرف مين اللي عدل
+                await entry.ReloadAsync(cancellationToken);
+
+                return Result<TripStartResultDto>.Failure(
+                    $"{entityName} was modified by another process. Please try again.",
+                    "ConcurrencyConflict");
+            }
+
+            // 4. تحويل النتيجة وإرجاعها
+            var resultDto = _mapper.Map<TripStartResultDto>(trip);
+            return Result<TripStartResultDto>.Success(resultDto, "Trip started successfully");
         }
     }
 }

@@ -2,6 +2,7 @@
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Infrastructure.Interceptors;
+using NYCTaxiData.Infrastructure.Services.ConcurrentEntity;
 using System;
 using System.Collections.Generic;
 
@@ -119,6 +120,8 @@ public partial class TaxiDbContext : DbContext
 
     public virtual DbSet<Zone> Zones { get; set; }
 
+    public virtual DbSet<DailyStats> DailyStats { get; set; }
+
     ////    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     ////#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
     ////        => optionsBuilder.UseNpgsql("Host=aws-0-eu-west-1.pooler.supabase.com;Port=6543;Database=postgres;Username=postgres.owdwyzvxtdblxpmtuygv;Password=*GradProject2026#;Ssl Mode=Require;Trust Server Certificate=true;Pooling=false;");
@@ -157,6 +160,36 @@ public partial class TaxiDbContext : DbContext
             entity.ToTable("trips");
 
             entity.Property(e => e.TripId).HasColumnName("trip_id");
+            modelBuilder.Entity<DailyStats>(entity =>
+            {
+                entity.ToTable("daily_stats");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Date).HasColumnName("date");
+                entity.Property(e => e.TotalTrips).HasColumnName("total_trips");
+                entity.Property(e => e.TotalRevenue).HasColumnName("total_revenue");
+                entity.Property(e => e.ActiveDrivers).HasColumnName("active_drivers");
+                entity.Property(e => e.AvgTripMinutes).HasColumnName("avg_trip_minutes");
+                entity.Property(e => e.AvgFare).HasColumnName("avg_fare");
+                entity.Property(e => e.CompletedTrips).HasColumnName("completed_trips");
+                entity.Property(e => e.CancelledTrips).HasColumnName("cancelled_trips");
+                entity.Property(e => e.ComputedAt).HasColumnName("computed_at");
+            });
+            modelBuilder.Entity<DriverConcurrent>(entity =>
+            {
+                entity.Property(d => d.RowVersion)
+                      .HasColumnName("row_version")
+                      .IsRowVersion()
+                      .IsConcurrencyToken();
+            });
+
+            modelBuilder.Entity<TripConcurrent>(entity =>
+            {
+                entity.Property(t => t.RowVersion)
+                      .HasColumnName("row_version")
+                      .IsRowVersion()
+                      .IsConcurrencyToken();
+            });
 
             // ✅ لازم الأسماء هنا تطابق اللي في Supabase بالظبط (PascalCase)
             entity.Property(e => e.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false);

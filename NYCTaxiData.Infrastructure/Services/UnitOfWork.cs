@@ -6,6 +6,7 @@ using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Data.Repository;
+using NYCTaxiData.Infrastructure.Services.ConcurrentEntity;
 
 namespace NYCTaxiData.Infrastructure.Services;
 

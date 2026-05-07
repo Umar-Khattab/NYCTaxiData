@@ -1,4 +1,5 @@
 ﻿using NYCTaxiData.Domain.Entities;
+using NYCTaxiData.Infrastructure.Services.ConcurrentEntity;
 using System;
 using System.Collections.Generic;
 using System.Text;

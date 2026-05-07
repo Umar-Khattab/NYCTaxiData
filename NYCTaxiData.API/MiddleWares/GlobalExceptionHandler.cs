@@ -44,6 +44,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             // أي حاجة تانية تعتبر كارثة داخلية
             _ => (500, "INTERNAL_SERVER_ERROR")
         };
+         
 
         // 3. تجهيز الـ Response باستخدام الـ ApiResponse.Fail الموحد
         // هنا بنعمل حتة صياعة: لو فيه Validation Errors بنسحبها ونبعتها

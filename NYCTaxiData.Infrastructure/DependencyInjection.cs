@@ -1,3 +1,5 @@
+using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +11,7 @@ using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Data.Repository;
 using NYCTaxiData.Infrastructure.Interceptors;
 using NYCTaxiData.Infrastructure.Services;
-using Microsoft.AspNetCore.Http;
+using NYCTaxiData.Infrastructure.Workers;
 
 namespace NYCTaxiData.Infrastructure
 {
@@ -30,6 +32,11 @@ namespace NYCTaxiData.Infrastructure
             services.AddScoped<IDbInitializer, DbInitializer>();
             services.AddScoped<ISmsService, WhatsAppSmsService>();
             services.AddDistributedMemoryCache();
+            // ===== Services =====
+            services.AddScoped<IDailyAggregationService, DailyAggregationService>();
+
+            // ===== Background Worker =====
+            services.AddHostedService<DailyAggregationWorker>();
 
             // 2. تسجيل الـ DbContext مع الـ Interceptors والـ Retry Logic
             services.AddDbContext<TaxiDbContext>((sp, options) =>
@@ -51,6 +58,7 @@ namespace NYCTaxiData.Infrastructure
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+            
             return services;
         }
     }

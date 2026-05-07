@@ -6,6 +6,7 @@ using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure; // ده مهم عشان يشوف User1
 using NYCTaxiData.Infrastructure.Services;
+using NYCTaxiData.Infrastructure.Services.ConcurrentEntity;
 using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
 
 namespace NYCTaxiData.Application.Auth.Commands.RegisterDriver
