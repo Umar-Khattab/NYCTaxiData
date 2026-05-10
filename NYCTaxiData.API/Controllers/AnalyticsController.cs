@@ -1,5 +1,4 @@
- 
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NYCTaxiData.Application.Features.Analytics.Commands.UpdateSystemThresholds;
@@ -12,22 +11,18 @@ using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
 namespace NYCTaxiData.API.Controllers
 {
-    // [Authorize(Roles = "Admin,Dispatcher")] // هذه البيانات استراتيجية ويجب حمايتها
+    [Authorize(Roles = "Admin,Dispatcher")] // هذه البيانات استراتيجية ويجب حمايتها
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class AnalyticsController : ControllerBase
+    public class AnalyticsController(ISender _mediator) : ControllerBase
     {
-        private readonly ISender _mediator;
-
-        public AnalyticsController(ISender mediator)
-        {
-            _mediator = mediator;
-        }
 
         /// <summary>
         /// يجلب المؤشرات الرئيسية للداشبورد (عدد السائقين، الإيرادات، وقت الانتظار)
         /// </summary>
         [HttpGet("kpis")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetTopLevelKpis()
         {
             var query = new GetTopLevelKpisQuery(); 
@@ -42,6 +37,8 @@ namespace NYCTaxiData.API.Controllers
         /// يجلب بيانات الرسم البياني لتوقعات الذكاء الاصطناعي لحجم الطلب
         /// </summary>
         [HttpGet("demand-velocity")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetDemandVelocity([FromQuery] GetDemandVelocityChartQuery query)
         {
             // نستخدم FromQuery لأن هذا الطلب سيحمل فلاتر (مثل ZoneId أو DateRange)
@@ -54,6 +51,8 @@ namespace NYCTaxiData.API.Controllers
         /// يجلب إعدادات النظام الحالية (مثل مضاعفات الأسعار ونطاق البحث)
         /// </summary>
         [HttpGet("thresholds")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetSystemThresholds()
         {
             var query = new GetSystemThresholdsQuery();
@@ -66,6 +65,8 @@ namespace NYCTaxiData.API.Controllers
         /// يحدّث إعدادات النظام (مثل مضاعفات الأسعار ونطاق البحث)
         /// </summary>
         [HttpPut("thresholds")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> UpdateSystemThresholds([FromBody] UpdateSystemThresholdsCommand command)
         {
             var result = await _mediator.Send(command);

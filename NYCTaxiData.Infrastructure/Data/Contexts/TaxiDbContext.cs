@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
@@ -93,6 +94,9 @@ public partial class TaxiDbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<User1> Users1 { get; set; }
+
+    public Task<User1?> GetUserByPhoneAsync(string phoneNumber, CancellationToken cancellationToken = default)
+        => Users1.FirstOrDefaultAsync(u => u.Phonenumber == phoneNumber, cancellationToken);
 
     public virtual DbSet<VectorIndex> VectorIndexes { get; set; }
 

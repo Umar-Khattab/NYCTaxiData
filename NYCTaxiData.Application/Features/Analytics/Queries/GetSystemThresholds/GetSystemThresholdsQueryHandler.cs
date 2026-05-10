@@ -20,7 +20,7 @@ namespace NYCTaxiData.Application.Features.Analytics.Queries.GetSystemThresholds
                 var cachedThresholds = JsonSerializer.Deserialize<SystemThresholdsDto>(cachedJson);
                 if (cachedThresholds is not null)
                 {
-                    return Result<SystemThresholdsDto>.Success(cachedThresholds);
+                    return Result<SystemThresholdsDto>.Success(cachedThresholds, "System thresholds retrieved from cache successfully");
                 }
             }
 
@@ -52,7 +52,7 @@ namespace NYCTaxiData.Application.Features.Analytics.Queries.GetSystemThresholds
                     Critical: 7.0m),
                 LastUpdatedUtc: DateTime.UtcNow);
 
-            return Result<SystemThresholdsDto>.Success(systemThresholds);
+            return Result<SystemThresholdsDto>.Success(systemThresholds, "System thresholds generated successfully");
         }
     }
 }

@@ -40,7 +40,7 @@ namespace NYCTaxiData.Application.Features.Analytics.Queries.GetTopLevelKpis
                 TotalDailyRevenue: totalDailyRevenue,
                 AverageQueueTimeMinutes: Math.Round((decimal)(averageQueueTimeSeconds / 60d), 2));
 
-            return Result<TopLevelKpisDto>.Success(kpis);
+            return Result<TopLevelKpisDto>.Success(kpis, "Top-level KPIs retrieved successfully");
         }
     }
 }

@@ -12,14 +12,9 @@ namespace NYCTaxiData.API.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class DriversController : ControllerBase
+public class DriversController(ISender _sender) : ControllerBase
 {
-    private readonly ISender _sender;
 
-    public DriversController(ISender sender)
-    {
-        _sender = sender;
-    }
 
     /// <summary>
     /// Retrieves a paginated list of drivers with optional status and zone filters.

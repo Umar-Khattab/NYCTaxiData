@@ -4,8 +4,9 @@ using NYCTaxiData.Application.Auth.Commands.Login;
 using NYCTaxiData.Application.Common.Plumping; 
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
+using NYCTaxiData.Application.Common.Interfaces.Services;
+using Org.BouncyCastle.Crypto.Generators;
+using BCrypt.Net;
 
 namespace NYCTaxiData.Application.Features.Auth.Commands.Login
 {

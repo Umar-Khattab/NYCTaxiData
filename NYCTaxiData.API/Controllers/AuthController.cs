@@ -14,9 +14,11 @@ using Twilio.Types; // تأكد من الـ Namespace ده
 
 namespace NYCTaxiData.API.Controllers;
 
-public class AuthController : BaseController
+public class AuthController(ISender _mediator) : BaseController
 {
     [HttpPost("login")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
     {
         // استخدم (dynamic) عشان الـ BaseController يقبل أي Result<T>
@@ -25,6 +27,8 @@ public class AuthController : BaseController
 
     // 2. Register Driver
     [HttpPost("register/driver")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RegisterDriver([FromBody] RegisterDriverCommand command)
     {
         var result = await Mediator.Send(command);
@@ -33,6 +37,8 @@ public class AuthController : BaseController
 
     // 3. Register Manager
     [HttpPost("register/manager")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RegisterManager([FromBody] RegisterManagerCommand command)
     {
         return HandleResult((dynamic)await Mediator.Send(command));
@@ -40,6 +46,8 @@ public class AuthController : BaseController
 
     // 4. Send OTP
     [HttpPost("otp/send")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpCommand command)
     {
         var result = await Mediator.Send(command);
@@ -53,6 +61,8 @@ public class AuthController : BaseController
 
     // 5. Verify OTP
     [HttpPost("otp/verify")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpCommand command)
     {
         var result = await Mediator.Send(command);
@@ -69,6 +79,8 @@ public class AuthController : BaseController
 
     // 6. Reset Password
     [HttpPost("password/reset")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
     {
         var result = await Mediator.Send(command);
@@ -85,6 +97,8 @@ public class AuthController : BaseController
 
     // 7. Refresh Token
     [HttpPost("token/refresh")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command)
     {
         return HandleResult((dynamic)await Mediator.Send(command));
@@ -92,6 +106,8 @@ public class AuthController : BaseController
 
     // 8. Get Profile
     [HttpGet("profile/{phoneNumber}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProfile([FromRoute] string phoneNumber)
     {
         var result = await Mediator.Send(new GetProfileQuery(phoneNumber));

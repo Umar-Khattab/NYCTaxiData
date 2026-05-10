@@ -70,6 +70,6 @@ public sealed class GetShiftStatisticsQueryHandler : IRequestHandler<GetShiftSta
             IdleTimeMinutes = idleTimeMinutes
         };
 
-        return Result<ShiftStatisticsDto>.Success(dto);
+        return Result<ShiftStatisticsDto>.Success(dto, "Shift statistics retrieved successfully");
     }
 }

@@ -31,9 +31,8 @@ public sealed class SyncOfflineDataCommandHandler : IRequestHandler<SyncOfflineD
                 SyncedCount = 0,
                 FailedCount = 0,
                 FailedLocalTripIds = []
-            });
+            }, "No trips to sync.");
         }
-
         var tripsToPersist = request.Trips.Select(t => new Trip
         {
             DriverId = request.DriverId,
@@ -54,6 +53,6 @@ public sealed class SyncOfflineDataCommandHandler : IRequestHandler<SyncOfflineD
             SyncedCount = request.Trips.Count,
             FailedCount = 0,
             FailedLocalTripIds = []
-        });
+        }, "Trips synced successfully.");
     }
 }

@@ -1,206 +1,170 @@
-﻿//using Microsoft.AspNetCore.Mvc;
-//using NYCTaxiData.API.Contracts;
+using Microsoft.AspNetCore.Mvc;
+using MediatR;
+using NYCTaxiData.API.Contracts;
+using NYCTaxiData.Application.Features.AI.Commands.PredictDemand15Min;
+using NYCTaxiData.Application.Features.AI.Commands.PredictDemand6h;
+using NYCTaxiData.Application.Features.AI.Commands.PredictETA;
+using NYCTaxiData.Application.Features.AI.Commands.PredictRevenue;
+using NYCTaxiData.Application.Features.AI.Commands.PredictStockOut;
+using NYCTaxiData.Application.Features.AI.Commands.RankProfitZones;
+using NYCTaxiData.Application.Features.AI.Commands.EstimateCausalImpact;
+using NYCTaxiData.Application.Features.AI.Commands.OptimizeRepositioning;
+using NYCTaxiData.Application.Features.AI.Commands.StartFleetExpansionSimulation;
+using NYCTaxiData.Application.Features.AI.Queries.GetSimulationResult;
+using NYCTaxiData.Application.Features.AI.DTOs;
+using NYCTaxiData.Application.Common.Models;
+using NYCTaxiData.Domain.Enums;
+using NYCTaxiData.Application.DTOs;
 
-//namespace NYCTaxiData.API.Controllers
-//{
-//    [ApiController]
-//    [Route("api/v1/[controller]")]
-//    public class AiController : ControllerBase
-//    {
-//        // --------------------------------------------------------
-//        // 1. Get Demand Forecast (التنبؤ بالطلب)
-//        // --------------------------------------------------------
-//        [HttpGet("forecast")]
-//        public IActionResult GetForecast([FromQuery] int hours = 6)
-//        {
-//            return Ok(new APIResponse<object>
-//            {
-//                IsSuccess = true,
-//                Message = "Forecast generated successfully",
-//                Data = new
-//                {
-//                    forecastHorizonHours = hours,
-//                    predictions = new[]
-//                    {
-//                        new
-//                        {
-//                            timeWindow = "18:00 - 19:00",
-//                            predictedShortage = true,
-//                            zones = new[]
-//                            {
-//                                new { zoneId = "104-A", h3Index = "892a10089ebffff", predictedDemand = 1240, predictedSurge = 2.4m, confidenceScore = 98 }
-//                            }
-//                        }
-//                    }
-//                }
-//            });
-//        }
+namespace NYCTaxiData.API.Controllers;
 
-//        // --------------------------------------------------------
-//        // 2. Explainable AI Insight (تفسير قرارات الذكاء الاصطناعي)
-//        // --------------------------------------------------------
-//        [HttpGet("explain/{zoneId}")]
-//        public IActionResult GetExplainability([FromRoute] string zoneId)
-//        {
-//            return Ok(new APIResponse<object>
-//            {
-//                IsSuccess = true,
-//                Message = "AI reasoning generated",
-//                Data = new
-//                {
-//                    zoneId = zoneId,
-//                    recommendation = "Head to Lower Manhattan",
-//                    reasons = new[]
-//                    {
-//                        new { factor = "Weather", impact = "High", description = "Rain in 15 mins." },
-//                        new { factor = "Fleet Supply", impact = "High", description = "Only 24 units available." }
-//                    }
-//                }
-//            });
-//        }
+/// <summary>
+/// API controller for AI/ML prediction and optimization endpoints.
+/// </summary>
+[ApiController]
+[Route("api/v1/ai")]
+public class AiController : ControllerBase
+{
+    private readonly IMediator _mediator;
 
-//        // --------------------------------------------------------
-//        // 3. Strategic Simulation (المحاكاة الاستراتيجية للمدير)
-//        // --------------------------------------------------------
-//        [HttpPost("simulate/strategic")]
-//        public IActionResult RunStrategicSimulation([FromBody] StrategicSimulationRequest request)
-//        {
-//            return Ok(new APIResponse<object>
-//            {
-//                IsSuccess = true,
-//                Message = "Strategic simulation completed",
-//                Data = new
-//                {
-//                    netProfit = -500000.00m,
-//                    roiPercentage = -3.2m,
-//                    recommendation = "WARNING: Market saturation detected.",
-//                    optimalFleetAddition = 350
-//                }
-//            });
-//        }
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AiController"/> class.
+    /// </summary>
+    public AiController(IMediator mediator) => _mediator = mediator;
 
-//        // --------------------------------------------------------
-//        // 4. Operational Event Simulation (محاكاة الأحداث والطقس)
-//        // --------------------------------------------------------
-//        [HttpPost("simulate/operational")]
-//        public IActionResult RunOperationalSimulation([FromBody] OperationalSimulationRequest request)
-//        {
-//            return Ok(new APIResponse<object>
-//            {
-//                IsSuccess = true,
-//                Message = "Operational simulation completed",
-//                Data = new
-//                {
-//                    recommendedExtraDrivers = 150,
-//                    predictedLostRevenue = 12500.00m,
-//                    hotspots = new[] { "104-A", "105-B" },
-//                    actionableInsight = "Deploy fleet 2 hours before event start."
-//                }
-//            });
-//        }
+    // ========================================================================
+    // EXISTING endpoints (keep them - do not remove)
+    // ========================================================================
+    // [HttpGet("demand-forecast")]
+    // [HttpGet("dispatch-recommendation")]
+    // [HttpGet("optimal-driver-schedule")]
+    // [HttpGet("explainable-ai-insight")]
+    // [HttpPost("voice-assistant")]
+    // [HttpPost("simulate/operational")]
+    // [HttpPost("simulate/strategic")]
+    // [HttpPost("model/retrain")]
 
-//        // --------------------------------------------------------
-//        // 5. Dispatch Recommendation Engine (توصيات التوجيه اللحظي)
-//        // --------------------------------------------------------
-//        [HttpGet("dispatch/recommend")]
-//        public IActionResult GetDispatchRecommendation([FromQuery] string targetZoneId)
-//        {
-//            return Ok(new APIResponse<object>
-//            {
-//                IsSuccess = true,
-//                Message = "Recommendation generated",
-//                Data = new
-//                {
-//                    targetZone = targetZoneId,
-//                    recommendedUnitsToDeploy = 15,
-//                    estimatedQueueClearanceMins = 12,
-//                    aiContext = "High probability of rain in 15 mins. Algorithm suggests deploying 15 units preemptively."
-//                }
-//            });
-//        }
+    // ========================================================================
+    // NEW endpoints - Demand Predictions
+    // ========================================================================
 
-//        // --------------------------------------------------------
-//        // 6. Smart Break & Shift Planner (مخطط راحة السائق)
-//        // --------------------------------------------------------
-//        [HttpGet("driver/{id}/optimal-schedule")]
-//        public IActionResult GetOptimalSchedule([FromRoute] string id)
-//        {
-//            return Ok(new APIResponse<object>
-//            {
-//                IsSuccess = true,
-//                Message = "Schedule optimized",
-//                Data = new
-//                {
-//                    driverId = id,
-//                    recommendedBreakTime = "14:30",
-//                    durationMinutes = 45,
-//                    reason = "Predicted 40% drop in city-wide demand. Peak hours will resume at 16:00."
-//                }
-//            });
-//        }
+    /// <summary>
+    /// Predicts 15-minute demand for a list of zones.
+    /// </summary>
+    [HttpPost("predict/demand-15min")]
+    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<Demand15MinResult>>>> PredictDemand15Min(
+        [FromBody] PredictDemand15MinCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
 
-//        // --------------------------------------------------------
-//        // 7. Voice-First Assistant (المساعد الصوتي RAG للسائق)
-//        // --------------------------------------------------------
-//        [HttpPost("voice-assistant")]
-//        public IActionResult VoiceAssistant([FromBody] VoiceAssistantRequest request)
-//        {
-//            return Ok(new APIResponse<object>
-//            {
-//                IsSuccess = true,
-//                Message = "Voice response generated",
-//                Data = new
-//                {
-//                    responseText = "I recommend heading north to Midtown South. Expect a 2.4x surge.",
-//                    actionTargetZoneId = "105-B"
-//                }
-//            });
-//        }
+    /// <summary>
+    /// Predicts 6-hour demand for a list of zones.
+    /// </summary>
+    [HttpPost("predict/demand-6h")]
+    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<Demand6hResult>>>> PredictDemand6h(
+        [FromBody] PredictDemand6hCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
 
-//        // --------------------------------------------------------
-//        // 8. Trigger Model Retraining (MLOps - إعادة التدريب)
-//        // --------------------------------------------------------
-//        [HttpPost("model/retrain")]
-//        public IActionResult TriggerRetraining([FromBody] RetrainModelRequest request)
-//        {
-//            // عادة عمليات الـ ML تأخذ ساعات، لذلك نرد بـ 202 Accepted (جاري التنفيذ في الخلفية)
-//            return StatusCode(202, new APIResponse<object>
-//            {
-//                IsSuccess = true,
-//                Message = "Retraining job started successfully in the background.",
-//                Data = new
-//                {
-//                    jobId = $"JOB-{new Random().Next(10000, 99999)}"
-//                }
-//            });
-//        }
-//    }
+    /// <summary>
+    /// Predicts ETA for a list of zone pairs (routes).
+    /// </summary>
+    [HttpPost("predict/eta")]
+    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<ETAResult>>>> PredictETA(
+        [FromBody] PredictETACommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
 
-//    // ========================================================================
-//    // 📦 Request DTOs (Records)
-//    // ========================================================================
+    /// <summary>
+    /// Predicts revenue for a list of zones.
+    /// </summary>
+    [HttpPost("predict/revenue")]
+    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<RevenueResult>>>> PredictRevenue(
+        [FromBody] PredictRevenueCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
 
-//    public record StrategicSimulationRequest(
-//        int AddedFleetSize,
-//        decimal CapexPerCar,
-//        decimal DailyOpexPerCar,
-//        int SimulationMonths
-//    );
+    /// <summary>
+    /// Predicts stock-out probability for a list of zones.
+    /// </summary>
+    [HttpPost("predict/stockout")]
+    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<StockOutResult>>>> PredictStockOut(
+        [FromBody] PredictStockOutCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
 
-//    public record OperationalSimulationRequest(
-//        DateTime TargetDate,
-//        string EventType,
-//        string[] ImpactedZones,
-//        double SeverityMultiplier
-//    );
+    /// <summary>
+    /// Ranks zones by expected profit.
+    /// </summary>
+    [HttpPost("predict/profit-zones")]
+    public async Task<ActionResult<ApiResponse<List<ProfitZoneResult>>>> RankProfitZones(
+        [FromBody] RankProfitZonesCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
 
-//    public record VoiceAssistantRequest(
-//        string DriverId,
-//        string Query
-//    );
+    /// <summary>
+    /// Estimates the causal impact of a treatment event on demand in a zone.
+    /// </summary>
+    [HttpPost("predict/causal-impact")]
+    public async Task<ActionResult<ApiResponse<CausalImpactResult>>> EstimateCausalImpact(
+        [FromBody] EstimateCausalImpactCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
 
-//    public record RetrainModelRequest(
-//        string[] DataSourceDateRange, // ["2024-09-01", "2024-09-30"]
-//        string ModelType
-//    );
-//}
+    // ========================================================================
+    // NEW endpoints - Optimization & Simulation
+    // ========================================================================
+
+    /// <summary>
+    /// Optimizes vehicle repositioning across zones.
+    /// </summary>
+    [HttpPost("optimize/repositioning")]
+    public async Task<ActionResult<ApiResponse<RepositioningPlan>>> OptimizeRepositioning(
+        [FromBody] OptimizeRepositioningCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Starts a fleet expansion simulation job.
+    /// </summary>
+    [HttpPost("simulate/fleet-expansion")]
+    public async Task<ActionResult<ApiResponse<SimulationJobResponse>>> StartFleetExpansionSimulation(
+        [FromBody] StartFleetExpansionSimulationCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Accepted(result);
+    }
+
+    /// <summary>
+    /// Retrieves the result of a simulation by its ID.
+    /// Returns 202 Accepted if the simulation is still running.
+    /// </summary>
+    [HttpGet("simulate/{simulationId}")]
+    public async Task<ActionResult<ApiResponse<PaginatedList<SimulationResult>>>> GetSimulationResult(
+        [FromRoute] string simulationId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken ct = default)
+    {
+        var query = new GetSimulationResultQuery(simulationId, pageNumber, pageSize);
+        var result = await _mediator.Send(query, ct);
+
+        return Ok(result);
+    }
+}

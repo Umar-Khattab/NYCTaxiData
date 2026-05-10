@@ -2,10 +2,10 @@ using AutoMapper;
 using MediatR;
 using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Specifications.Trips;
 using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services.Specifications.Trips;
 
 namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory
 {

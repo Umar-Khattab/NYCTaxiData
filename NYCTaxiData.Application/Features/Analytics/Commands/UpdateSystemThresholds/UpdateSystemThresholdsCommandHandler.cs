@@ -40,7 +40,7 @@ namespace NYCTaxiData.Application.Features.Analytics.Commands.UpdateSystemThresh
                 DispatchRadiusKm: request.DispatchRadiusKm,
                 UpdatedAtUtc: updatedAtUtc);
 
-            return Result<UpdateSystemThresholdsResultDto>.Success(response);
+            return Result<UpdateSystemThresholdsResultDto>.Success(response, "System thresholds updated successfully");
         }
     }
 }

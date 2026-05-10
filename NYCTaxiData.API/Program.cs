@@ -36,6 +36,7 @@ builder.Services.AddProblemDetails();
 
 // تسجيل خدمات الـ Infrastructure
 builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddApplicationServices(builder.Configuration);
 
 // ? لازم هنا: تسجيل الـ Authentication و SignalR قبل الـ Build
 builder.Services.AddJwtAuthentication(builder.Configuration);
@@ -91,6 +92,7 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<MappingProfile>();
     cfg.AddProfile<MappingTrips>();
+    cfg.AddProfile<AIMappingProfile>();
 });
 // ===== Services =====
 

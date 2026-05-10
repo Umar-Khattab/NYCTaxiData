@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
+using Microsoft.Extensions.Http;
+using NYCTaxiData.Application.Common.Interfaces.Services;
 using NYCTaxiData.Domain.Common.Interfaces;
-using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure.Data;
 using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Data.Repository;
@@ -28,6 +28,7 @@ namespace NYCTaxiData.Infrastructure
              
             services.AddScoped<ICacheService, CacheService>(); 
             services.AddScoped<ISmsService, WhatsAppSmsService>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddDistributedMemoryCache();
             // ===== Services =====
             services.AddScoped<IDailyAggregationService, DailyAggregationService>();
@@ -47,6 +48,16 @@ namespace NYCTaxiData.Infrastructure
              
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IAiPredictionService, AiPredictionService>();
+            services.AddHttpClient("MlService", client =>
+            {
+                client.BaseAddress = new Uri(configuration["MlService:BaseUrl"]!);
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .AddPolicyHandler(HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .WaitAndRetryAsync(3, retryAttempt =>
+            TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))));
 
             
             return services;

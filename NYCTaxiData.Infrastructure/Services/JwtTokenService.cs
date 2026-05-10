@@ -1,12 +1,13 @@
 ﻿ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using NYCTaxiData.Application.Common.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
 namespace NYCTaxiData.Infrastructure.Services;
 
-public class JwtTokenService(IConfiguration _config)
+public class JwtTokenService(IConfiguration _config) : IJwtTokenService
 {
     public string GenerateToken(string phoneNumber, string role, string fullName)
     {

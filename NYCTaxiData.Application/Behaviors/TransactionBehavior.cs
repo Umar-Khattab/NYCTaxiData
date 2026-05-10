@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using NYCTaxiData.Application.Features.Trips.Commands.StartTrip;
 using NYCTaxiData.Application.Features.Trips.Commands.StartTrip; 
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services;
 
 namespace NYCTaxiData.Application.Behaviors
 {

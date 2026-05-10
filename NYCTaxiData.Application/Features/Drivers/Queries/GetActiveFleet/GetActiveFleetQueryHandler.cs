@@ -34,6 +34,6 @@ public sealed class GetActiveFleetQueryHandler
             request.PageNumber,
             request.PageSize);
 
-        return Result<PaginatedList<ActiveFleetDriverDto>>.Success(paginated);
+        return Result<PaginatedList<ActiveFleetDriverDto>>.Success(paginated, "Active fleet retrieved successfully");
     }
 }

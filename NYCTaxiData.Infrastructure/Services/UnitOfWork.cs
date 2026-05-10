@@ -10,7 +10,7 @@ using NYCTaxiData.Infrastructure.Services.ConcurrentEntity;
 
 namespace NYCTaxiData.Infrastructure.Services;
 
-public class UnitOfWork : IUnitOfWork
+public class UnitOfWork : Application.Common.Interfaces.IUnitOfWork
 {
     private readonly TaxiDbContext _context;
     private IDbContextTransaction? _transaction;

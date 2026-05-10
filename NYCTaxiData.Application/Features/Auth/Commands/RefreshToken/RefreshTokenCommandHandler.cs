@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
 using MediatR;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
+using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Specifications.Auth;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;

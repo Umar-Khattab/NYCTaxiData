@@ -30,12 +30,16 @@ public class TripsController(
     ICurrentUserService _currentUserService) : BaseController
 { 
     [HttpPost("start")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> StartTrip([FromBody] StartTripCommand command)
     {
         return HandleResult(await Mediator.Send(command));
     }
      
     [HttpPost("end")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> EndTrip([FromBody] EndTripCommand command)
     {
         return HandleResult(await Mediator.Send(command));
