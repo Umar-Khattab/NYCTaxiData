@@ -6,9 +6,11 @@ using NYCTaxiData.API.Controllers.Base;
 using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Application.Common.Plumping;
 using NYCTaxiData.Application.DTOs.Identity;
+using NYCTaxiData.Application.DTOs.Trip;
+using NYCTaxiData.Application.Features.Drivers.Commands.UpdateDriverStatus;
 using NYCTaxiData.Application.Features.Trips.Commands.EndTrip;
 using NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch;
-using NYCTaxiData.Application.Features.Trips.Commands.StartTrip;
+using NYCTaxiData.Application.Features.Trips.Commands.StartTrip; 
 using NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed;
 using NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
 using NYCTaxiData.Domain.Entities;
@@ -21,37 +23,30 @@ namespace NYCTaxiData.API.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class TripsController
-    (IUnitOfWork _unitOfWork,
-     IMapper _mapper,
-     TaxiDbContext _context,
-     ICurrentUserService _currentUserService) : BaseController
-{
-    // 1. Start Trip
+public class TripsController(
+    IUnitOfWork _unitOfWork,
+    IMapper _mapper,
+    TaxiDbContext _context,
+    ICurrentUserService _currentUserService) : BaseController
+{ 
     [HttpPost("start")]
     public async Task<IActionResult> StartTrip([FromBody] StartTripCommand command)
     {
-        var data = await Mediator.Send(command);
-        return HandleResult(Result.Success(data));
+        return HandleResult(await Mediator.Send(command));
     }
-
-    // 2. End Trip
+     
     [HttpPost("end")]
     public async Task<IActionResult> EndTrip([FromBody] EndTripCommand command)
     {
-        var data = await Mediator.Send(command);
-        return HandleResult(Result.Success(data));
+        return HandleResult(await Mediator.Send(command));
     }
-
-    // 3. Get Trip History (Pagination)
-    [HttpGet]
-    public async Task<IActionResult> GetTrips([FromQuery] Guid? driverId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+     
+    [HttpGet("history")]
+    public async Task<IActionResult> GetTripHistory([FromQuery] GetTripHistoryQuery query)
     {
-        var data = await Mediator.Send(new GetTripHistoryQuery(driverId, pageNumber, pageSize));
-        return HandleResult(Result.Success(data));
+        return HandleResult(await Mediator.Send(query));
     }
-
-    // 4. Get Online Drivers (Specification Pattern)
+     
     [HttpGet("online")]
     public async Task<IActionResult> GetOnlineDrivers([FromQuery] int page = 1, [FromQuery] int limit = 100)
     {
@@ -63,24 +58,28 @@ public class TripsController
         var pagedData = PaginatedList<DriverListDto>.Create(driverDtos, totalCount, page, limit);
         return PaginatedResult(pagedData, "Online drivers retrieved successfully");
     }
-
-    // 5. Get Live Dispatch Feed
+     
     [HttpGet("dispatch/feed")]
-    public async Task<IActionResult> GetLiveDispatchFeed([FromQuery] int limit = 5, [FromQuery] int minutesWindow = 60)
+    public async Task<IActionResult> GetLiveDispatchFeed([FromQuery] GetLiveDispatchFeedQuery query)
     {
-        var data = await Mediator.Send(new GetLiveDispatchFeedQuery(limit, minutesWindow));
-        return HandleResult(Result.Success(data));
+        return HandleResult(await Mediator.Send(query));
     }
-
-    // 6. Manual Dispatch
+     
     [HttpPost("dispatch/manual")]
     public async Task<IActionResult> ManualDispatch([FromBody] ManualDispatchCommand command)
     {
-        var data = await Mediator.Send(command);
-        return HandleResult(Result.Success(data));
+        return HandleResult(await Mediator.Send(command));
     }
-
-    // 7. Test Audit (Direct Context for testing Interceptors)
+     
+    [HttpPatch("driver/status")]
+    public async Task<IActionResult> UpdateDriverStatus([FromBody] UpdateDriverStatusCommand command)
+    {
+        var result = await Mediator.Send(command); 
+        return result.IsSuccess
+        ? HandleResult(Result<object>.Success(null))
+        : HandleResult(Result<object>.Failure(result.Error, "UpdateFailed"));
+    }
+     
     [HttpPost("test-audit")]
     public async Task<IActionResult> TestAudit()
     {
@@ -96,21 +95,20 @@ public class TripsController
             UserFromToken = _currentUserService.UserName ?? "System"
         };
 
-        return HandleResult(Result.Success(responseData));
+        return HandleResult(Result<object>.Success(responseData));
     }
-
-    // 8. Delete Trip (Soft Delete Test)
+     
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTrip(int id)
-    { 
+    {
         var trip = await _context.Trips.FirstOrDefaultAsync(t => t.TripId == id);
 
         if (trip == null)
-            return HandleResult(Result.Failure($"Trip {id} not found", "NotFound"));
+            return HandleResult(Result<object>.Failure($"Trip {id} not found", "NotFound"));
 
         _context.Trips.Remove(trip);
         await _context.SaveChangesAsync();
 
-        return HandleResult(Result.Success(new { trip.TripId, trip.DeletedBy, trip.DeletedAt }));
+        return HandleResult(Result<object>.Success(new { trip.TripId, trip.DeletedBy, trip.DeletedAt }));
     }
 }

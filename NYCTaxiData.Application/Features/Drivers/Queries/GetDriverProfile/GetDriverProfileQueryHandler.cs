@@ -1,55 +1,60 @@
 using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Common;
+using NYCTaxiData.Application.Common.Plumping; // توحيد الـ Result
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
 
-namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverProfile;
-
-public sealed class GetDriverProfileQueryHandler : IRequestHandler<GetDriverProfileQuery, Result<DriverProfileDto>>
+namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverProfile
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
-
-    public GetDriverProfileQueryHandler(IUnitOfWork unitOfWork, IMapper mapper)
+    // تأكد أن الـ GetDriverProfileQuery والـ DriverProfileDto من نفس الـ Namespace ده
+    public sealed class GetDriverProfileQueryHandler : IRequestHandler<GetDriverProfileQuery, Result<DriverProfileDto>>
     {
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
-    }
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-    public async Task<Result<DriverProfileDto>> Handle(GetDriverProfileQuery request, CancellationToken cancellationToken)
-    {
-        var driver = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId);
-        if (driver is null)
+        public GetDriverProfileQueryHandler(IUnitOfWork unitOfWork, IMapper mapper)
         {
-            return Result<DriverProfileDto>.Failure($"Driver with id '{request.DriverId}' was not found.");
+            _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
-        var allTrips = await _unitOfWork.Trips.FindByConditionAsync(t => t.DriverId == request.DriverId);
-        var trips = allTrips.ToList();
-
-        var completedTrips = trips.Count(t => t.EndedAt.HasValue);
-        var activeTrips = trips.Count(t => t.StartedAt.HasValue && !t.EndedAt.HasValue);
-        var totalEarnings = trips.Where(t => t.ActualFare.HasValue).Sum(t => t.ActualFare ?? 0m);
-        var lastTripEndedAt = trips.Where(t => t.EndedAt.HasValue).OrderByDescending(t => t.EndedAt).Select(t => t.EndedAt).FirstOrDefault();
-
-        var profile = _mapper.Map<DriverProfileDto>(driver);
-        profile = new DriverProfileDto
+        public async Task<Result<DriverProfileDto>> Handle(GetDriverProfileQuery request, CancellationToken cancellationToken)
         {
-            DriverId = profile.DriverId,
-            FullName = profile.FullName,
-            PlateNumber = profile.PlateNumber,
-            LicenseNumber = profile.LicenseNumber,
-            Rating = profile.Rating,
-            Status = profile.Status,
-            PhoneNumber = driver.IdNavigation?.Phonenumber ?? string.Empty,
-            Email = driver.IdNavigation?.Email ?? string.Empty,
-            CompletedTrips = completedTrips,
-            ActiveTrips = activeTrips,
-            TotalEarnings = totalEarnings,
-            LastTripEndedAt = lastTripEndedAt
-        };
+            var driver = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId);
+            if (driver is null)
+            {
+                return Result<DriverProfileDto>.Failure($"Driver with id '{request.DriverId}' was not found.");
+            }
 
-        return Result<DriverProfileDto>.Success(profile);
+            var allTrips = await _unitOfWork.Trips.FindByConditionAsync(t => t.DriverId == request.DriverId);
+            var trips = allTrips.ToList();
+
+            // الحسابات
+            var completedTrips = trips.Count(t => t.EndedAt.HasValue);
+            var activeTrips = trips.Count(t => !t.EndedAt.HasValue);
+            var totalEarnings = trips.Sum(t => t.TotalAmount ?? 0m);
+            var lastTripEndedAt = trips.Where(t => t.EndedAt.HasValue)
+                                       .OrderByDescending(t => t.EndedAt)
+                                       .Select(t => t.EndedAt)
+                                       .FirstOrDefault();
+
+            // كريت الـ DTO مرة واحدة عشان الـ init
+            var profile = new DriverProfileDto
+            {
+                DriverId = driver.UserId, // استخدام UserId بناءً على الـ Scaffold الجديد
+                FullName = driver.FullName ?? string.Empty,
+                PlateNumber = driver.PlateNumber,
+                LicenseNumber = driver.LicenseNumber,
+                Rating = driver.Rating,
+                Status = driver.Status.ToString(),
+                PhoneNumber = driver.User?.PhoneNumber ?? string.Empty, 
+                CompletedTrips = completedTrips,
+                ActiveTrips = activeTrips,
+                TotalEarnings = totalEarnings,
+                LastTripEndedAt = lastTripEndedAt
+            };
+
+            return Result<DriverProfileDto>.Success(profile);
+        }
     }
 }

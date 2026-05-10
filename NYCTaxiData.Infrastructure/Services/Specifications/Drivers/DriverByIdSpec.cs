@@ -9,7 +9,7 @@ namespace NYCTaxiData.Infrastructure.Services.Specifications.Drivers
     public class DriverByIdSpec : BaseSpecification<Driver>
     {
         public DriverByIdSpec(Guid driverId)
-            : base(d => d.Id == driverId)
+            : base(d => d.UserId == driverId)
         {
         }
     }

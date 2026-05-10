@@ -15,7 +15,7 @@ namespace NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsTrip
                 d.Status == CurrentStatus.Available ||
                 d.Status == CurrentStatus.On_Trip);
 
-            AddOrderBy(d => d.Fullname!);
+            AddOrderBy(d => d.FullName!);
             ApplyPaging(0, limit);
         }
     }

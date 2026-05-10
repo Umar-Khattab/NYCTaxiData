@@ -24,7 +24,7 @@ public sealed class GetActiveFleetQueryHandler
             pageNumber: request.PageNumber,
             pageSize: request.PageSize,
             predicate: d => d.Status != CurrentStatus.Offline,
-            orderBy: query => query.OrderBy(d => d.Fullname));
+            orderBy: query => query.OrderBy(d => d.FullName));
 
         var mappedItems = _mapper.Map<IReadOnlyList<ActiveFleetDriverDto>>(items.ToList());
 

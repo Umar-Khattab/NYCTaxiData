@@ -1,3 +1,4 @@
+
 namespace NYCTaxiData.Application.Common;
 
 public sealed class Result<T>

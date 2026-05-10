@@ -12,8 +12,7 @@ namespace NYCTaxiData.Infrastructure.Workers
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<DailyAggregationWorker> _logger;
-
-        // ✅ وقت التشغيل — الـ Midnight بالظبط
+         
         private static readonly TimeOnly TargetTime = new(0, 0, 0);
 
         public DailyAggregationWorker(
@@ -41,11 +40,9 @@ namespace NYCTaxiData.Infrastructure.Workers
                     delay.Seconds);
 
                 try
-                {
-                    // ✅ انتظر لحد الـ Midnight
+                { 
                     await Task.Delay(delay, stoppingToken);
-
-                    // ✅ نفّذ الـ Aggregation
+                     
                     await RunAggregationAsync(stoppingToken);
                 }
                 catch (OperationCanceledException)
@@ -58,22 +55,19 @@ namespace NYCTaxiData.Infrastructure.Workers
                 {
                     _logger.LogError(ex,
                         "[Worker] Unexpected error. Retrying in 1 minute.");
-
-                    // ✅ لو في Error، استنى دقيقة وحاول تاني
+                     
                     await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
                 }
             }
         }
 
         private async Task RunAggregationAsync(CancellationToken cancellationToken)
-        {
-            // ✅ بنعمل Scope جديد لأن الـ DbContext Scoped مش Singleton
+        { 
             using var scope = _scopeFactory.CreateScope();
 
             var aggregationService = scope.ServiceProvider
                 .GetRequiredService<IDailyAggregationService>();
-
-            // ✅ بنجمع إحصائيات أمس
+             
             var yesterday = DateTime.UtcNow.Date.AddDays(-1);
 
             await aggregationService.AggregateAsync(yesterday, cancellationToken);
@@ -82,10 +76,9 @@ namespace NYCTaxiData.Infrastructure.Workers
         private static TimeSpan CalculateDelayUntilMidnight()
         {
             var now = DateTime.UtcNow;
-            var midnight = now.Date.AddDays(1); // الـ Midnight الجاي
+            var midnight = now.Date.AddDays(1);  
             var delay = midnight - now;
-
-            // ✅ لو الـ Delay أقل من ثانية، استنى لحد الـ Midnight الجاي
+             
             return delay <= TimeSpan.Zero
                 ? delay.Add(TimeSpan.FromDays(1))
                 : delay;

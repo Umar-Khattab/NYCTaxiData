@@ -120,6 +120,15 @@ public abstract class BaseController : ControllerBase
             _ => BadRequestResult(message ?? "An unexpected error occurred")
         };
     }
+    protected IActionResult HandleUnitResult(Result<Unit> result)
+    {
+        if (result is null) return NotFoundResult("Resource not found");
 
+        if (result.IsSuccess)
+            // بنبعت null لأن الـ Unit معناها مفيش داتا فعلية
+            return Ok(ApiResponse<object>.Success(null!, result.Message));
+
+        return MapError(result.ErrorCode, result.Message);
+    }
     #endregion
 }

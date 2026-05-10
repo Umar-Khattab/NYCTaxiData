@@ -7,7 +7,7 @@ namespace NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth
     public class UserForLoginSpec : BaseSpecification<User1>
     {
         public UserForLoginSpec(string phoneNumber)
-            : base(u => u.Phonenumber == phoneNumber)
+            : base(u => u.PhoneNumber == phoneNumber)
         {
             AddInclude(u => u.Driver!);
             AddInclude(u => u.Manager!);

@@ -54,7 +54,7 @@ public class DriversController : ControllerBase
     public async Task<IActionResult> GetDriverProfile(Guid driverId)
     {
         var result = await _sender.Send(new GetDriverProfileQuery(driverId));
-        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
     }
 
     /// <summary>
@@ -70,7 +70,7 @@ public class DriversController : ControllerBase
     {
         var query = new GetShiftStatisticsQuery(driverId, shiftStartUtc, shiftEndUtc);
         var result = await _sender.Send(query);
-        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
     }
 
     /// <summary>
@@ -95,7 +95,7 @@ public class DriversController : ControllerBase
     public async Task<IActionResult> SyncOffline([FromBody] SyncOfflineDataCommand command)
     {
         var result = await _sender.Send(command);
-        return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
     }
     public sealed record UpdateDriverStatusRequest(string Status, double CurrentLat, double CurrentLng);
 }

@@ -1,28 +1,41 @@
-﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
-using NYCTaxiData.Application.DTOs.Identity; 
-using NYCTaxiData.Infrastructure.Data.Contexts;
+﻿using AutoMapper;
+using MediatR;
+using NYCTaxiData.Application.DTOs.Identity;
+using NYCTaxiData.Domain.Interfaces;
+using NYCTaxiData.Infrastructure.Services;
+using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
 
-namespace NYCTaxiData.Application.Auth.Queries.GetProfile;
-
-public class GetProfileQueryHandler(TaxiDbContext _context)
-	: IRequestHandler<GetProfileQuery, UserResultDto>
+namespace NYCTaxiData.Application.Auth.Queries.GetProfile
 {
-	public async Task<UserResultDto> Handle(
-		GetProfileQuery request, CancellationToken cancellationToken)
-	{
-		var user = await _context.Users1
-	  .FirstOrDefaultAsync(u => u.Phonenumber == request.PhoneNumber, cancellationToken);
-
-		if (user is null)
-			return new UserResultDto { IsSuccess = false };
-
-		return new UserResultDto
-		{
-			IsSuccess = true,
-			FullName = $"{user.Firstname} {user.Lastname}",
-			Role = user.Role.ToString(),
-			Message = "Profile data retrieved successfully"
-		};
-	}
+    public class GetProfileQueryHandler(IUnitOfWork _uow, IMapper _mapper, JwtTokenService _jwt)
+        : IRequestHandler<GetProfileQuery, UserResultDto>
+    {
+        public async Task<UserResultDto> Handle(GetProfileQuery request, CancellationToken cancellationToken)
+        { 
+            var spec = new UserForProfileSpec(request.PhoneNumber);
+            var user = await _uow.Users.GetBySpecAsync(spec);
+             
+            if (user == null)
+            {
+                return new UserResultDto
+                {
+                    IsSuccess = false,
+                    Message = "User not found"
+                };
+            }
+             
+            var role = user.Driver != null ? "Driver"
+                     : user.Manager != null ? "Manager"
+                     : "User";
+             
+            var result = _mapper.Map<UserResultDto>(user);
+            var token = _jwt.GenerateToken(user.PhoneNumber, role, $"{user.FirstName} {user.LastName}");
+            result.IsSuccess = true;
+            result.Role = role;
+            result.FullName = $"{user.FirstName} {user.LastName}";
+            result.Message = "Profile data retrieved successfully";
+            result.Token = token;
+            return result;
+        }
+    }
 }

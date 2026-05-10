@@ -3,15 +3,12 @@ using Microsoft.Extensions.Logging;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure.Data.Contexts;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace NYCTaxiData.Infrastructure.Services
 {
     public class DailyAggregationService : IDailyAggregationService
     {
-        private readonly TaxiDbContext _context;
+        private readonly TaxiDbContext _context;  
         private readonly ILogger<DailyAggregationService> _logger;
 
         public DailyAggregationService(
@@ -26,53 +23,29 @@ namespace NYCTaxiData.Infrastructure.Services
             DateTime date,
             CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation(
-                "[DailyAggregation] Starting aggregation for {Date}",
-                date.ToString("yyyy-MM-dd"));
+            _logger.LogInformation("[DailyAggregation] Starting for {Date}", date.ToString("yyyy-MM-dd"));
 
             try
-            {
-                var dayStart = date.Date;
-                var dayEnd = dayStart.AddDays(1);
+            { 
+                var targetDate = date.Date;
+                var dayEnd = targetDate.AddDays(1);
 
-                // ✅ جيب كل الـ Trips اللي خلصت النهارده
                 var trips = await _context.Trips
                     .AsNoTracking()
-                    .Where(t => t.StartedAt >= dayStart &&
-                                t.StartedAt < dayEnd)
+                    .Where(t => t.StartedAt >= targetDate && t.StartedAt < dayEnd)
                     .ToListAsync(cancellationToken);
 
-                var completedTrips = trips
-                    .Where(t => t.EndedAt != null)
-                    .ToList();
-
-                // ✅ عدد السائقين اللي شتغلوا النهارده
-                var activeDrivers = trips
-                    .Select(t => t.DriverId)
-                    .Distinct()
-                    .Count();
-
-                // ✅ متوسط وقت الرحلة
-                var avgMinutes = completedTrips.Any()
-                    ? completedTrips
-                        .Where(t => t.StartedAt != null && t.EndedAt != null)
-                        .Average(t => (t.EndedAt!.Value - t.StartedAt!.Value).TotalMinutes)
-                    : 0;
-
-                var totalRevenue = completedTrips.Sum(t => t.ActualFare ?? 0);
-                var avgFare = completedTrips.Any()
-                    ? totalRevenue / completedTrips.Count
-                    : 0;
-
-                // ✅ شوف لو في Record موجود لليوم ده
+                var completedTrips = trips.Where(t => t.EndedAt != null).ToList();
+                var activeDrivers = trips.Where(t => t.DriverId.HasValue).Select(t => t.DriverId!.Value).Distinct().Count();
+                var avgMinutes = completedTrips.Any() ? completedTrips.Average(t => (t.EndedAt!.Value - t.StartedAt).TotalMinutes) : 0;
+                var totalRevenue = completedTrips.Sum(t => t.TotalAmount ?? 0);
+                var avgFare = completedTrips.Any() ? totalRevenue / completedTrips.Count : 0;
+                 
                 var existing = await _context.DailyStats
-                    .FirstOrDefaultAsync(
-                        s => s.Date == dayStart,
-                        cancellationToken);
+                    .FirstOrDefaultAsync(s => s.Date == targetDate, cancellationToken);
 
                 if (existing != null)
                 {
-                    // Update
                     existing.TotalTrips = trips.Count;
                     existing.TotalRevenue = totalRevenue;
                     existing.ActiveDrivers = activeDrivers;
@@ -84,10 +57,9 @@ namespace NYCTaxiData.Infrastructure.Services
                 }
                 else
                 {
-                    // Insert
                     await _context.DailyStats.AddAsync(new DailyStats
                     {
-                        Date = dayStart,
+                        Date = targetDate,
                         TotalTrips = trips.Count,
                         TotalRevenue = totalRevenue,
                         ActiveDrivers = activeDrivers,
@@ -100,20 +72,10 @@ namespace NYCTaxiData.Infrastructure.Services
                 }
 
                 await _context.SaveChangesAsync(cancellationToken);
-
-                _logger.LogInformation(
-                    "[DailyAggregation] ✅ Done for {Date} | " +
-                    "Trips: {Total} | Revenue: {Revenue} | Drivers: {Drivers}",
-                    date.ToString("yyyy-MM-dd"),
-                    trips.Count,
-                    totalRevenue,
-                    activeDrivers);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "[DailyAggregation] ❌ Failed for {Date}",
-                    date.ToString("yyyy-MM-dd"));
+                _logger.LogError(ex, "[DailyAggregation] Failed");
                 throw;
             }
         }

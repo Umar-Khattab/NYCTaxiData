@@ -16,46 +16,46 @@ public class WhatsAppSmsService : ISmsService
         try
         {
             using var client = new HttpClient();
+            var instanceId = "91849";
+            var apiToken = "V4ltwCVdMJf8BavnIpng7EKEdxmd1Ip0NBnXg6HQ4df49270";
 
-            var instanceId = _configuration["WhatsApp:InstanceId"];
-            var token = _configuration["WhatsApp:Token"];
-            var url = $"https://api.ultramsg.com/{instanceId}/messages/chat";
+            var url = $"https://waapi.app/api/v1/instances/{instanceId}/client/action/send-message";
 
-            // ✅ تنظيف الرقم: شيل أي علامة + أو مسافات
-            var formattedPhone = phoneNumber.Trim().Replace("+", "");
-
-            // ✅ لو الرقم مصري وبيبدأ بـ 01، ضيف كود الدولة 20
-            if (formattedPhone.StartsWith("01"))
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiToken);
+             
+            var formattedPhone = phoneNumber.Trim().Replace("+", "").Replace(" ", "");
+             
+            if (formattedPhone.StartsWith("0"))
+            {
+                formattedPhone = "20" + formattedPhone.Substring(1);
+            }
+            else if (!formattedPhone.StartsWith("20"))
+            {
                 formattedPhone = "20" + formattedPhone;
-            // ✅ لو الرقم بيبدأ بـ 1 بس (مثلاً 111...)، ضيف 20
-            else if (formattedPhone.StartsWith("1"))
-                formattedPhone = "20" + formattedPhone;
+            }
 
             var payload = new
             {
-                token = token,
-                to = formattedPhone,
-                body = message
+                chatId = $"{formattedPhone}@c.us",  
+                message = message
             };
 
             var response = await client.PostAsJsonAsync(url, payload);
 
-            // لو حبيت تشوف الـ Error اللي راجع في الـ Debugging
-            if (!response.IsSuccessStatusCode)
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"WhatsApp Error Details: {error}");
-            }
+            if (response.IsSuccessStatusCode) return true;
+             
+            var errorBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"❌ WaAPI Error Details: {errorBody}");
 
-            return response.IsSuccessStatusCode;
+            return false;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"WhatsApp Exception: {ex.Message}");
+            Console.WriteLine($"⚠️ SMS Exception: {ex.Message}");
             return false;
         }
     }
-
     public Task<string> GetSmsStatusAsync(string messageId) => Task.FromResult("Delivered");
 
 }

@@ -1,25 +1,34 @@
-﻿using NYCTaxiData.Application.Common.Interfaces.Identity;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Microsoft.Extensions.Caching.Distributed;
+using NYCTaxiData.Application.Common.Interfaces.Identity;
 
 namespace NYCTaxiData.Infrastructure.Services
 {
     public class CacheService : ICacheService
-    { 
-        public Task<string?> GetAsync(string key)
-        { 
-            return Task.FromResult<string?>(null);
-        }
+    {
+        private readonly IDistributedCache _cache;
 
-        public Task SetAsync(string key, string value, TimeSpan expiry)
-        { 
-            return Task.CompletedTask;
-        }
-
-        public Task RemoveAsync(string key)
+        public CacheService(IDistributedCache cache)
         {
-            return Task.CompletedTask;
+            _cache = cache;
+        }
+
+        public async Task<string?> GetAsync(string key)
+        {
+            return await _cache.GetStringAsync(key);
+        }
+
+        public async Task SetAsync(string key, string value, TimeSpan expiry)
+        {
+            var options = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = expiry
+            };
+            await _cache.SetStringAsync(key, value, options);
+        }
+
+        public async Task RemoveAsync(string key)
+        {
+            await _cache.RemoveAsync(key);
         }
     }
 }

@@ -1,9 +1,10 @@
-﻿using MediatR;
-using AutoMapper;
-using System.Linq.Expressions;
-using NYCTaxiData.Application.Common;
+﻿using AutoMapper;
+using MediatR;
+using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure;
+using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsTrip;
+using NYCTaxiData.Infrastructure.Services.Specifications.Trips;
 
 namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
 {
@@ -14,32 +15,37 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
             GetLiveDispatchFeedQuery request,
             CancellationToken cancellationToken)
         {
-            // Calculate the time window for recent trips
-            var cutoffTime = DateTime.UtcNow.AddMinutes(-request.MinutesWindow);
+            var spec = new DispatchFeedSpec(request.Limit);
+            var activeDrivers = await _unitOfWork.Drivers.GetAllBySpecAsync(spec);
 
-            // Get recent trips within the time window, ordered by most recent first
-            var recentTrips = await _unitOfWork.Trips.FindByConditionWithIncludesAsync(
-                predicate: t => t.StartedAt >= cutoffTime,
-                includes: new Expression<Func<Trip, object>>[]
+            var dispatchItems = _mapper.Map<List<DispatchFeedItemDto>>(activeDrivers);
+
+            foreach (var item in dispatchItems)
+            { 
+                var driver = activeDrivers.FirstOrDefault(d => d.User?.PhoneNumber == item.PhoneNumber);
+
+                if (driver != null)
                 {
-                    t => t.Driver!,
-                    t => t.PickupLocation!,
-                    t => t.DropoffLocation!
-                });
+                    var driverId = driver.UserId;
+                    var activeTrip = await _unitOfWork.Trips.GetBySpecAsync(new TripsByDriverSpec(driverId));
 
-            // Apply limit and convert to DTOs using AutoMapper
-            var dispatchItems = recentTrips
-                .OrderByDescending(t => t.StartedAt)
-                .Take(request.Limit)
-                .Select(trip => _mapper.Map<DispatchFeedItemDto>(trip))
-                .ToList();
+                    if (activeTrip != null)
+                    {
+                        item.CurrentTripId = activeTrip.TripId;
+                        item.Status = activeTrip.EndedAt == null ? "On Trip" : "Available";
+                        item.LastUpdated = activeTrip.StartedAt;
+                    }
+                }
+            }
 
-            return Result<LiveDispatchFeedResultDto>.Success(new LiveDispatchFeedResultDto
+            var result = new LiveDispatchFeedResultDto
             {
                 Items = dispatchItems,
                 TotalCount = dispatchItems.Count,
                 RetrievedAt = DateTime.UtcNow
-            });
+            };
+
+            return Result<LiveDispatchFeedResultDto>.Success(result, "Live dispatch feed retrieved successfully");
         }
     }
 }

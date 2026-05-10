@@ -12,7 +12,7 @@ namespace NYCTaxiData.Infrastructure.Services.Specifications.Drivers
         public AvailableDriversSpec()
             : base(d => d.Status == CurrentStatus.Available)
         {
-            AddOrderBy(d => d.Fullname!);
+            AddOrderBy(d => d.FullName!);
         }
     }
 }

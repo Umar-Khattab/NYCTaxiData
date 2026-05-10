@@ -1,13 +1,17 @@
 ﻿using MediatR;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
-using NYCTaxiData.Application.Common.Models;  
-using NYCTaxiData.Application.Common.Plumping;  
+using NYCTaxiData.Application.Common.Models;
+using NYCTaxiData.Application.Common.Plumping;
 using NYCTaxiData.Application.DTOs.Trip;
+using System;
 
-namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
-
-public record GetTripHistoryQuery(
-    Guid? DriverId,
-    int PageNumber = 1,
-    int PageSize = 10
-) : IRequest<Result<PaginatedList<TripHistoryItemDto>>>, ISecureRequest;
+namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory
+{
+    // 1. تعريف الـ Query الموحدة
+    // استخدمنا PageNumber و PageSize عشان تتماشى مع الـ PaginatedList اللي في الـ Handler
+    public record GetTripHistoryQuery(
+        Guid? DriverId = null,
+        int PageNumber = 1,
+        int PageSize = 10
+    ) : IRequest<Result<PaginatedList<TripHistoryItemDto>>>, ISecureRequest;
+}

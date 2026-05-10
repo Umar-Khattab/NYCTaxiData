@@ -96,33 +96,27 @@ public class LiveTrackingHub : Hub
             await Clients.Caller.SendAsync("UpdateReceived", new { status = "Success (Cache)" });
             return;
         }
-
-        // 2️⃣ لو أول مرة يبعت، روح هاته من الـ DB (بإستخدام الـ Trim عشان دقة البحث)
-        var driver = await _context.Drivers
-            .Include(d => d.IdNavigation)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(d => d.IdNavigation.Phonenumber.Trim() == phone.Trim());
+         
+          var driver = await _context.Drivers
+         .Include(d => d.User)  
+         .AsNoTracking()
+         .FirstOrDefaultAsync(d => d.User.PhoneNumber.Trim() == phone.Trim());
 
         if (driver != null)
         {
             driverInfo = new DriverLocationInfo
             {
-                DriverId = driver.Id, // 👈 هنا الـ ID الحقيقي من الـ DB
-                DriverName = driver.Fullname ?? "Unknown Driver",
+                DriverId = driver.UserId,  
+                DriverName = driver.User.FirstName + " " + driver.User.LastName,
                 Phone = phone,
                 Latitude = latitude,
                 Longitude = longitude,
                 Status = driver.Status.ToString(),
                 UpdatedAt = DateTime.UtcNow
             };
-
-            _activeDrivers[phone] = driverInfo;
-            await Clients.Group("Managers").SendAsync("DriverLocationUpdated", driverInfo);
-            await Clients.Caller.SendAsync("UpdateReceived", new { status = "Success (DB)" });
         }
         else
-        {
-            // 💡 حالة الطوارئ: لو السواق مش في الـ DB، اديله ID وهمي عشان ميظهرش أصفار 
+        { 
             var tempInfo = new DriverLocationInfo
             {
                 DriverId = Guid.NewGuid(),
@@ -138,35 +132,33 @@ public class LiveTrackingHub : Hub
         }
     }
 
-    // ===== Manager يطلب كل السائقين =====
     public async Task GetAllDriverLocations()
-    { 
-         
+    {
         if (!_activeDrivers.Any())
         {
             var activeDriversFromDb = await _context.Drivers
-                .Include(d => d.IdNavigation)
+                .Include(d => d.User) 
                 .AsNoTracking()
                 .Where(d => d.Status != CurrentStatus.Offline)
                 .ToListAsync();
 
             foreach (var d in activeDriversFromDb)
-            {
-                _activeDrivers[d.IdNavigation.Phonenumber] = new DriverLocationInfo
+            { 
+                var phone = d.User?.PhoneNumber ?? "Unknown";
+
+                _activeDrivers[phone] = new DriverLocationInfo
                 {
-                    Phone = d.IdNavigation.Phonenumber,
-                    DriverName = d.Fullname,
+                    Phone = phone, 
+                    DriverName = $"{d.User?.FirstName} {d.User?.LastName}".Trim(),
                     Status = d.Status.ToString()
                 };
             }
         }
-         
+
         var result = _activeDrivers.Values.ToList();
-
-        await Clients.Caller.SendAsync("ActiveDrivers", result); 
+        await Clients.Caller.SendAsync("ActiveDrivers", result);
     }
-
-    // ===== السائق يغير Status =====
+     
     public async Task UpdateDriverStatus(string status)
     {
         var phone = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value

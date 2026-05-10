@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Data\Contexts\" />
     <Folder Include="ExternalServices\" />
     <Folder Include="Caching\" />
     <Folder Include="Real-TimeCommunication\" />

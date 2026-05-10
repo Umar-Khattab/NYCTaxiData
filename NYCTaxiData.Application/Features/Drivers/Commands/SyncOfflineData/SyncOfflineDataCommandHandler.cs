@@ -1,5 +1,5 @@
 using MediatR;
-using NYCTaxiData.Application.Common;
+using NYCTaxiData.Application.Common.Plumping; // تأكد من استخدام الـ Result الصح في مشروعك
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
 
@@ -16,7 +16,8 @@ public sealed class SyncOfflineDataCommandHandler : IRequestHandler<SyncOfflineD
 
     public async Task<Result<SyncSummaryDto>> Handle(SyncOfflineDataCommand request, CancellationToken cancellationToken)
     {
-        var driverExists = await _unitOfWork.Drivers.AnyAsync(d => d.Id == request.DriverId);
+
+        var driverExists = await _unitOfWork.Drivers.AnyAsync(d => d.UserId == request.DriverId);
         if (!driverExists)
         {
             return Result<SyncSummaryDto>.Failure($"Driver with id '{request.DriverId}' was not found.");
@@ -40,10 +41,12 @@ public sealed class SyncOfflineDataCommandHandler : IRequestHandler<SyncOfflineD
             DropoffLocationId = t.DropoffLocationId,
             StartedAt = t.StartedAt,
             EndedAt = t.EndedAt,
-            ActualFare = t.ActualFare
+
+            TotalAmount = t.ActualFare
         }).ToList();
 
         await _unitOfWork.Trips.AddRangeAsync(tripsToPersist);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);  
 
         return Result<SyncSummaryDto>.Success(new SyncSummaryDto
         {

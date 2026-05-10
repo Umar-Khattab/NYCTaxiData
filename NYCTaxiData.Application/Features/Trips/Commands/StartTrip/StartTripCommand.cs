@@ -1,17 +1,17 @@
 ﻿using MediatR;
-using NYCTaxiData.Application.Common;
-using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces; 
+using NYCTaxiData.Application.Common.Plumping;  
+using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
+using System;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
-{
+{ 
     public record StartTripCommand(
+        int TripId,
         Guid DriverId,
         int PickupLocationId,
         int DropoffLocationId
-    ) : IRequest<Result<TripStartResultDto>>, ITransactionalCommand, ISecureRequest
-    {
-    }
-
+    ) : IRequest<Result<TripStartResultDto>>, ITransactionalCommand, ISecureRequest;
+     
     public class TripStartResultDto
     {
         public int TripId { get; set; }

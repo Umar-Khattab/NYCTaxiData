@@ -20,16 +20,13 @@ namespace NYCTaxiData.Infrastructure
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
             var connectionString = configuration.GetConnectionString("DefaultConnection");
-
-            // 1. تسجيل الخدمات المساعدة (Infrastructure Helpers)
+             
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<AuditableEntityInterceptor>();
-            services.AddScoped<AuditLogInterceptor>();
-
-            // خدمات إضافية (شغل صاحبك)
-            services.AddScoped<ICacheService, CacheService>();
-            services.AddScoped<IDbInitializer, DbInitializer>();
+            services.AddScoped<AuditLogInterceptor>(); 
+             
+            services.AddScoped<ICacheService, CacheService>(); 
             services.AddScoped<ISmsService, WhatsAppSmsService>();
             services.AddDistributedMemoryCache();
             // ===== Services =====
@@ -37,24 +34,17 @@ namespace NYCTaxiData.Infrastructure
 
             // ===== Background Worker =====
             services.AddHostedService<DailyAggregationWorker>();
-
-            // 2. تسجيل الـ DbContext مع الـ Interceptors والـ Retry Logic
-            services.AddDbContext<TaxiDbContext>((sp, options) =>
-            {
-                var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
-                var auditLogInterceptor = sp.GetRequiredService<AuditLogInterceptor>();
-
+             
+            services.AddDbContext<TaxiDbContext>(options =>
                 options.UseNpgsql(connectionString, npgsqlOptions =>
                 {
+                    npgsqlOptions.CommandTimeout(60); // increase seconds
                     npgsqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        maxRetryCount: 2,
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
                         errorCodesToAdd: null);
-                })
-                .AddInterceptors(auditableInterceptor, auditLogInterceptor);
-            });
-
-            // 3. تسجيل أنماط البيانات (Data Patterns)
+                }));
+             
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
