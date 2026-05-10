@@ -1,5 +1,5 @@
 ﻿using MediatR;
- using NYCTaxiData.Application.DTOs.Identity; 
+ using NYCTaxiData.Application.DTOs.Identity;  
 
 namespace NYCTaxiData.Application.Auth.Queries.GetProfile
 {

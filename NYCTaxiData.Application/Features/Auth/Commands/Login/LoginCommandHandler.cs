@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using MediatR;
 using NYCTaxiData.Application.Auth.Commands.Login;
-using NYCTaxiData.Application.Common.Specifications.Auth;
+using NYCTaxiData.Application.Common.Plumping; 
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Application.Common.Interfaces.Services;
@@ -10,35 +10,33 @@ using BCrypt.Net;
 
 namespace NYCTaxiData.Application.Features.Auth.Commands.Login
 {
+    public class LoginCommandHandler(IUnitOfWork _uow, JwtTokenService _jwt, IMapper _mapper)
+        : IRequestHandler<LoginCommand, Result<UserResultDto>>  
+    {
+        public async Task<Result<UserResultDto>> Handle(LoginCommand request, CancellationToken cancellationToken) 
+        {
+            var spec = new UserForLoginSpec(request.PhoneNumber);
+            var user = await _uow.Users.GetBySpecAsync(spec, cancellationToken);
 
-	// LoginCommandHandler
- public class LoginCommandHandler(IUnitOfWork _uow, IJwtTokenService _jwt,IMapper mapper)
-		: IRequestHandler<LoginCommand, UserResultDto>
-	{
-		public async Task<UserResultDto> Handle(LoginCommand request, CancellationToken cancellationToken)
-		{
-			var spec = new UserForLoginSpec(request.PhoneNumber);
-			var user = await _uow.Users.GetBySpecAsync(spec);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash ?? ""))
+            { 
+                return Result<UserResultDto>.Failure("Invalid phone number or password");
+            }
 
-			if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Passwordhash ?? ""))
-				return new UserResultDto { IsSuccess = false, Message = "Invalid credentials" };
+            var role = user.Driver != null ? "Driver"
+                     : user.Manager != null ? "Manager"
+                     : "User";
 
-			var role = user.Driver != null ? "Driver"
-					 : user.Manager != null ? "Manager"
-					 : "User";
-			var fullName = $"{user.Firstname} {user.Lastname}";
+            var fullName = $"{user.FirstName} {user.LastName}";
+            var token = _jwt.GenerateToken(user.PhoneNumber, role, fullName);
 
-			// ✅ استخدم JwtTokenService
-			var token = _jwt.GenerateToken(user.Phonenumber, role, fullName);
-            var result = mapper.Map<UserResultDto>(user);
-
-            // 3. ✅ تعبئة الحقول اللي مش موجودة في الـ User Entity يدويًا
-            result.Token = token;
-            result.IsSuccess = true;
-            result.Role = role;
-            result.FullName = fullName;
-
-            return result;
+            var resultDto = _mapper.Map<UserResultDto>(user);
+            resultDto.Token = token;
+            resultDto.IsSuccess = true;
+            resultDto.Role = role;
+            resultDto.FullName = fullName;
+             
+            return Result<UserResultDto>.Success(resultDto);
         }
-	}
+    }
 }

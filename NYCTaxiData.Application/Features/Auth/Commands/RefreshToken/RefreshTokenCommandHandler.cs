@@ -6,49 +6,64 @@ using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 
-namespace NYCTaxiData.Application.Auth.Commands.RefreshToken {
+namespace NYCTaxiData.Application.Auth.Commands.RefreshToken
+{
+    public class RefreshTokenCommandHandler(
+        IUnitOfWork _uow,
+        IConfiguration _config,
+        JwtTokenService _jwtService,
+        IMapper _mapper)
+        : IRequestHandler<RefreshTokenCommand, UserResultDto>
+    {
+        public async Task<UserResultDto> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+        { 
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_config["Jwt:Secret"] ?? "default-secret-key-min32chars-longer");
 
+            ClaimsPrincipal principal;
+            try
+            {
+                principal = tokenHandler.ValidateToken(request.OldToken, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidIssuer = _config["Jwt:Issuer"] ?? "NYCTaxiData",
+                    ValidateAudience = true,
+                    ValidAudience = _config["Jwt:Audience"] ?? "NYCTaxiData",
+                    ValidateLifetime = false  
+                }, out _);
+            }
+            catch
+            {
+                return new UserResultDto { IsSuccess = false, Message = "Invalid token format or signature" };
+            }
+             
+            var phoneNumber = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-	// RefreshTokenCommandHandler
- public class RefreshTokenCommandHandler(IUnitOfWork _uow, IJwtTokenService _jwt, IMapper mapper)
-		: IRequestHandler<RefreshTokenCommand, UserResultDto>
-	{
-		public async Task<UserResultDto> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
-		{
-			// التحقق من الـ Token القديم وجيب الـ Phone
-			var tokenHandler = new JwtSecurityTokenHandler();
-			JwtSecurityToken? jwtToken;
-			try
-			{
-				jwtToken = tokenHandler.ReadJwtToken(request.OldToken);
-			}
-			catch
-			{
-				return new UserResultDto { IsSuccess = false, Message = "Invalid token" };
-			}
+            if (string.IsNullOrEmpty(phoneNumber))
+                return new UserResultDto { IsSuccess = false, Message = "Invalid token claims" };
+             
+            var spec = new UserForLoginSpec(phoneNumber);
+            var user = await _uow.Users.GetBySpecAsync(spec);
 
-			var phoneNumber = jwtToken.Claims
-				.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (user == null)
+                return new UserResultDto { IsSuccess = false, Message = "User associated with this token no longer exists" };
+             
+            var role = user.Driver != null ? "Driver"
+                     : user.Manager != null ? "Manager"
+                     : "User";
 
-			if (string.IsNullOrEmpty(phoneNumber))
-				return new UserResultDto { IsSuccess = false, Message = "Invalid token claims" };
+            var fullName = $"{user.FirstName} {user.LastName}"; 
+            var newToken = _jwtService.GenerateToken(phoneNumber, role, fullName);
+             
+            var result = _mapper.Map<UserResultDto>(user); 
+            result.IsSuccess = true;
+            result.Message = "Token refreshed successfully";
 
-			var spec = new UserForLoginSpec(phoneNumber);
-			var user = await _uow.Users.GetBySpecAsync(spec);
-			if (user == null)
-				return new UserResultDto { IsSuccess = false, Message = "User not found" };
-
-			var role = user.Driver != null ? "Driver"
-					 : user.Manager != null ? "Manager"
-					 : "User";
-			var fullName = $"{user.Firstname} {user.Lastname}";
-
-			// ✅ استخدم JwtTokenService
-			var newToken = _jwt.GenerateToken(phoneNumber, role, fullName);
-
-			var result = mapper.Map<UserResultDto>(user);
-			return result;
-		}
-	}
+            return result;
+        }
+    }
 }

@@ -7,7 +7,7 @@ namespace NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth
     public class UserForResetPasswordSpec : BaseSpecification<User1>
     {
         public UserForResetPasswordSpec(string phoneNumber)
-            : base(u => u.Phonenumber == phoneNumber)
+            : base(u => u.PhoneNumber == phoneNumber)
         {
         }
     }

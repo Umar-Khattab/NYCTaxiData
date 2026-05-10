@@ -64,27 +64,22 @@ public class AuditableEntityInterceptor : SaveChangesInterceptor
             // 3. حالة المسح (Soft Delete)
             else if (entry.State == EntityState.Deleted)
             {
-                entry.State = EntityState.Modified; // المنقذ اللي بيمنع المسح
-
-                // بنستخدم الأسماء اللي ظاهرة في Supabase بالظبط
+                entry.State = EntityState.Modified;  
+                 
                 SetPropertySafe(entry, type, "IsDeleted", true);
                 SetPropertySafe(entry, type, "DeletedAt", now);
                 SetPropertySafe(entry, type, "DeletedBy", actor);
             }
         }
     }
-
-    // ميثود مساعدة بتعمل الـ Update بذكاء ومن غير ما تضرب الأيرور ده
+     
     private void SetPropertySafe(EntityEntry entry, Type type, string propertyName, object value)
-    {
-        // بنتاكد الأول إن الـ Property موجودة في الكلاس (Reflection)
+    { 
         var prop = type.GetProperty(propertyName);
         if (prop != null)
-        {
-            // 1. تحديث الـ Object نفسه
+        { 
             prop.SetValue(entry.Entity, value);
-
-            // 2. تحديث الـ Tracker (فقط لو الـ EF شايفها كـ Column)
+             
             var efProp = entry.Metadata.FindProperty(propertyName);
             if (efProp != null)
             {

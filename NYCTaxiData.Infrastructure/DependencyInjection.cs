@@ -1,3 +1,5 @@
+using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,10 +11,7 @@ using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Data.Repository;
 using NYCTaxiData.Infrastructure.Interceptors;
 using NYCTaxiData.Infrastructure.Services;
-using Microsoft.AspNetCore.Http;
-using Polly.Extensions.Http;
-using Polly;
-using NYCTaxiData.Application.Common.Interfaces;
+using NYCTaxiData.Infrastructure.Workers;
 
 namespace NYCTaxiData.Infrastructure
 {
@@ -21,37 +20,32 @@ namespace NYCTaxiData.Infrastructure
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
             var connectionString = configuration.GetConnectionString("DefaultConnection");
-
-            // 1. تسجيل الخدمات المساعدة (Infrastructure Helpers)
+             
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<AuditableEntityInterceptor>();
-            services.AddScoped<AuditLogInterceptor>();
-
-            // خدمات إضافية (شغل صاحبك)
-            services.AddScoped<ICacheService, CacheService>();
-            services.AddScoped<IDbInitializer, DbInitializer>();
+            services.AddScoped<AuditLogInterceptor>(); 
+             
+            services.AddScoped<ICacheService, CacheService>(); 
             services.AddScoped<ISmsService, WhatsAppSmsService>();
             services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddDistributedMemoryCache();
+            // ===== Services =====
+            services.AddScoped<IDailyAggregationService, DailyAggregationService>();
 
-            // 2. تسجيل الـ DbContext مع الـ Interceptors والـ Retry Logic
-            services.AddDbContext<TaxiDbContext>((sp, options) =>
-            {
-                var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
-                var auditLogInterceptor = sp.GetRequiredService<AuditLogInterceptor>();
-
+            // ===== Background Worker =====
+            services.AddHostedService<DailyAggregationWorker>();
+             
+            services.AddDbContext<TaxiDbContext>(options =>
                 options.UseNpgsql(connectionString, npgsqlOptions =>
                 {
+                    npgsqlOptions.CommandTimeout(60); // increase seconds
                     npgsqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        maxRetryCount: 2,
+                        maxRetryDelay: TimeSpan.FromSeconds(5),
                         errorCodesToAdd: null);
-                })
-                .AddInterceptors(auditableInterceptor, auditLogInterceptor);
-            });
-
-            // 3. تسجيل أنماط البيانات (Data Patterns)
+                }));
+             
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IAiPredictionService, AiPredictionService>();
@@ -65,6 +59,7 @@ namespace NYCTaxiData.Infrastructure
             .WaitAndRetryAsync(3, retryAttempt =>
             TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))));
 
+            
             return services;
         }
     }

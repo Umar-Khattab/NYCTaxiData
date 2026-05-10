@@ -1,48 +1,62 @@
-﻿using MediatR;
-using AutoMapper;
-using NYCTaxiData.Application.Common;
+﻿using AutoMapper;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.DTOs.Trip;
+using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Application.Common.Exceptions;
-using NYCTaxiData.Infrastructure;
+using NYCTaxiData.Infrastructure.Data.Contexts;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
 {
-    public class EndTripCommandHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
+    public class EndTripCommandHandler(IUnitOfWork _unitOfWork, TaxiDbContext _context, IMapper _mapper)
         : IRequestHandler<EndTripCommand, Result<TripEndResultDto>>
     {
         public async Task<Result<TripEndResultDto>> Handle(
             EndTripCommand request,
             CancellationToken cancellationToken)
         {
-            // Get the trip
-            var trip = await _unitOfWork.Trips.GetByIdAsync(request.TripId);
+            var trip = await _context.Trips
+                .Include(t => t.Driver)
+                .FirstOrDefaultAsync(t => t.TripId == request.TripId, cancellationToken);
 
             if (trip == null)
-                throw new NotFoundException($"Trip with ID {request.TripId} not found");
+                return Result<TripEndResultDto>.Failure($"Trip not found", "NotFound");
 
-            // Verify trip has been started
-            if (trip.StartedAt == null)
-                throw new ConflictException("Trip has not been started yet");
+            if (trip.StartedAt == default) // تعديل للـ StartedAt لأنها مش nullable في الملف الجديد
+                return Result<TripEndResultDto>.Failure("Trip has not been started yet", "Conflict");
 
-            // Verify trip hasn't already ended
             if (trip.EndedAt != null)
-                throw new ConflictException("Trip has already ended");
+                return Result<TripEndResultDto>.Failure("Trip has already ended", "Conflict");
 
-            // Calculate total fare
-            var totalFare = request.BaseFare * request.SurgeMultiplier;
+            var endedAt = DateTime.UtcNow;
+            var durationMinutes = (endedAt - trip.StartedAt).TotalMinutes;
 
-            // Update trip with end time and fare
-            trip.EndedAt = DateTime.UtcNow;
-            trip.ActualFare = totalFare;
+            // تم تعديل المسمى لـ TotalAmount بناءً على ملف الـ Trip الجديد
+            var totalFare = Math.Round(((decimal)durationMinutes * request.FarePerMinute + request.BaseFare) * request.SurgeMultiplier, 2);
 
-            await _unitOfWork.Trips.UpdateAsync(trip);
-            await _unitOfWork.SaveChangesAsync();
+            trip.EndedAt = endedAt;
+            trip.TotalAmount = totalFare;
 
-            var result = _mapper.Map<TripEndResultDto>(trip);
-            result.BaseFare = request.BaseFare;
-            result.SurgeMultiplier = request.SurgeMultiplier;
+            if (trip.Driver != null)
+            {
+                trip.Driver.Status = CurrentStatus.Available;
+            }
 
-            return Result<TripEndResultDto>.Success(result, "Trip ended successfully");
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                return Result<TripEndResultDto>.Failure($"Error: {ex.Message}", "InternalError");
+            }
+
+            var resultDto = _mapper.Map<TripEndResultDto>(trip);
+            resultDto.DurationMinutes = (int)durationMinutes;
+            resultDto.TotalFare = totalFare;
+
+            return Result<TripEndResultDto>.Success(resultDto, "Trip ended successfully");
         }
     }
 }

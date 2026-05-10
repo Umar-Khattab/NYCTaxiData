@@ -8,6 +8,7 @@ using NYCTaxiData.Application.Features.Analytics.Queries.GetTopLevelKpis;
 using NYCTaxiData.Application.Common;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
+
 namespace NYCTaxiData.API.Controllers
 {
     [Authorize(Roles = "Admin,Dispatcher")] // هذه البيانات استراتيجية ويجب حمايتها
@@ -24,10 +25,12 @@ namespace NYCTaxiData.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetTopLevelKpis()
         {
-            var query = new GetTopLevelKpisQuery();
+            var query = new GetTopLevelKpisQuery(); 
             var result = await _mediator.Send(query);
-
-            return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
+             
+            return result.IsSuccess
+                ? Ok(result.Data)
+                : BadRequest(result.Message);
         }
 
         /// <summary>

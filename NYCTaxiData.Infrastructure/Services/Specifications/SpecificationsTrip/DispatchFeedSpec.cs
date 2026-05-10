@@ -1,5 +1,6 @@
 ﻿using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
+using NYCTaxiData.Infrastructure.Services.ConcurrentEntity;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,7 +15,7 @@ namespace NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsTrip
                 d.Status == CurrentStatus.Available ||
                 d.Status == CurrentStatus.On_Trip);
 
-            AddOrderBy(d => d.Fullname!);
+            AddOrderBy(d => d.FullName!);
             ApplyPaging(0, limit);
         }
     }

@@ -1,5 +1,9 @@
 ﻿using FluentValidation;
-using NYCTaxiData.Application.Features.Trips.Commands.EndTrip;
+using MediatR;
+using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
+using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.DTOs.Trip;
+using System;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
 {
@@ -23,4 +27,5 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
                 .WithMessage("Surge multiplier must be greater than 0");
         }
     }
+
 }

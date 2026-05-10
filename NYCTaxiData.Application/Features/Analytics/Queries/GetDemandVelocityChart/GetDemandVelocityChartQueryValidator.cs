@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+﻿    using FluentValidation;
 
 namespace NYCTaxiData.Application.Features.Analytics.Queries.GetDemandVelocityChart
 {

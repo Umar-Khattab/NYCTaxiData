@@ -1,5 +1,4 @@
-﻿// NYCTaxiData.Infrastructure/Services/JwtTokenService.cs
-using Microsoft.Extensions.Configuration;
+﻿ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using NYCTaxiData.Application.Common.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;

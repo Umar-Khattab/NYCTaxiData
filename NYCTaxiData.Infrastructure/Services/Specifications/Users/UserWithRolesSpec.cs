@@ -7,7 +7,7 @@ namespace NYCTaxiData.Infrastructure.Services.Specifications.Users
     public class UserWithRolesSpec : BaseSpecification<User1>
     {
         public UserWithRolesSpec(string phoneNumber)
-            : base(u => u.Phonenumber == phoneNumber)
+            : base(u => u.PhoneNumber == phoneNumber)
         {
             AddInclude(u => u.Driver!);
             AddInclude(u => u.Manager!);

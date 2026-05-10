@@ -9,6 +9,8 @@ public partial class Location
 
     public int? ZoneId { get; set; }
 
+    public bool? IsActive { get; set; }
+
     public virtual ICollection<Simulationrequest> SimulationrequestDropoffLocations { get; set; } = new List<Simulationrequest>();
 
     public virtual ICollection<Simulationrequest> SimulationrequestPickupLocations { get; set; } = new List<Simulationrequest>();

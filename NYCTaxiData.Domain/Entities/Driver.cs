@@ -1,25 +1,22 @@
 ﻿using NYCTaxiData.Domain.Enums;
-using NYCTaxiData.Infrastructure;
 using System;
 using System.Collections.Generic;
 
-namespace NYCTaxiData.Domain.Entities;
+namespace NYCTaxiData.Infrastructure;
 
 public partial class Driver
 {
-    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
 
-    public string? Fullname { get; set; }
+    public string? FullName { get; set; }
 
-    public string Platenumber { get; set; } = null!;
+    public string PlateNumber { get; set; } = null!;
 
-    public string Licensenumber { get; set; } = null!;
+    public string LicenseNumber { get; set; } = null!;
 
     public decimal? Rating { get; set; }
-    
-    public CurrentStatus Status { get; set; }
-
-    public virtual User1 IdNavigation { get; set; } = null!;
-
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();
+
+    public virtual User1 User { get; set; } = null!;
+    public CurrentStatus Status { get; set; } = CurrentStatus.Offline;
 }

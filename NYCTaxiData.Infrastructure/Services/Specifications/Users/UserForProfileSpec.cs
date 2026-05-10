@@ -8,7 +8,7 @@ namespace NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth
     {
         // بالـ Phone
         public UserForProfileSpec(string phoneNumber)
-            : base(u => u.Phonenumber == phoneNumber)
+            : base(u => u.PhoneNumber == phoneNumber)
         {
             AddInclude(u => u.Driver!);
             AddInclude(u => u.Manager!);

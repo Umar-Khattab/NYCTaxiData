@@ -1,8 +1,10 @@
 using AutoMapper;
 using MediatR;
 using NYCTaxiData.Application.Common;
+using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
+using NYCTaxiData.Infrastructure;
 using System.Linq.Expressions;
 
 namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverList;
@@ -33,7 +35,7 @@ public sealed class GetDriverListQueryHandler
             parsedStatus = status;
         }
 
-        Expression<Func<NYCTaxiData.Domain.Entities.Driver, bool>> predicate = driver =>
+        Expression<Func<Driver, bool>> predicate = driver =>
             (!parsedStatus.HasValue || driver.Status == parsedStatus.Value)
             && (!request.ZoneId.HasValue
                 || driver.Trips.Any(t =>
@@ -44,7 +46,7 @@ public sealed class GetDriverListQueryHandler
             pageNumber: request.PageNumber,
             pageSize: request.PageSize,
             predicate: predicate,
-            orderBy: query => query.OrderBy(d => d.Fullname));
+            orderBy: query => query.OrderBy(d => d.FullName));
 
         var mappedItems = _mapper.Map<IReadOnlyList<DriverDto>>(items.ToList());
 

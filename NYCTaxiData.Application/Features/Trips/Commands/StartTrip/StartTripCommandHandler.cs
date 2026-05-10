@@ -1,9 +1,11 @@
-﻿using MediatR;
-using AutoMapper;
-using NYCTaxiData.Application.Common;
+﻿using AutoMapper;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.DTOs.Trip;
+using NYCTaxiData.Domain.Entities;
+using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Application.Common.Exceptions;
-using NYCTaxiData.Infrastructure;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
 {
@@ -14,37 +16,45 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
             StartTripCommand request,
             CancellationToken cancellationToken)
         {
-            // Verify driver exists
+            // استخدام IUnitOfWork يضمن الوصول للـ Entities من الـ Domain
+            var trip = await _unitOfWork.Trips.GetByIdAsync(request.TripId);
+            if (trip == null)
+                return Result<TripStartResultDto>.Failure($"Trip with ID {request.TripId} not found", "NotFound");
+
             var driver = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId);
-
             if (driver == null)
-                throw new NotFoundException($"Driver with ID {request.DriverId} not found");
+                return Result<TripStartResultDto>.Failure($"Driver with ID {request.DriverId} not found", "NotFound");
 
-            // Verify locations exist
-            var pickupLocation = await _unitOfWork.Locations.GetByIdAsync(request.PickupLocationId);
+            if (driver.Status == CurrentStatus.On_Trip)
+                return Result<TripStartResultDto>.Failure("Driver is already on another trip.", "Conflict");
 
-            if (pickupLocation == null)
-                throw new NotFoundException($"Pickup location with ID {request.PickupLocationId} not found");
+            var startedAt = DateTime.UtcNow;
+            trip.StartedAt = startedAt;
+            trip.DriverId = request.DriverId;
 
-            var dropoffLocation = await _unitOfWork.Locations.GetByIdAsync(request.DropoffLocationId);
+            if (request.PickupLocationId > 0) trip.PickupLocationId = request.PickupLocationId;
+            if (request.DropoffLocationId > 0) trip.DropoffLocationId = request.DropoffLocationId;
 
-            if (dropoffLocation == null)
-                throw new NotFoundException($"Dropoff location with ID {request.DropoffLocationId} not found");
+            driver.Status = CurrentStatus.On_Trip;
 
-            // Create new trip
-            var trip = new Trip
+            try
             {
-                DriverId = request.DriverId,
-                PickupLocationId = request.PickupLocationId,
-                DropoffLocationId = request.DropoffLocationId,
-                StartedAt = DateTime.UtcNow
-            };
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                var entry = ex.Entries.First();
+                await entry.ReloadAsync(cancellationToken);
 
-            await _unitOfWork.Trips.AddAsync(trip);
-            await _unitOfWork.SaveChangesAsync();
+                return Result<TripStartResultDto>.Failure(
+                    "Concurrency conflict detected. Please try again.",
+                    "ConcurrencyConflict");
+            }
 
-            var result = _mapper.Map<TripStartResultDto>(trip);
-            return Result<TripStartResultDto>.Success(result, "Trip started successfully");
+            var resultDto = _mapper.Map<TripStartResultDto>(trip);
+            resultDto.Status = "Ongoing";
+
+            return Result<TripStartResultDto>.Success(resultDto, "Trip started successfully");
         }
     }
 }

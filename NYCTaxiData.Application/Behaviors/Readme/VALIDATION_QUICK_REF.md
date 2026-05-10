@@ -108,7 +108,9 @@ public class UserRegisterValidator : AbstractValidator<UserRegisterCommand>
     public UserRegisterValidator()
     {
         // String rules
-        RuleFor(x => x.FirstName)
+        RuleFor(x => x.
+        
+        )
             .NotEmpty()
             .MaximumLength(50);
 

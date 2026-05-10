@@ -1,9 +1,9 @@
 using MediatR;
-using NYCTaxiData.Application.Common;
+using NYCTaxiData.Application.Common.Plumping;  
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
 namespace NYCTaxiData.Application.Features.Drivers.Commands.SyncOfflineData;
-
+ 
 public sealed record SyncOfflineDataCommand(
     Guid DriverId,
     IReadOnlyCollection<OfflineTripDto> Trips)

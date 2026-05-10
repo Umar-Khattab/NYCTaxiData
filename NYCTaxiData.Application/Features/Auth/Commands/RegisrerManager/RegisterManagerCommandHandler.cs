@@ -1,45 +1,69 @@
 ﻿using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Common.Interfaces.Services;
-using NYCTaxiData.Application.Common.Specifications.Auth;
-using NYCTaxiData.Application.Common.Specifications.Managers;
+using NYCTaxiData.Application.Common.Plumping;
 using NYCTaxiData.Application.DTOs.Identity;
+using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
+using NYCTaxiData.Infrastructure.Services;
+using NYCTaxiData.Infrastructure.Services.Specifications.Managers;  
+using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
+using Twilio.Jwt.AccessToken;
+using Twilio.TwiML.Messaging;
 
 namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
 {
+    public class RegisterManagerCommandHandler(IUnitOfWork _uow, IMapper _mapper, JwtTokenService _jwt)
+        : IRequestHandler<RegisterManagerCommand, Result<UserResultDto>>
+    {
+        public async Task<Result<UserResultDto>> Handle(RegisterManagerCommand request, CancellationToken ct)
+        {
+            // 1. التأكد من عدم التكرار (خارج الـ Transaction)
+            if (await _uow.Users.AnyAsync(u => u.PhoneNumber == request.PhoneNumber))
+                return Result.Failure<UserResultDto>("Phone number already exists", "Conflict");
 
- public class RegisterManagerCommandHandler(IUnitOfWork _uow, IMapper _mapper, IJwtTokenService _jwt)
-	: IRequestHandler<RegisterManagerCommand, UserResultDto>
-	{
-		public async Task<UserResultDto> Handle(RegisterManagerCommand request, CancellationToken cancellationToken)
-		{
-			if (await _uow.Users.AnyWithSpecAsync(new UserPhoneExistsSpec(request.PhoneNumber), cancellationToken))
-				return new UserResultDto { IsSuccess = false, Message = "Phone number already exists" };
+            if (await _uow.Managers.AnyAsync(m => m.Employeeid == request.EmployeeId))
+                return Result.Failure<UserResultDto>("Employee ID already exists", "Conflict");
 
-			if (await _uow.Managers.AnyWithSpecAsync(new ManagerEmployeeIdExistsSpec(request.EmployeeId), cancellationToken))
-				return new UserResultDto { IsSuccess = false, Message = "Employee ID already exists" };
+            return await _uow.ExecuteInTransactionAsync(async (transactionToken) =>
+            {
+                var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-			User1 user = _mapper.Map<User1>(request);
-			var manager = _mapper.Map<Manager>(request);
+                // 2. إنشاء اليوزر "بدون" وضع ID يدوياً
+                var user = new User1
+                {
+                    FirstName = request.FirstName,
+                    LastName = request.LastName,
+                    PhoneNumber = request.PhoneNumber,
+                    PasswordHash = passwordHash,
+                    Userrole = "Manager",
+                    // 👈 الربط السحري: بنحط كائن المانجر جوه اليوزر مباشرة
+                    Manager = new Manager
+                    {
+                        Employeeid = request.EmployeeId,
+                        Department = request.Department
+                    }
+                };
 
-			manager.Id = user.Id;
+                // 3. بنعمل Add لليوزر بس، وهو هيسحب المانجر معاه
+                await _uow.Users.AddAsync(user);
 
-			await _uow.Users.AddAsync(user);
-			await _uow.Managers.AddAsync(manager);
-			await _uow.SaveChangesAsync(cancellationToken);
+                // 4. سيف الكل: الـ EF هيولد الـ ID لليوزر، وياخده يحطه للمانجر، ويسيفهم بالترتيب الصح
+                await _uow.SaveChangesAsync(transactionToken);
 
-			var fullName = $"{user.Firstname} {user.Lastname}";
-			var token = _jwt.GenerateToken(user.Phonenumber, "Manager", fullName);
+                // 5. توليد الـ Token بعد ما البيانات اتسيفت وبقى ليها ID حقيقي
+                var fullName = $"{user.FirstName} {user.LastName}";
+                var token = _jwt.GenerateToken(user.PhoneNumber, "Manager", fullName);
 
-			return new UserResultDto
-			{
-				IsSuccess = true,
-				FullName = fullName,
-				Role = "Manager",
-				Token = token
-			};
-		}
-	}
+                return Result.Success(new UserResultDto
+                {
+                    IsSuccess = true,
+                    FullName = fullName,
+                    Message= "Manager registered successfully",
+                    Role = "Manager",
+                    Token = token
+                });
+            }, ct);
+        }
+    }
 }

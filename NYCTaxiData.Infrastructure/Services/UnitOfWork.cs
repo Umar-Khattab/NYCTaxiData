@@ -6,6 +6,7 @@ using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Data.Repository;
+using NYCTaxiData.Infrastructure.Services.ConcurrentEntity;
 
 namespace NYCTaxiData.Infrastructure.Services;
 
@@ -59,6 +60,7 @@ public class UnitOfWork : Application.Common.Interfaces.IUnitOfWork
     public IGenericRepository<Weathersnapshot> WeatherSnapshots
         => _weatherSnapshots ??= new GenericRepository<Weathersnapshot>(_context);
 
+
     public void Dispose()
     {
         _context.Dispose();
@@ -75,21 +77,25 @@ public class UnitOfWork : Application.Common.Interfaces.IUnitOfWork
     {
         return await _context.SaveChangesAsync(cancellationToken);
     }
-    // داخل UnitOfWork.cs
     public async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken ct)
     {
         var strategy = _context.Database.CreateExecutionStrategy();
+
         return await strategy.ExecuteAsync(async () =>
-        {
-            // 👈 السر هنا: await using بدلاً من using العادية
-            await using var transaction = await _context.Database.BeginTransactionAsync(ct);
+        { 
+            using var transaction = await _context.Database.BeginTransactionAsync(ct);
             try
             {
                 var result = await operation(ct);
+                await _context.SaveChangesAsync(ct);  
                 await transaction.CommitAsync(ct);
                 return result;
             }
-            catch { await transaction.RollbackAsync(ct); throw; }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(ct);
+                throw;  
+            }
         });
     }
 }

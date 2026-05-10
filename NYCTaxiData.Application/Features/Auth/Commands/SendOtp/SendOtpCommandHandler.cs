@@ -3,40 +3,46 @@ using NYCTaxiData.Application.Common.Interfaces.Services;
 using NYCTaxiData.Application.Common.Specifications.Auth;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
+using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
+using System.Security.Cryptography;
 
-public class SendOtpCommandHandler(
-	IUnitOfWork _uow,
-	ICacheService _cache,
-	ISmsService _sms)
-	: IRequestHandler<SendOtpCommand, ResultDto>
+namespace NYCTaxiData.Application.Features.Auth.Commands.SendOtp
 {
-	public async Task<ResultDto> Handle(SendOtpCommand request, CancellationToken cancellationToken)
-	{
-		// ✅ التأكد من وجود المستخدم بالـ Specification
-		var spec = new UserByPhoneSpec(request.PhoneNumber);
-		var userExists = await _uow.Users.AnyWithSpecAsync(spec, cancellationToken); // استخدم AnyWithSpecAsync لضمان التوافق
+    public class SendOtpCommandHandler(
+        IUnitOfWork _uow,
+        ICacheService _cache,
+        ISmsService _sms)
+        : IRequestHandler<SendOtpCommand, ResultDto>
+    {
+        public async Task<ResultDto> Handle(SendOtpCommand request, CancellationToken cancellationToken)
+        {
+            var cleanPhone = request.PhoneNumber.Trim().Replace(" ", "");
+             
+            if (cleanPhone.StartsWith("20")) cleanPhone = "0" + cleanPhone.Substring(2);
 
-		if (!userExists)
-			return new ResultDto { IsSuccess = false, Message = "Phone number not registered" };
+            var spec = new UserByPhoneSpec(cleanPhone);
+            var userExists = await _uow.Users.AnyWithSpecAsync(spec, cancellationToken);
+            if (!userExists)
+            {
+                return new ResultDto { IsSuccess = false, Message = "Phone number not registered" };
+            }
 
-		// توليد OTP مكون من 6 أرقام
-		var otp = new Random().Next(100000, 999999).ToString();
-		var cacheKey = $"otp:{request.PhoneNumber}";
+            var otp = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+            var cacheKey = $"otp:{request.PhoneNumber}";
+             
+            await _cache.SetAsync(cacheKey, otp, TimeSpan.FromMinutes(5));
+             
+            var smsSent = await _sms.SendSmsAsync(
+                request.PhoneNumber,
+                $"Your NYCTaxi OTP code is: {otp}. Valid for 5 minutes.");
+             
+            if (!smsSent)
+            {
+                await _cache.RemoveAsync(cacheKey);
+                return new ResultDto { IsSuccess = false, Message = "Failed to send OTP" };
+            }
 
-		// حفظ في الكاش لمدة 5 دقائق
-		await _cache.SetAsync(cacheKey, otp, TimeSpan.FromMinutes(5));
-
-		// إرسال الرسالة
-		var smsSent = await _sms.SendSmsAsync(
-			request.PhoneNumber,
-			$"Your NYCTaxi OTP code is: {otp}. Valid for 5 minutes.");
-
-		if (!smsSent)
-		{
-			await _cache.RemoveAsync(cacheKey);
-			return new ResultDto { IsSuccess = false, Message = "Failed to send OTP" };
-		}
-
-		return new ResultDto { IsSuccess = true, Message = "OTP sent successfully" };
-	}
+            return new ResultDto { IsSuccess = true, Message = "OTP sent successfully" };
+        }
+    }
 }
