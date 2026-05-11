@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
-using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Interfaces.Services;  
 using System.Net.Http.Json;
 
-public class WhatsAppSmsService : ISmsService
+namespace NYCTaxiData.Infrastructure.Services.Twilio;  
+
+public class WhatsAppSmsService : ISmsService  
 {
     private readonly IConfiguration _configuration;
 
@@ -18,36 +20,33 @@ public class WhatsAppSmsService : ISmsService
             using var client = new HttpClient();
             var instanceId = "91849";
             var apiToken = "V4ltwCVdMJf8BavnIpng7EKEdxmd1Ip0NBnXg6HQ4df49270";
-
             var url = $"https://waapi.app/api/v1/instances/{instanceId}/client/action/send-message";
 
             client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiToken);
-             
-            var formattedPhone = phoneNumber.Trim().Replace("+", "").Replace(" ", "");
-             
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiToken);
+
+            var formattedPhone = phoneNumber.Trim()
+                .Replace("+", "")
+                .Replace(" ", "");
+
             if (formattedPhone.StartsWith("0"))
-            {
                 formattedPhone = "20" + formattedPhone.Substring(1);
-            }
             else if (!formattedPhone.StartsWith("20"))
-            {
                 formattedPhone = "20" + formattedPhone;
-            }
 
             var payload = new
             {
-                chatId = $"{formattedPhone}@c.us",  
+                chatId = $"{formattedPhone}@c.us",
                 message = message
             };
 
             var response = await client.PostAsJsonAsync(url, payload);
 
             if (response.IsSuccessStatusCode) return true;
-             
-            var errorBody = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"❌ WaAPI Error Details: {errorBody}");
 
+            var errorBody = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"❌ WaAPI Error: {errorBody}");
             return false;
         }
         catch (Exception ex)
@@ -56,6 +55,7 @@ public class WhatsAppSmsService : ISmsService
             return false;
         }
     }
-    public Task<string> GetSmsStatusAsync(string messageId) => Task.FromResult("Delivered");
 
+    public Task<string> GetSmsStatusAsync(string messageId)
+        => Task.FromResult("Delivered");
 }

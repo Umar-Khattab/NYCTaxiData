@@ -51,9 +51,10 @@ public sealed class GetShiftStatisticsQueryHandler : IRequestHandler<GetShiftSta
             var boundedStart = started < shiftStart ? shiftStart : started;
             var boundedEnd = ended > shiftEnd ? shiftEnd : ended;
 
-            return boundedEnd > boundedStart
-                ? (int)(boundedEnd - boundedStart).TotalMinutes
-                : 0;
+            return (boundedEnd > boundedStart)
+            ? (int)((DateTime)boundedEnd - (DateTime)boundedStart).TotalMinutes
+            : 0;
+
         });
 
         var totalShiftMinutes = (int)Math.Max(0, (shiftEnd - shiftStart).TotalMinutes);

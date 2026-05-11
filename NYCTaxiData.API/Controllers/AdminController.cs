@@ -61,47 +61,7 @@ public class AdminController(
     }
 
     // ✅ تشغيل الـ Aggregation يدوي
-    [HttpPost("aggregate/{date}")]
-    public async Task<IActionResult> AggregateByDateAsync(
-    [FromRoute] DateTime date,
-    CancellationToken cancellationToken)
-    {
-        // 1. Validation: منع التواريخ المستقبلية
-        if (date.Date > DateTime.UtcNow.Date)
-        {
-            return BadRequest(new { Message = "Cannot aggregate future dates. Time travel is not supported yet! 🚀" });
-        }
-
-        _logger.LogInformation("[AdminController] Manual backfilling triggered for date: {Date}", date.ToString("yyyy-MM-dd"));
-
-        try
-        {
-            await _aggregationService.AggregateAsync(date, cancellationToken);
-
-            return Ok(new
-            {
-                Success = true,
-                Message = $"Aggregation for {date:yyyy-MM-dd} completed successfully."
-            });
-        }
-        catch (OperationCanceledException)
-        {
-            return StatusCode(499, new { Message = "Aggregation process was cancelled by the user." });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during manual aggregation for {Date}", date);
-
-            // استخدام الـ _env (لو حقنته) عشان تظهر التفاصيل في الـ Dev فقط
-            return StatusCode(500, new
-            {
-                Message = "An internal error occurred during aggregation.",
-                Details = _env.IsDevelopment() ? ex.Message : "Please check server logs."
-            });
-        }
-    }
-
-    // ✅ جيب الإحصائيات مع Handling للـ Dates
+    // ✅ جيب الإحصائيات مع Handling للـ Dates والـ UTC
     [HttpGet("stats")]
     public async Task<IActionResult> GetStatsAsync(
     [FromQuery] DateTime? from,
@@ -110,9 +70,10 @@ public class AdminController(
     {
         try
         {
-            // 1. تحديد القيم الافتراضية بذكاء
-            var fromDate = from?.Date ?? DateTime.UtcNow.Date.AddDays(-30);
-            var toDate = to?.Date ?? DateTime.UtcNow.Date;
+            // 1. تحديد القيم الافتراضية بذكاء ونضمن إنها UTC 🛑
+            // بنستخدم SpecifyKind عشان PostgreSQL ميعملش Exception
+            var fromDate = DateTime.SpecifyKind(from?.Date ?? DateTime.UtcNow.Date.AddDays(-30), DateTimeKind.Utc);
+            var toDate = DateTime.SpecifyKind(to?.Date ?? DateTime.UtcNow.Date, DateTimeKind.Utc);
 
             // 2. Validation: منطقية التواريخ
             if (fromDate > toDate)
@@ -120,19 +81,19 @@ public class AdminController(
                 return BadRequest(new { Message = "The 'from' date cannot be later than the 'to' date." });
             }
 
-            // 3. تحديد حد أقصى للنطاق (مثلاً سنة واحدة) عشان البروفورمانس
+            // 3. تحديد حد أقصى للنطاق (سنة واحدة)
             if ((toDate - fromDate).TotalDays > 365)
             {
                 return BadRequest(new { Message = "Date range cannot exceed one year for performance reasons." });
             }
 
+            // 4. الاستعلام من الداتابيز
             var stats = await _context.DailyStats
                 .AsNoTracking()
                 .Where(s => s.Date >= fromDate && s.Date <= toDate)
                 .OrderByDescending(s => s.Date)
                 .ToListAsync(cancellationToken);
 
-            // 4. الرد بـ 200 حتى لو الـ stats فاضية (Empty List)
             return Ok(new
             {
                 From = fromDate.ToString("yyyy-MM-dd"),
@@ -145,6 +106,32 @@ public class AdminController(
         {
             _logger.LogError(ex, "Error fetching stats from {From} to {To}", from, to);
             return StatusCode(500, new { Message = "An error occurred while fetching dashboard statistics." });
+        }
+    }
+
+    // ✅ تعديل الـ Manual Trigger للتوافق مع الـ UTC
+    [HttpPost("aggregate/{date}")]
+    public async Task<IActionResult> AggregateByDateAsync(
+    [FromRoute] DateTime date,
+    CancellationToken cancellationToken)
+    {
+        // نضمن إن التاريخ UTC قبل المقارنة والارسال
+        var targetDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
+
+        if (targetDate > DateTime.UtcNow.Date)
+        {
+            return BadRequest(new { Message = "Cannot aggregate future dates. 🚀" });
+        }
+
+        try
+        {
+            await _aggregationService.AggregateAsync(targetDate, cancellationToken);
+            return Ok(new { Success = true, Message = $"Aggregation for {targetDate:yyyy-MM-dd} completed." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during manual aggregation for {Date}", targetDate);
+            return StatusCode(500, new { Message = "Internal error during aggregation." });
         }
     }
 }

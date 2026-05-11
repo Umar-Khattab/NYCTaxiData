@@ -1,17 +1,18 @@
 ﻿using AutoMapper;
-using MediatR;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
+using MediatR; 
+using NYCTaxiData.Application.Common.Interfaces.Services;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
+using NYCTaxiData.Domain.Specifications.Users;
+using NYCTaxiData.Infrastructure.Services; 
 using StackExchange.Redis;
 using System.Text;
+using ICacheService = NYCTaxiData.Application.Common.Interfaces.Services.ICacheService;
 
 public class VerifyOtpCommandHandler(
     IUnitOfWork _uow,
     ICacheService _cache,
-    JwtTokenService _jwt,
+    IJwtTokenService _jwt,
     IMapper _mapper)
     : IRequestHandler<VerifyOtpCommand, VerifyOtpResultDto> // تأكد إن الـ DTO صح هنا
 {

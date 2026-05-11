@@ -1,17 +1,15 @@
-using MediatR;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http;
+using NYCTaxiData.Application.Common.Interfaces; 
 using NYCTaxiData.Application.Common.Interfaces.Services;
 using NYCTaxiData.Domain.Common.Interfaces;
-using NYCTaxiData.Infrastructure.Data;
+using NYCTaxiData.Domain.Interfaces; 
 using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Data.Repository;
 using NYCTaxiData.Infrastructure.Interceptors;
 using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Workers;
 
 namespace NYCTaxiData.Infrastructure
 {
@@ -22,44 +20,41 @@ namespace NYCTaxiData.Infrastructure
             var connectionString = configuration.GetConnectionString("DefaultConnection");
              
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<AuditableEntityInterceptor>();
-            services.AddScoped<AuditLogInterceptor>(); 
-             
-            services.AddScoped<ICacheService, CacheService>(); 
-            services.AddScoped<ISmsService, WhatsAppSmsService>();
-            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddScoped<AuditLogInterceptor>();
+            services.AddScoped<ICurrentUserService,CurrentUserService >();
+            services.AddScoped<IIdempotencyService, IdempotencyService>(); 
+            services.AddScoped<IAiPredictionService, AiPredictionService>();
+            services.AddScoped< IDailyAggregationService, DailyAggregationService>();
+            services.AddHttpClient<IAiPredictionService, AiPredictionService>(client =>
+            {
+                client.BaseAddress = new Uri(configuration["AiService:BaseUrl"] ?? "http://localhost:5000");
+            }); 
+            services.AddScoped<ICacheService, CacheService>();  
             services.AddDistributedMemoryCache();
-            // ===== Services =====
-            services.AddScoped<IDailyAggregationService, DailyAggregationService>();
-
-            // ===== Background Worker =====
-            services.AddHostedService<DailyAggregationWorker>();
              
-            services.AddDbContext<TaxiDbContext>(options =>
+            services.AddDbContext<TaxiDbContext>((sp, options) =>
+            {
+                var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
+                var auditLogInterceptor = sp.GetRequiredService<AuditLogInterceptor>();
+
                 options.UseNpgsql(connectionString, npgsqlOptions =>
                 {
-                    npgsqlOptions.CommandTimeout(60); // increase seconds
                     npgsqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 2,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(30),
                         errorCodesToAdd: null);
-                }));
-             
+                })
+                .AddInterceptors(auditableInterceptor, auditLogInterceptor);
+            });
+            services.AddScoped<IJwtTokenService, JwtTokenService>(); 
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped<IAiPredictionService, AiPredictionService>();
-            services.AddHttpClient("MlService", client =>
+            services.AddScoped<IUnitOfWork, UnitOfWork>(); 
+            services.AddHttpClient<NYCTaxiData.Application.Common.Interfaces.IAiPredictionService, NYCTaxiData.Infrastructure.Services.AiPredictionService>(client =>
             {
-                client.BaseAddress = new Uri(configuration["MlService:BaseUrl"]!);
-                client.Timeout = TimeSpan.FromSeconds(30);
-            })
-            .AddPolicyHandler(HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .WaitAndRetryAsync(3, retryAttempt =>
-            TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))));
+                client.BaseAddress = new Uri(configuration["AiService:BaseUrl"] ?? "http://localhost:5000");
+            });
 
-            
             return services;
         }
     }

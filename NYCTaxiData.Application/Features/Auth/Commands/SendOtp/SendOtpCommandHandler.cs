@@ -1,11 +1,9 @@
 ﻿using MediatR;
-using NYCTaxiData.Application.Common.Interfaces.Services;
-using NYCTaxiData.Application.Common.Specifications.Auth;
+using NYCTaxiData.Application.Common.Interfaces.Services; 
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
-using System.Security.Cryptography;
-
+using NYCTaxiData.Domain.Specifications.Users; 
+using System.Security.Cryptography;   
 namespace NYCTaxiData.Application.Features.Auth.Commands.SendOtp
 {
     public class SendOtpCommandHandler(

@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using NYCTaxiData.Domain.Interfaces;
+using NYCTaxiData.Application.Common.Interfaces; 
 
 public class AuditableEntityInterceptor : SaveChangesInterceptor
 {
@@ -36,7 +36,7 @@ public class AuditableEntityInterceptor : SaveChangesInterceptor
     {
         if (context == null) return;
 
-        var userId = _currentUserService.UserId ?? "System";
+        var userId = _currentUserService.UserId.ToString() ?? "System";
         var userName = _currentUserService.UserName ?? "System";
         var actor = !string.IsNullOrEmpty(userName) ? userName : userId;
         var now = DateTime.UtcNow;

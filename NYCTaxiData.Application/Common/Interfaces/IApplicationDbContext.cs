@@ -1,4 +1,5 @@
-﻿using NYCTaxiData.Infrastructure;
+﻿using NYCTaxiData.Domain.Entities;
+using NYCTaxiData.Infrastructure;
 
 namespace NYCTaxiData.Application.Common.Interfaces
 {

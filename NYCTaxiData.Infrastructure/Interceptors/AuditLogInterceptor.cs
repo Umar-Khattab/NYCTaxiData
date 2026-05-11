@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -38,7 +39,7 @@ namespace NYCTaxiData.Infrastructure.Interceptors
         {
             if (context == null) return;
 
-            var userId = _currentUserService.UserId ?? "System";
+            var userId = _currentUserService.UserId.ToString() ?? "System";
 
             foreach (var entry in context.ChangeTracker.Entries())
             {

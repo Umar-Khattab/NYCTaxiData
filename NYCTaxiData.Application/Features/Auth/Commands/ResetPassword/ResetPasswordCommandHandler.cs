@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
-using MediatR;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
+using MediatR; 
+using NYCTaxiData.Application.Common.Interfaces.Services;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
+using NYCTaxiData.Domain.Specifications.Users;
 
 namespace NYCTaxiData.Application.Features.Auth.Commands.ResetPassword
 {

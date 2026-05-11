@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace NYCTaxiData.Infrastructure;
+namespace NYCTaxiData.Domain.Entities;
 
 public partial class User1
 {

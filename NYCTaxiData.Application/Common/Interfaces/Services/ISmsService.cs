@@ -1,3 +1,4 @@
+
 namespace NYCTaxiData.Application.Common.Interfaces.Services;
 
 public interface ISmsService

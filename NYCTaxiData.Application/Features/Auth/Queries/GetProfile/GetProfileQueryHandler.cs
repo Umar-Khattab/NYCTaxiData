@@ -1,13 +1,14 @@
 ﻿using AutoMapper;
 using MediatR;
+using NYCTaxiData.Application.Common.Interfaces.Services;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
+using NYCTaxiData.Domain.Specifications.Users;
+using NYCTaxiData.Infrastructure.Services; 
 
 namespace NYCTaxiData.Application.Auth.Queries.GetProfile
 {
-    public class GetProfileQueryHandler(IUnitOfWork _uow, IMapper _mapper, JwtTokenService _jwt)
+    public class GetProfileQueryHandler(IUnitOfWork _uow, IMapper _mapper, IJwtTokenService _jwt)
         : IRequestHandler<GetProfileQuery, UserResultDto>
     {
         public async Task<UserResultDto> Handle(GetProfileQuery request, CancellationToken cancellationToken)

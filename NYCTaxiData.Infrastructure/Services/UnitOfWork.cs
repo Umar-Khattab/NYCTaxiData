@@ -1,16 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-using NYCTaxiData.Application.Common.Interfaces;
+using Microsoft.EntityFrameworkCore.Storage; 
 using NYCTaxiData.Domain.Common.Interfaces;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure.Data.Contexts;
-using NYCTaxiData.Infrastructure.Data.Repository;
-using NYCTaxiData.Infrastructure.Services.ConcurrentEntity;
+using NYCTaxiData.Infrastructure.Data.Repository; 
 
 namespace NYCTaxiData.Infrastructure.Services;
 
-public class UnitOfWork : Application.Common.Interfaces.IUnitOfWork
+public class UnitOfWork :  IUnitOfWork
 {
     private readonly TaxiDbContext _context;
     private IDbContextTransaction? _transaction;

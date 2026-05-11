@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using NYCTaxiData.Application.Common.Interfaces.Identity;
+﻿using Microsoft.Extensions.Caching.Distributed; 
+using NYCTaxiData.Application.Common.Interfaces.Services;
 
 namespace NYCTaxiData.Infrastructure.Services
 {

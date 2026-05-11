@@ -3,7 +3,7 @@ using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Domain.Common.Interfaces;
 using NYCTaxiData.Domain.Interfaces.Specifications;
 using NYCTaxiData.Infrastructure.Data.Contexts;
-using NYCTaxiData.Infrastructure.Services.Specifications;
+using NYCTaxiData.Infrastructure.Services;
 using System.Linq.Expressions;
 
 namespace NYCTaxiData.Infrastructure.Data.Repository
@@ -28,7 +28,7 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
 
         public async Task<IEnumerable<T>> GetAllBySpecAsync(ISpecification<T> spec)
      => await SpecificationEvaluator<T>
-         .GetQuery(_dbSet.AsNoTracking(), spec) // ✅ AsNoTracking دايماً
+         .GetQuery(_dbSet.AsNoTracking(), spec)  
          .ToListAsync();
 
         public async Task<IEnumerable<T>> GetAllAsync()

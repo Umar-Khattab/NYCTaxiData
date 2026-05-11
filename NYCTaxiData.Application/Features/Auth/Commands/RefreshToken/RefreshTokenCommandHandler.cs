@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Common.Interfaces.Services;
-using NYCTaxiData.Application.Common.Specifications.Auth;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using NYCTaxiData.Application.Common.Interfaces.Services; 
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
+using NYCTaxiData.Domain.Specifications.Users;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -13,7 +15,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RefreshToken
     public class RefreshTokenCommandHandler(
         IUnitOfWork _uow,
         IConfiguration _config,
-        JwtTokenService _jwtService,
+        IJwtTokenService _jwtService,
         IMapper _mapper)
         : IRequestHandler<RefreshTokenCommand, UserResultDto>
     {

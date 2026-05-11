@@ -7,10 +7,11 @@ using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Application.Common.Interfaces.Services;
 using Org.BouncyCastle.Crypto.Generators;
 using BCrypt.Net;
+using NYCTaxiData.Domain.Specifications.Users;
 
 namespace NYCTaxiData.Application.Features.Auth.Commands.Login
 {
-    public class LoginCommandHandler(IUnitOfWork _uow, JwtTokenService _jwt, IMapper _mapper)
+    public class LoginCommandHandler(IUnitOfWork _uow, IJwtTokenService _jwt, IMapper _mapper)
         : IRequestHandler<LoginCommand, Result<UserResultDto>>  
     {
         public async Task<Result<UserResultDto>> Handle(LoginCommand request, CancellationToken cancellationToken) 
