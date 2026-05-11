@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NYCTaxiData.Infrastructure;
+namespace NYCTaxiData.Domain.Entities;
 
 /// <summary>
 /// Auth: Audit trail for user actions.

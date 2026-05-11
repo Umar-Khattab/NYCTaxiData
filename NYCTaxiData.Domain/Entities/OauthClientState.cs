@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NYCTaxiData.Infrastructure;
+namespace NYCTaxiData.Domain.Entities;
 
 /// <summary>
 /// Stores OAuth states for third-party provider authentication flows where Supabase acts as the OAuth client.

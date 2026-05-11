@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NYCTaxiData.API.Controllers.Base;
+using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Application.Common.Plumping;
 using NYCTaxiData.Application.DTOs.Identity;
@@ -15,9 +16,9 @@ using NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed;
 using NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
+using NYCTaxiData.Domain.Specifications.Trips;
 using NYCTaxiData.Infrastructure;
-using NYCTaxiData.Infrastructure.Data.Contexts;
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsTrip;
+using NYCTaxiData.Infrastructure.Data.Contexts; 
 
 namespace NYCTaxiData.API.Controllers;
 

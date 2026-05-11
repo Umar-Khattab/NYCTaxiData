@@ -1,5 +1,6 @@
 using MediatR;
 using NYCTaxiData.Application.Common.Plumping; // تأكد من استخدام الـ Result الصح في مشروعك
+using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
 

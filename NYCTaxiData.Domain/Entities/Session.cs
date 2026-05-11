@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 
-namespace NYCTaxiData.Infrastructure;
+namespace NYCTaxiData.Domain.Entities;
 
 /// <summary>
 /// Auth: Stores session data associated to a user.

@@ -1,5 +1,4 @@
-﻿// NYCTaxiData.API/Hubs/LiveTrackingHub.cs
-using Microsoft.AspNetCore.Authorization;
+﻿ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure.Data.Contexts;
@@ -55,13 +54,11 @@ public class LiveTrackingHub : Hub
         var phone = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (role == "Driver" && phone != null)
-        {
-            // شيل السائق من الـ Active List
+        { 
             _activeDrivers.Remove(phone);
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Drivers");
-
-            // ابعت للمدير إن السائق قطع
+             
             await Clients.Group("Managers").SendAsync("DriverDisconnected", new
             {
                 Phone = phone,

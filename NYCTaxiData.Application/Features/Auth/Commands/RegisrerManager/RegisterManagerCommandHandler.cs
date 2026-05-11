@@ -1,19 +1,14 @@
 ﻿using AutoMapper;
 using MediatR;
+using NYCTaxiData.Application.Common.Interfaces.Services;
 using NYCTaxiData.Application.Common.Plumping;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Entities;
-using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure;
-using NYCTaxiData.Infrastructure.Services;
-using NYCTaxiData.Infrastructure.Services.Specifications.Managers;  
-using NYCTaxiData.Infrastructure.Services.Specifications.SpecificationsAuth;
-using Twilio.Jwt.AccessToken;
-using Twilio.TwiML.Messaging;
+using NYCTaxiData.Domain.Interfaces; 
 
 namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
 {
-    public class RegisterManagerCommandHandler(IUnitOfWork _uow, IMapper _mapper, JwtTokenService _jwt)
+    public class RegisterManagerCommandHandler(IUnitOfWork _uow, IMapper _mapper, IJwtTokenService _jwt)
         : IRequestHandler<RegisterManagerCommand, Result<UserResultDto>>
     {
         public async Task<Result<UserResultDto>> Handle(RegisterManagerCommand request, CancellationToken ct)
@@ -36,22 +31,18 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
                     LastName = request.LastName,
                     PhoneNumber = request.PhoneNumber,
                     PasswordHash = passwordHash,
-                    Userrole = "Manager",
-                    // 👈 الربط السحري: بنحط كائن المانجر جوه اليوزر مباشرة
+                    Userrole = "Manager", 
                     Manager = new Manager
                     {
                         Employeeid = request.EmployeeId,
                         Department = request.Department
                     }
                 };
-
-                // 3. بنعمل Add لليوزر بس، وهو هيسحب المانجر معاه
+                 
                 await _uow.Users.AddAsync(user);
-
-                // 4. سيف الكل: الـ EF هيولد الـ ID لليوزر، وياخده يحطه للمانجر، ويسيفهم بالترتيب الصح
+                 
                 await _uow.SaveChangesAsync(transactionToken);
-
-                // 5. توليد الـ Token بعد ما البيانات اتسيفت وبقى ليها ID حقيقي
+                 
                 var fullName = $"{user.FirstName} {user.LastName}";
                 var token = _jwt.GenerateToken(user.PhoneNumber, "Manager", fullName);
 

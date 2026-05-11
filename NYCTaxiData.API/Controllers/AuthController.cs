@@ -8,9 +8,9 @@ using NYCTaxiData.Application.Auth.Commands.RegisterManager;
 using NYCTaxiData.Application.Auth.Commands.RefreshToken;
 using NYCTaxiData.Application.Auth.Queries.GetProfile;
 using NYCTaxiData.Application.Features.Auth.Commands.ResetPassword;
-using NYCTaxiData.Application.Features.Auth.Commands.SendOtp; // تأكد من الـ Namespace ده
+using NYCTaxiData.Application.Features.Auth.Commands.SendOtp;  
 using NYCTaxiData.Application.Features.Auth.Commands.VerifyOtp;
-using Twilio.Types; // تأكد من الـ Namespace ده
+using Twilio.Types;  
 
 namespace NYCTaxiData.API.Controllers;
 
@@ -20,9 +20,11 @@ public class AuthController(ISender _mediator) : BaseController
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
-    {
-        // استخدم (dynamic) عشان الـ BaseController يقبل أي Result<T>
-        return HandleResult((dynamic)await Mediator.Send(command));
+    { 
+        var result = await _mediator.Send(command);
+        if (!result.IsSuccess)
+            return Unauthorized(new { message = "Invalid phone number or password" });
+        return Ok(result);
     }
 
     // 2. Register Driver
@@ -68,12 +70,10 @@ public class AuthController(ISender _mediator) : BaseController
         var result = await Mediator.Send(command);
 
         if (result.IsSuccess)
-        {
-            // بنرجع الداتا اللي راجعة في الـ DTO (زي التوكن مثلاً)
+        { 
             return OkResult(result, result.Message ?? "OTP verified successfully");
         }
-
-        // لو فشل نرجع BadRequest بالرسالة اللي جاية من الـ Handler
+         
         return BadRequestResult(result.Message ?? "Invalid OTP");
     }
 
@@ -83,13 +83,10 @@ public class AuthController(ISender _mediator) : BaseController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
     {
-        var result = await Mediator.Send(command);
-
-        // 2. بما إن الـ Reset Password غالباً بيرجع Success/Failure بس
-        // بنفحص الـ IsSuccess بتاعة الـ DTO اللي راجع
+        var result = await Mediator.Send(command); 
         if (result.IsSuccess)
         {
-            return Ok(result); // أو OkResult لو الميثود موجودة في الـ Base
+            return Ok(result);  
         }
 
         return BadRequest(result);
@@ -111,8 +108,7 @@ public class AuthController(ISender _mediator) : BaseController
     public async Task<IActionResult> GetProfile([FromRoute] string phoneNumber)
     {
         var result = await Mediator.Send(new GetProfileQuery(phoneNumber));
-
-        // لو النتيجة مش null يبقى نجاح، غير كدة نرجع 404
+         
         if (result != null)
         {
             return Ok(new { isSuccess = true, data = result });

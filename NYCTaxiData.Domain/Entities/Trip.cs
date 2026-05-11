@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NYCTaxiData.Infrastructure;
+namespace NYCTaxiData.Domain.Entities;
 
 public partial class Trip
 {
@@ -21,7 +21,7 @@ public partial class Trip
 
     public decimal? TotalAmount { get; set; }
 
-    public DateTime StartedAt { get; set; }
+    public DateTime? StartedAt { get; set; }
 
     public DateTime? EndedAt { get; set; }
 

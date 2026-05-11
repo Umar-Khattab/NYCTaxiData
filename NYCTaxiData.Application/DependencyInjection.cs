@@ -3,8 +3,8 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NYCTaxiData.Application.Behaviors;
+using NYCTaxiData.Domain.Interfaces;
 using System.Reflection;
-
 namespace NYCTaxiData.Application
 {
     public static class DependencyInjection
@@ -26,7 +26,7 @@ namespace NYCTaxiData.Application
             // Automatically scans and registers all validators
             // =========================================================
             services.AddValidatorsFromAssembly(assembly);
-
+            
             // =========================================================
             // 2. MediatR Registration
             // Handles CQRS (Commands / Queries / Handlers)

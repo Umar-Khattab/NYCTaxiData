@@ -11,6 +11,7 @@ namespace NYCTaxiData.Application.Common.Interfaces
         /// Gets the ID of the current user.
         /// </summary>
         Guid? UserId { get; }
+        string? UserName { get; }
 
         /// <summary>
         /// Gets the role of the current user.

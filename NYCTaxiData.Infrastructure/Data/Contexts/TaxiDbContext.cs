@@ -6,7 +6,8 @@ using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
 using NYCTaxiData.Infrastructure.Services;
 using System;
-using System.Collections.Generic;
+using System.Collections.Generic; 
+using Object = NYCTaxiData.Domain.Entities.Object;
 
 namespace NYCTaxiData.Infrastructure.Data.Contexts;
 
@@ -96,7 +97,7 @@ public partial class TaxiDbContext : DbContext
     public virtual DbSet<User1> Users1 { get; set; }
 
     public Task<User1?> GetUserByPhoneAsync(string phoneNumber, CancellationToken cancellationToken = default)
-        => Users1.FirstOrDefaultAsync(u => u.Phonenumber == phoneNumber, cancellationToken);
+        => Users1.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber, cancellationToken);
 
     public virtual DbSet<VectorIndex> VectorIndexes { get; set; }
 

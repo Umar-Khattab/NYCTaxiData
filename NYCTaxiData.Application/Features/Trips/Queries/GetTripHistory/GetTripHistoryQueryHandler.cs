@@ -2,46 +2,41 @@ using AutoMapper;
 using MediatR;
 using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Application.Common.Plumping;
-using NYCTaxiData.Application.Common.Specifications.Trips;
 using NYCTaxiData.Application.DTOs.Trip;
-using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
+using NYCTaxiData.Domain.Specifications.Trips; 
 
-namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory
+namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
+
+public class GetTripHistoryQueryHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
+    : IRequestHandler<GetTripHistoryQuery, Result<PaginatedList<TripHistoryItemDto>>>
 {
-    public class GetTripHistoryQueryHandler(IUnitOfWork _unitOfWork, IMapper _mapper)
-        : IRequestHandler<GetTripHistoryQuery, Result<PaginatedList<TripHistoryItemDto>>>
-    {
-        public async Task<Result<PaginatedList<TripHistoryItemDto>>> Handle(
-            GetTripHistoryQuery request,
-            CancellationToken cancellationToken)
-        { 
-            var page = request.PageNumber > 0 ? request.PageNumber : 1;
-            var size = request.PageSize > 0 ? request.PageSize : 10;
-             
-            if (request.DriverId.HasValue)
+    public async Task<Result<PaginatedList<TripHistoryItemDto>>> Handle(
+        GetTripHistoryQuery request,
+        CancellationToken cancellationToken)
+    { 
+        if (request.DriverId.HasValue)
+        {
+            var driver = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId.Value);
+            if (driver == null)
             {
-                var driverExists = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId.Value);
-                if (driverExists == null)
-                {
-                    return Result<PaginatedList<TripHistoryItemDto>>.Failure($"Driver with ID {request.DriverId} not found", "NotFound");
-                }
+                return Result<PaginatedList<TripHistoryItemDto>>.Failure($"Driver with ID {request.DriverId} not found");
             }
-             
-            var spec = new TripHistorySpec(request.DriverId, page, size);
-             
-            var trips = await _unitOfWork.Trips.GetAllBySpecAsync(spec);
-            var totalCount = await _unitOfWork.Trips.CountAsync(spec);
-             
-            var tripItems = _mapper.Map<List<TripHistoryItemDto>>(trips);
-             
-            var paginatedData = PaginatedList<TripHistoryItemDto>.Create(
-                tripItems,
-                totalCount,
-                page,
-                size);
-
-            return Result<PaginatedList<TripHistoryItemDto>>.Success(paginatedData, "Trip history retrieved successfully");
         }
+         
+        var spec = new TripHistorySpec(request.DriverId, request.PageNumber, request.PageSize);
+         
+        var totalCount = await _unitOfWork.Trips.CountAsync(spec);
+        var trips = await _unitOfWork.Trips.GetAllBySpecAsync(spec);
+         
+        var tripItems = _mapper.Map<List<TripHistoryItemDto>>(trips);
+         
+        var paginatedData = PaginatedList<TripHistoryItemDto>.Create(
+            tripItems,
+            totalCount,
+            request.PageNumber,
+            request.PageSize);
+
+        return Result<PaginatedList<TripHistoryItemDto>>.Success(paginatedData);
     }
 }
