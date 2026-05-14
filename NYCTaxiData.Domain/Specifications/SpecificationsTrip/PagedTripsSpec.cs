@@ -12,7 +12,7 @@ namespace NYCTaxiData.Domain.Specifications.Trips
             if (driverId.HasValue)
                 AddCriteria(t => t.DriverId == driverId.Value);
 
-            AddInclude(t => t.Driver!);
+            AddInclude(t => t.Driver!.User!);
             AddOrderByDescending(t => t.StartedAt!);
             ApplyPaging((page - 1) * limit, limit);
         }

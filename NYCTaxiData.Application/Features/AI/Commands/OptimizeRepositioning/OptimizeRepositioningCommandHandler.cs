@@ -2,8 +2,8 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Application.Common.Interfaces;
-using NYCTaxiData.Application.Features.AI.DTOs;
 using NYCTaxiData.Application.Common;
+using NYCTaxiData.Domain.DTOs;
 
 namespace NYCTaxiData.Application.Features.AI.Commands.OptimizeRepositioning;
 

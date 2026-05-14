@@ -8,7 +8,7 @@ namespace NYCTaxiData.Application.DTOs.Identity
     {
         public string DriverId { get; set; }
         public string FirstName { get; set; }
-        public string LastName { get; set; }
+        public string LastName { get; set; } 
         public string PlateNumber { get; set; }
         public string Status { get; set; }  
     }

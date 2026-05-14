@@ -15,7 +15,9 @@ using NYCTaxiData.Application.Features.Trips.Commands.StartTrip;
 using NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed;
 using NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
 using NYCTaxiData.Domain.Entities;
+using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
+using NYCTaxiData.Domain.Specifications.Drivers;
 using NYCTaxiData.Domain.Specifications.Trips;
 using NYCTaxiData.Infrastructure;
 using NYCTaxiData.Infrastructure.Data.Contexts; 
@@ -51,19 +53,21 @@ public class TripsController(
     {
         return HandleResult(await Mediator.Send(query));
     }
-     
+
     [HttpGet("online")]
     public async Task<IActionResult> GetOnlineDrivers([FromQuery] int page = 1, [FromQuery] int limit = 100)
     {
-        var spec = new OnlineDriversSpec(page, limit);
-        var drivers = await _unitOfWork.Drivers.GetAllBySpecAsync(spec);
+        var spec = new AvailableDriversSpec(page, limit);
+
+        var drivers = await _unitOfWork.Drivers.GetAllBySpecAsync(spec); 
+
         var totalCount = await _unitOfWork.Drivers.CountAsync(spec);
         var driverDtos = _mapper.Map<List<DriverListDto>>(drivers);
 
         var pagedData = PaginatedList<DriverListDto>.Create(driverDtos, totalCount, page, limit);
         return PaginatedResult(pagedData, "Online drivers retrieved successfully");
     }
-     
+
     [HttpGet("dispatch/feed")]
     public async Task<IActionResult> GetLiveDispatchFeed([FromQuery] GetLiveDispatchFeedQuery query)
     {

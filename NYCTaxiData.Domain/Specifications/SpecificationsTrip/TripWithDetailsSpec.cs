@@ -12,8 +12,7 @@ namespace NYCTaxiData.Domain.Specifications.Trips
         {
             AddInclude(t => t.Driver!);
             AddInclude(t => t.PickupLocation!);
-            AddInclude(t => t.DropoffLocation!);
-            AddInclude(t => t.Simulation!);
+            AddInclude(t => t.DropoffLocation!); 
         }
     }
 }

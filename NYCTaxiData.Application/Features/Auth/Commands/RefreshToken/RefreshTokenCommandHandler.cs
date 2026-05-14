@@ -64,7 +64,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RefreshToken
             var result = _mapper.Map<UserResultDto>(user); 
             result.IsSuccess = true;
             result.Message = "Token refreshed successfully";
-
+            result.Token = newToken;
             return result;
         }
     }

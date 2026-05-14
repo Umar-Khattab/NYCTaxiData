@@ -1,4 +1,5 @@
 using AutoMapper;
+using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Application.Features.Drivers.Queries.GetActiveFleet;
 using NYCTaxiData.Application.Features.Drivers.Queries.GetDriverList;
 using NYCTaxiData.Application.Features.Drivers.Queries.GetDriverProfile;
@@ -39,5 +40,17 @@ public sealed class DriversMappingProfile : Profile
             .ForMember(d => d.ActiveTrips, opt => opt.Ignore())
             .ForMember(d => d.TotalEarnings, opt => opt.Ignore())
             .ForMember(d => d.LastTripEndedAt, opt => opt.Ignore());
+
+        CreateMap<Driver, DriverListDto>()
+         .ForMember(dest => dest.DriverId,
+             opt => opt.MapFrom(src => src.UserId.ToString()))
+         .ForMember(dest => dest.FirstName,
+             opt => opt.MapFrom(src =>
+                 src.User != null ? src.User.FirstName : "Unknown")) // ✅
+         .ForMember(dest => dest.LastName,
+             opt => opt.MapFrom(src =>
+                 src.User != null ? src.User.LastName : "Unknown"))  // ✅
+         .ForMember(dest => dest.Status,
+             opt => opt.MapFrom(src => src.Status.ToString()));
     }
-}
+    }

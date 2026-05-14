@@ -11,10 +11,10 @@ using NYCTaxiData.Application.Features.AI.Commands.EstimateCausalImpact;
 using NYCTaxiData.Application.Features.AI.Commands.OptimizeRepositioning;
 using NYCTaxiData.Application.Features.AI.Commands.StartFleetExpansionSimulation;
 using NYCTaxiData.Application.Features.AI.Queries.GetSimulationResult;
-using NYCTaxiData.Application.Features.AI.DTOs;
 using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Application.DTOs;
+using NYCTaxiData.Domain.DTOs;
 
 namespace NYCTaxiData.API.Controllers;
 

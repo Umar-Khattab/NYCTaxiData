@@ -59,6 +59,7 @@ namespace NYCTaxiData.Application.Common.Mappings
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
                 .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName))
                 .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
+
                 .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Userrole))
                 .ForMember(dest => dest.EmployeeId, opt => opt.Ignore())
                 .ForMember(dest => dest.Department, opt => opt.Ignore());
@@ -77,8 +78,14 @@ namespace NYCTaxiData.Application.Common.Mappings
             CreateMap<User, VerifyOtpResultDto>();
 
             CreateMap<RegisterDriverCommand, Driver>();
+            CreateMap<Driver, DriverListDto>()
+            .ForMember(dest => dest.DriverId, opt => opt.MapFrom(src => src.UserId))
 
-}
+            // 👈 التوجيه الصريح للأسماء عشان AutoMapper ميتلخبطش
+            .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.User.FirstName))
+            .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.User.LastName));
+
+        }
         }
     }
  

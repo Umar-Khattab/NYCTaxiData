@@ -27,8 +27,7 @@ namespace NYCTaxiData.Infrastructure.Services
                 query = query.OrderByDescending(spec.OrderByDescending);
 
             if (spec.IsPagingEnabled)
-                query = query.Skip(spec.Skip!.Value).Take(spec.Take!.Value);
-
+                query = query.Skip(spec.Skip!.Value).Take(spec.Take!.Value); 
             return query;
         }
     }
