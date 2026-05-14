@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NYCTaxiData.Domain.Entities;
+namespace NYCTaxiData.Infrastructure.Domain.EntitiesAi;
 
-public partial class Inferencelog
+public partial class Revenuefeature
 {
-    public Guid InferenceId { get; set; }
-
     public int? PuLocationId { get; set; }
 
     public decimal? AvgFare { get; set; }
@@ -27,7 +25,7 @@ public partial class Inferencelog
 
     public int? PickupHour { get; set; }
 
-    public double? RainMm { get; set; }
+    public decimal? RainMm { get; set; }
 
     public decimal? RevLag16h { get; set; }
 
@@ -37,17 +35,11 @@ public partial class Inferencelog
 
     public decimal? RevRollingMean7d { get; set; }
 
-    public double? RollingMean24h { get; set; }
+    public decimal? RollingMean24h { get; set; }
 
-    public double? TempC { get; set; }
+    public decimal? TempC { get; set; }
 
     public decimal? TipRate { get; set; }
 
     public int? WeatherCode { get; set; }
-
-    public DateTime? CreatedAt { get; set; }
-
-    public virtual Zone? PuLocation { get; set; }
-
-    public virtual ICollection<Simulationrequest> Simulationrequests { get; set; } = new List<Simulationrequest>();
 }

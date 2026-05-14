@@ -47,7 +47,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
                 DriverId = request.DriverId,
                 PickupLocationId = pickupLocations.First().LocationId,
                 DropoffLocationId = dropoffLocations.First().LocationId,
-                CreatedAt = DateTime.UtcNow, // 👈 دي اللي تسجلها دلوقتي
+                CreatedAt = DateTime.UtcNow,  
                 StartedAt = null,          
                 EndedAt = null
             };

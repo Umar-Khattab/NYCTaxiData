@@ -5,6 +5,7 @@ using NYCTaxiData.API.MiddleWares;
 using NYCTaxiData.Application;
 using NYCTaxiData.Application.Common.Interfaces;  
 using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Mappings;
 using NYCTaxiData.Infrastructure;
 using NYCTaxiData.Infrastructure.Services;
 using NYCTaxiData.Infrastructure.Services.Twilio;
@@ -21,8 +22,7 @@ builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
-builder.Services.AddHttpContextAccessor(); 
-builder.Services.AddScoped<NYCTaxiData.Application.Common.Interfaces.IAiPredictionService, NYCTaxiData.Infrastructure.Services.AiPredictionService>();
+builder.Services.AddHttpContextAccessor();  
 builder.Services.AddScoped<ISmsService, WhatsAppSmsService>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddSignalR();
@@ -30,6 +30,11 @@ builder.Services.AddAuthorization();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<IDispatchNotificationService, DispatchNotification>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<AIMappingProfile>();
+    cfg.AddProfile<MappingProfile>();
+});
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

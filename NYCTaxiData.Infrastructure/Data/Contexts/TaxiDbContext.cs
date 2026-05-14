@@ -1,25 +1,22 @@
-﻿using Microsoft.EntityFrameworkCore;
-using NYCTaxiData.Application.Common.Interfaces;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using NYCTaxiData.Domain.Entities;
-using NYCTaxiData.Domain.Enums;
-using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure;
-using NYCTaxiData.Infrastructure.Services;
-using System;
-using System.Collections.Generic; 
 using Object = NYCTaxiData.Domain.Entities.Object;
 
-namespace NYCTaxiData.Infrastructure.Data.Contexts;
+namespace NYCTaxiData.Infrastructure.Data.Contexts; 
 
 public partial class TaxiDbContext : DbContext
-{ 
-    private readonly ICurrentUserService _currentUserService; 
-    public TaxiDbContext(DbContextOptions<TaxiDbContext> options, ICurrentUserService currentUserService)
+{
+    public TaxiDbContext()
+    {
+    }
+
+    public TaxiDbContext(DbContextOptions<TaxiDbContext> options)
         : base(options)
     {
-        _currentUserService = currentUserService;
     }
-    public virtual DbSet<DailyStats> DailyStats { get; set; }
+
     public virtual DbSet<AuditLogEntry> AuditLogEntries { get; set; }
 
     public virtual DbSet<Bucket> Buckets { get; set; }
@@ -30,13 +27,13 @@ public partial class TaxiDbContext : DbContext
 
     public virtual DbSet<CustomOauthProvider> CustomOauthProviders { get; set; }
 
+    public virtual DbSet<DailyStat> DailyStats { get; set; }
+
     public virtual DbSet<Driver> Drivers { get; set; }
 
     public virtual DbSet<FlowState> FlowStates { get; set; }
 
     public virtual DbSet<Identity> Identities { get; set; }
-
-    public virtual DbSet<Inferencelog> Inferencelogs { get; set; }
 
     public virtual DbSet<Instance> Instances { get; set; }
 
@@ -60,7 +57,7 @@ public partial class TaxiDbContext : DbContext
 
     public virtual DbSet<OauthConsent> OauthConsents { get; set; }
 
-    public virtual DbSet<Object> Objects { get; set; }
+    public virtual DbSet< Object> Objects { get; set; }
 
     public virtual DbSet<OneTimeToken> OneTimeTokens { get; set; }
 
@@ -80,10 +77,6 @@ public partial class TaxiDbContext : DbContext
 
     public virtual DbSet<Session> Sessions { get; set; }
 
-    public virtual DbSet<Simulationrequest> Simulationrequests { get; set; }
-
-    public virtual DbSet<Simulationresult> Simulationresults { get; set; }
-
     public virtual DbSet<SsoDomain> SsoDomains { get; set; }
 
     public virtual DbSet<SsoProvider> SsoProviders { get; set; }
@@ -96,33 +89,42 @@ public partial class TaxiDbContext : DbContext
 
     public virtual DbSet<User1> Users1 { get; set; }
 
-    public Task<User1?> GetUserByPhoneAsync(string phoneNumber, CancellationToken cancellationToken = default)
-        => Users1.FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber, cancellationToken);
-
     public virtual DbSet<VectorIndex> VectorIndexes { get; set; }
-
-    public virtual DbSet<Weathersnapshot> Weathersnapshots { get; set; }
 
     public virtual DbSet<WebauthnChallenge> WebauthnChallenges { get; set; }
 
     public virtual DbSet<WebauthnCredential> WebauthnCredentials { get; set; }
 
-    public virtual DbSet<Zone> Zones { get; set; } 
+    public virtual DbSet<Zone> Zones { get; set; }
 
-    // C#
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (optionsBuilder.IsConfigured) return;
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseNpgsql("Host=aws-1-eu-central-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.aufjywcejdsmyfbkyoal;Password=*GradProject2026#;SSL Mode=Require;Trust Server Certificate=true;Command Timeout=120;Timeout=120;Keepalive=30;Multiplexing=False;Pooling=true;Minimum Pool Size=1;Maximum Pool Size=10;");
 
-        // Fail fast instead of silently using an embedded connection string
-        throw new InvalidOperationException(
-            "TaxiDbContext was not configured. Configure the DbContext via DI and provide a valid connection string.");
-    }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // choose one: if app provides GUIDs
+        modelBuilder.Entity<User1>(entity =>
+        {
+            entity.ToTable("users");
+
+            // ✅ أضف دول
+            entity.Property(e => e.FirstName)
+                  .HasColumnName("first_name");
+
+            entity.Property(e => e.LastName)
+                  .HasColumnName("last_name");
+
+            entity.Property(e => e.PhoneNumber)
+                  .HasColumnName("phone_number");
+
+            entity.Property(e => e.PasswordHash)
+                  .HasColumnName("password_hash");
+
+            entity.Property(e => e.CreatedAt)
+                  .HasColumnName("created_at");
+        });
         modelBuilder.Entity<User>()
-            .HasKey(u => u.Id);
+          .HasKey(u => u.Id);
         modelBuilder.Entity<User>()
             .Property(u => u.Id)
             .ValueGeneratedNever();
@@ -140,8 +142,12 @@ public partial class TaxiDbContext : DbContext
           .HasColumnName("id")
           .HasDefaultValueSql("gen_random_uuid()") // 👈 يخلي الداتابيز تولده تلقائياً
           .ValueGeneratedOnAdd();
-     
 
+            entity.Property(e => e.FirstName)
+      .HasColumnName("first_name");  // ✅
+
+            entity.Property(e => e.LastName)
+                  .HasColumnName("last_name");
             entity.Property(u => u.FirstName).HasColumnName("first_name");
             entity.Property(u => u.LastName).HasColumnName("last_name");
             entity.Property(u => u.PhoneNumber).HasColumnName("phone_number");
@@ -156,22 +162,22 @@ public partial class TaxiDbContext : DbContext
 
             entity.Property(u => u.Updatedat).HasColumnName("updated_at");
         });
-         
+
         modelBuilder.Entity<Manager>(entity =>
         {
             entity.ToTable("managers");
-            entity.HasKey(m => m.Id);  
+            entity.HasKey(m => m.Id);
 
             entity.Property(m => m.Id).HasColumnName("id");
             entity.Property(m => m.Employeeid).HasColumnName("employeeid");
             entity.Property(m => m.Department).HasColumnName("department");
-             
+
             entity.HasOne<User1>()
                   .WithOne(u => u.Manager)
                   .HasForeignKey<Manager>(m => m.Id)
                   .OnDelete(DeleteBehavior.Cascade);
         });
-         
+
         modelBuilder.Entity<Driver>(entity =>
         {
             entity.ToTable("drivers");
@@ -186,13 +192,18 @@ public partial class TaxiDbContext : DbContext
 
             entity.Property(d => d.Status)
                   .HasColumnName("status")
-                  .HasConversion<string>();  
-             
+                  .HasConversion<string>();
+
             entity.HasOne<User1>()
                   .WithOne(u => u.Driver)
                   .HasForeignKey<Driver>(d => d.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(d => d.Status)
+      .HasColumnName("status")
+      .HasConversion<string>();
         });
+
         modelBuilder
             .HasPostgresEnum("auth", "aal_level", new[] { "aal1", "aal2", "aal3" })
             .HasPostgresEnum("auth", "code_challenge_method", new[] { "s256", "plain" })
@@ -371,9 +382,38 @@ public partial class TaxiDbContext : DbContext
             entity.Property(e => e.UserinfoUrl).HasColumnName("userinfo_url");
         });
 
+        modelBuilder.Entity<DailyStat>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("daily_stats_pkey");
+
+            entity.ToTable("daily_stats");
+
+            entity.HasIndex(e => e.Date, "daily_stats_date_key").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ActiveDrivers).HasColumnName("active_drivers");
+            entity.Property(e => e.AvgFare)
+                .HasPrecision(10, 2)
+                .HasColumnName("avg_fare");
+            entity.Property(e => e.AvgTripMinutes).HasColumnName("avg_trip_minutes");
+            entity.Property(e => e.CancelledTrips).HasColumnName("cancelled_trips");
+            entity.Property(e => e.CompletedTrips).HasColumnName("completed_trips");
+            entity.Property(e => e.ComputedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("computed_at");
+            entity.Property(e => e.Date).HasColumnName("date");
+            entity.Property(e => e.TotalRevenue)
+                .HasPrecision(12, 2)
+                .HasColumnName("total_revenue");
+            entity.Property(e => e.TotalTrips).HasColumnName("total_trips");
+        });
+
         modelBuilder.Entity<Driver>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("drivers_pkey");
+            entity.Property(e => e.Status)
+     .HasColumnName("status") // 👈 دي أهم حتة عشان يربط بـ status اللي في Postgres
+     .HasConversion<string>();
 
             entity.ToTable("drivers");
 
@@ -467,55 +507,6 @@ public partial class TaxiDbContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.Identities)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("identities_user_id_fkey");
-        });
-
-        modelBuilder.Entity<Inferencelog>(entity =>
-        {
-            entity.HasKey(e => e.InferenceId).HasName("inferencelog_pkey");
-
-            entity.ToTable("inferencelog");
-
-            entity.Property(e => e.InferenceId)
-                .HasDefaultValueSql("gen_random_uuid()")
-                .HasColumnName("inference_id");
-            entity.Property(e => e.AvgFare)
-                .HasPrecision(10, 2)
-                .HasColumnName("avg_fare");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnName("created_at");
-            entity.Property(e => e.DayOfWeek).HasColumnName("day_of_week");
-            entity.Property(e => e.IsHoliday).HasColumnName("is_holiday");
-            entity.Property(e => e.IsRain).HasColumnName("is_rain");
-            entity.Property(e => e.IsWeekend).HasColumnName("is_weekend");
-            entity.Property(e => e.Lag16h).HasColumnName("lag_1_6h");
-            entity.Property(e => e.Lag26h).HasColumnName("lag_2_6h");
-            entity.Property(e => e.Lag46h).HasColumnName("lag_4_6h");
-            entity.Property(e => e.PickupHour).HasColumnName("pickup_hour");
-            entity.Property(e => e.PuLocationId).HasColumnName("pu_location_id");
-            entity.Property(e => e.RainMm).HasColumnName("rain_mm");
-            entity.Property(e => e.RevLag16h)
-                .HasPrecision(10, 2)
-                .HasColumnName("rev_lag_1_6h");
-            entity.Property(e => e.RevLag1Week)
-                .HasPrecision(10, 2)
-                .HasColumnName("rev_lag_1_week");
-            entity.Property(e => e.RevRollingMean30d)
-                .HasPrecision(10, 2)
-                .HasColumnName("rev_rolling_mean_30d");
-            entity.Property(e => e.RevRollingMean7d)
-                .HasPrecision(10, 2)
-                .HasColumnName("rev_rolling_mean_7d");
-            entity.Property(e => e.RollingMean24h).HasColumnName("rolling_mean_24h");
-            entity.Property(e => e.TempC).HasColumnName("temp_c");
-            entity.Property(e => e.TipRate)
-                .HasPrecision(5, 4)
-                .HasColumnName("tip_rate");
-            entity.Property(e => e.WeatherCode).HasColumnName("weather_code");
-
-            entity.HasOne(d => d.PuLocation).WithMany(p => p.Inferencelogs)
-                .HasForeignKey(d => d.PuLocationId)
-                .HasConstraintName("inferencelog_pu_location_id_fkey");
         });
 
         modelBuilder.Entity<Instance>(entity =>
@@ -1123,70 +1114,6 @@ public partial class TaxiDbContext : DbContext
                 .HasConstraintName("sessions_user_id_fkey");
         });
 
-        modelBuilder.Entity<Simulationrequest>(entity =>
-        {
-            entity.HasKey(e => e.SimulationId).HasName("simulationrequest_pkey");
-
-            entity.ToTable("simulationrequest");
-
-            entity.Property(e => e.SimulationId).HasColumnName("simulation_id");
-            entity.Property(e => e.DropoffLocationId).HasColumnName("dropoff_location_id");
-            entity.Property(e => e.InferenceId).HasColumnName("inference_id");
-            entity.Property(e => e.PassengerCount)
-                .HasDefaultValue(1)
-                .HasColumnName("passenger_count");
-            entity.Property(e => e.PickupDatetime).HasColumnName("pickup_datetime");
-            entity.Property(e => e.PickupLocationId).HasColumnName("pickup_location_id");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-
-            entity.HasOne(d => d.DropoffLocation).WithMany(p => p.SimulationrequestDropoffLocations)
-                .HasForeignKey(d => d.DropoffLocationId)
-                .HasConstraintName("simulationrequest_dropoff_location_id_fkey");
-
-            entity.HasOne(d => d.Inference).WithMany(p => p.Simulationrequests)
-                .HasForeignKey(d => d.InferenceId)
-                .HasConstraintName("simulationrequest_inference_id_fkey");
-
-            entity.HasOne(d => d.PickupLocation).WithMany(p => p.SimulationrequestPickupLocations)
-                .HasForeignKey(d => d.PickupLocationId)
-                .HasConstraintName("simulationrequest_pickup_location_id_fkey");
-
-            entity.HasOne(d => d.User).WithMany(p => p.Simulationrequests)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("simulationrequest_user_id_fkey");
-        });
-
-        modelBuilder.Entity<Simulationresult>(entity =>
-        {
-            entity.HasKey(e => e.ResultId).HasName("simulationresult_pkey");
-
-            entity.ToTable("simulationresult");
-
-            entity.HasIndex(e => e.SimulationId, "simulationresult_simulation_id_key").IsUnique();
-
-            entity.Property(e => e.ResultId).HasColumnName("result_id");
-            entity.Property(e => e.ComputedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnName("computed_at");
-            entity.Property(e => e.DemandP50).HasColumnName("demand_p50");
-            entity.Property(e => e.DemandP90).HasColumnName("demand_p90");
-            entity.Property(e => e.RevenueP50)
-                .HasPrecision(10, 2)
-                .HasColumnName("revenue_p50");
-            entity.Property(e => e.RevenueP90)
-                .HasPrecision(10, 2)
-                .HasColumnName("revenue_p90");
-            entity.Property(e => e.SimulationId).HasColumnName("simulation_id");
-            entity.Property(e => e.StockoutProb)
-                .HasPrecision(5, 4)
-                .HasColumnName("stockout_prob");
-
-            entity.HasOne(d => d.Simulation).WithOne(p => p.Simulationresult)
-                .HasForeignKey<Simulationresult>(d => d.SimulationId)
-                .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("simulationresult_simulation_id_fkey");
-        });
-
         modelBuilder.Entity<SsoDomain>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("sso_domains_pkey");
@@ -1257,8 +1184,6 @@ public partial class TaxiDbContext : DbContext
 
             entity.HasIndex(e => new { e.StartedAt, e.PickupLocationId }, "idx_trips_time_zone");
 
-            entity.HasIndex(e => e.SimulationId, "trips_simulation_id_key").IsUnique();
-
             entity.Property(e => e.TripId).HasColumnName("trip_id");
             entity.Property(e => e.CvDataPath).HasColumnName("cv_data_path");
             entity.Property(e => e.DriverId).HasColumnName("driver_id");
@@ -1272,7 +1197,6 @@ public partial class TaxiDbContext : DbContext
                 .HasMaxLength(20)
                 .HasDefaultValueSql("'Pending'::character varying")
                 .HasColumnName("process_status");
-            entity.Property(e => e.SimulationId).HasColumnName("simulation_id");
             entity.Property(e => e.StartedAt).HasColumnName("started_at");
             entity.Property(e => e.TipAmount)
                 .HasPrecision(10, 2)
@@ -1294,10 +1218,20 @@ public partial class TaxiDbContext : DbContext
             entity.HasOne(d => d.PickupLocation).WithMany(p => p.TripPickupLocations)
                 .HasForeignKey(d => d.PickupLocationId)
                 .HasConstraintName("trips_pickup_location_id_fkey");
+            entity.Property(e => e.CreatedAt)
+          .HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt)
+                      .HasDefaultValueSql("now()")  
+                      .ValueGeneratedOnAdd();
 
-            entity.HasOne(d => d.Simulation).WithOne(p => p.Trip)
-                .HasForeignKey<Trip>(d => d.SimulationId)
-                .HasConstraintName("trips_simulation_id_fkey");
+            entity.Property(e => e.CreatedBy)
+          .HasColumnName("created_by");
+
+            entity.Property(e => e.DeletedAt)
+          .HasColumnName("deleted_at");  
+
+            entity.Property(e => e.DeletedBy)
+                  .HasColumnName("deleted_by");
         });
 
         modelBuilder.Entity<User>(entity =>
@@ -1420,33 +1354,7 @@ public partial class TaxiDbContext : DbContext
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         });
 
-        modelBuilder.Entity<User1>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("users_pkey");
-
-            entity.ToTable("users");
-             
-
-            entity.HasIndex(e => e.PhoneNumber, "users_phone_number_key").IsUnique();
-
-            entity.Property(e => e.Id)
-                .HasDefaultValueSql("gen_random_uuid()")
-                .HasColumnName("id");
-             
-            entity.Property(e => e.FirstName)
-                .HasMaxLength(50)
-                .HasColumnName("first_name");
-            entity.Property(e => e.LastName)
-                .HasMaxLength(50)
-                .HasColumnName("last_name");
-            entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
-            entity.Property(e => e.PhoneNumber)
-                .HasMaxLength(15)
-                .HasColumnName("phone_number");
-            entity.Property(e => e.Updatedat)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnName("updatedat");
-        });
+      
 
         modelBuilder.Entity<VectorIndex>(entity =>
         {
@@ -1484,28 +1392,6 @@ public partial class TaxiDbContext : DbContext
                 .HasConstraintName("vector_indexes_bucket_id_fkey");
         });
 
-        modelBuilder.Entity<Weathersnapshot>(entity =>
-        {
-            entity.HasKey(e => e.WeatherId).HasName("weathersnapshot_pkey");
-
-            entity.ToTable("weathersnapshot");
-
-            entity.HasIndex(e => e.CapturedAt, "idx_weather_lookup").IsDescending();
-
-            entity.Property(e => e.WeatherId).HasColumnName("weather_id");
-            entity.Property(e => e.CapturedAt).HasColumnName("captured_at");
-            entity.Property(e => e.IsRain)
-                .HasDefaultValue(0)
-                .HasColumnName("is_rain");
-            entity.Property(e => e.RainMm)
-                .HasDefaultValue(0.0)
-                .HasColumnName("rain_mm");
-            entity.Property(e => e.TempC).HasColumnName("temp_c");
-            entity.Property(e => e.WeatherCode)
-                .HasDefaultValue(0)
-                .HasColumnName("weather_code");
-        });
-
         modelBuilder.Entity<WebauthnChallenge>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("webauthn_challenges_pkey");
@@ -1533,22 +1419,6 @@ public partial class TaxiDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("webauthn_challenges_user_id_fkey");
-        });
-
-        modelBuilder.Entity<DailyStats>(entity =>
-        {
-            entity.ToTable("daily_stats");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Date).HasColumnName("date");
-            entity.Property(e => e.TotalTrips).HasColumnName("total_trips");
-            entity.Property(e => e.TotalRevenue).HasColumnName("total_revenue");
-            entity.Property(e => e.ActiveDrivers).HasColumnName("active_drivers");
-            entity.Property(e => e.AvgTripMinutes).HasColumnName("avg_trip_minutes");
-            entity.Property(e => e.AvgFare).HasColumnName("avg_fare");
-            entity.Property(e => e.CompletedTrips).HasColumnName("completed_trips");
-            entity.Property(e => e.CancelledTrips).HasColumnName("cancelled_trips");
-            entity.Property(e => e.ComputedAt).HasColumnName("computed_at");
         });
 
         modelBuilder.Entity<WebauthnCredential>(entity =>
@@ -1616,5 +1486,4 @@ public partial class TaxiDbContext : DbContext
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
-  
 }

@@ -20,16 +20,7 @@ namespace NYCTaxiData.Domain.Interfaces
 
         IGenericRepository<Zone> Zones { get; }
 
-        IGenericRepository<Location> Locations { get; }
-
-        IGenericRepository<Simulationrequest> SimulationRequests { get; }
-
-        IGenericRepository<Simulationresult> SimulationResults { get; }
-
-        IGenericRepository<Demandprediction> DemandPredictions { get; }
-
-        IGenericRepository<Weathersnapshot> WeatherSnapshots { get; }
-
+        IGenericRepository<Location> Locations { get; } 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
         Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken cancellationToken = default);

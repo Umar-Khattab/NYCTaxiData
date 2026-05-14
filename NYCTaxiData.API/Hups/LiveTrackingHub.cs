@@ -192,4 +192,15 @@ public class LiveTrackingHub : Hub
             Text = message
         });
     }
+
+    public async Task SendDemandAlert(string areaName, string time, string message)
+    { 
+        await Clients.Group("Drivers").SendAsync("ReceiveDemandAlert", new
+        {
+            Area = areaName,
+            TargetTime = time,
+            Message = message,
+            Timestamp = DateTime.UtcNow
+        });
+    }
 }

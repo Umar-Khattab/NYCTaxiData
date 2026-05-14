@@ -1,6 +1,6 @@
 using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Application.DTOs;
-using NYCTaxiData.Application.Features.AI.DTOs;
+using NYCTaxiData.Domain.DTOs;
 using NYCTaxiData.Domain.Enums;
 
 namespace NYCTaxiData.Application.Common.Interfaces;

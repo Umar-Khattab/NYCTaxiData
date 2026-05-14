@@ -2,7 +2,7 @@ using MediatR;
 using NYCTaxiData.Application.Common;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 using NYCTaxiData.Application.Common.Models;
-using NYCTaxiData.Application.Features.AI.DTOs;
+using NYCTaxiData.Domain.DTOs;
 
 namespace NYCTaxiData.Application.Features.AI.Queries.GetSimulationResult;
 
