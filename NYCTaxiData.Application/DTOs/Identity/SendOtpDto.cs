@@ -8,6 +8,6 @@ namespace NYCTaxiData.Application.DTOs.Identity
     public class SendOtpDto
     { 
         [Phone]  
-        public string PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = string.Empty;
     }
 }

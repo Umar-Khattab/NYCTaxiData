@@ -24,12 +24,11 @@ public class AIMappingProfile : Profile
         CreateMap<SimulationResult, SimulationMetrics>();
 
         // Demand prediction mappings
-        CreateMap<Demandprediction, Demand15MinResult>()
-            .ForMember(dest => dest.ZoneId, opt => opt.MapFrom(src => src.ZoneId))
-            .ForMember(dest => dest.P50, opt => opt.MapFrom(src => src.P50))
-            .ForMember(dest => dest.P90, opt => opt.MapFrom(src => src.P90))
-            .ForMember(dest => dest.LowerBound, opt => opt.Ignore())
-            .ForMember(dest => dest.UpperBound, opt => opt.Ignore());
+        CreateMap<Demandprediction, Demand6hResult>()
+            .ForMember(dest => dest.Status, opt => opt.Ignore())
+            .ForMember(dest => dest.PickupLocationId, opt => opt.MapFrom(src => src.ZoneId))
+            .ForMember(dest => dest.PredictedDemand6h, opt => opt.MapFrom(src => src.P50))
+            .ForMember(dest => dest.ShapeFile, opt => opt.Ignore());
 
         // Zone supply state mappings
         CreateMap<Zone, ZoneSupplyState>()

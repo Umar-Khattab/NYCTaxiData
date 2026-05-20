@@ -9,4 +9,4 @@ namespace NYCTaxiData.Application.Features.AI.Commands.PredictDemand6h;
 /// </summary>
 public record PredictDemand6hCommand(
     List<Demand6hInput> Zones
-) : IRequest<Result<BatchPredictionResponse<Demand6hResult>>>;
+) : IRequest<Result<List<Demand6hResult>>>;

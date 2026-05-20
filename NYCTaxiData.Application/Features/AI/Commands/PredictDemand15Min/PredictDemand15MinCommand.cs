@@ -10,4 +10,4 @@ namespace NYCTaxiData.Application.Features.AI.Commands.PredictDemand15Min;
 public record PredictDemand15MinCommand(
     List<Demand15MinInput> Zones,
     bool RoundToInt = true
-) : IRequest<Result<BatchPredictionResponse<Demand15MinResult>>>;
+) : IRequest<Result<List<Demand15MinResult>>>;

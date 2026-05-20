@@ -10,7 +10,7 @@ namespace NYCTaxiData.Application.Features.AI.Commands.PredictRevenue;
 /// <summary>
 /// Handler for <see cref="PredictRevenueCommand"/>.
 /// </summary>
-public class PredictRevenueCommandHandler : IRequestHandler<PredictRevenueCommand, Result<BatchPredictionResponse<RevenueResult>>>
+public class PredictRevenueCommandHandler : IRequestHandler<PredictRevenueCommand, Result<List<RevenueResult>>>
 {
     private readonly IAiPredictionService _aiPredictionService;
     private readonly ILogger<PredictRevenueCommandHandler> _logger;
@@ -25,12 +25,12 @@ public class PredictRevenueCommandHandler : IRequestHandler<PredictRevenueComman
     }
 
     /// <inheritdoc />
-    public async Task<Result<BatchPredictionResponse<RevenueResult>>> Handle(PredictRevenueCommand request, CancellationToken cancellationToken)
+    public async Task<Result<List<RevenueResult>>> Handle(PredictRevenueCommand request, CancellationToken cancellationToken)
     {
         try
         {
             var result = await _aiPredictionService.PredictRevenueAsync(request.Zones, cancellationToken);
-            return Result<BatchPredictionResponse<RevenueResult>>.Success(result, "Revenue predictions generated successfully");
+            return Result<List<RevenueResult>>.Success(result, "Revenue predictions generated successfully");
         }
         catch (HttpRequestException ex)
         {

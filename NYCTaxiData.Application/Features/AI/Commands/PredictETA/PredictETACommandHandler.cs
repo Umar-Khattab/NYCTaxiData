@@ -10,7 +10,7 @@ namespace NYCTaxiData.Application.Features.AI.Commands.PredictETA;
 /// <summary>
 /// Handler for <see cref="PredictETACommand"/>.
 /// </summary>
-public class PredictETACommandHandler : IRequestHandler<PredictETACommand, Result<BatchPredictionResponse<ETAResult>>>
+public class PredictETACommandHandler : IRequestHandler<PredictETACommand, Result<List<ETAResult>>>
 {
     private readonly IAiPredictionService _aiPredictionService;
     private readonly ILogger<PredictETACommandHandler> _logger;
@@ -25,12 +25,12 @@ public class PredictETACommandHandler : IRequestHandler<PredictETACommand, Resul
     }
 
     /// <inheritdoc />
-    public async Task<Result<BatchPredictionResponse<ETAResult>>> Handle(PredictETACommand request, CancellationToken cancellationToken)
+    public async Task<Result<List<ETAResult>>> Handle(PredictETACommand request, CancellationToken cancellationToken)
     {
         try
         {
             var result = await _aiPredictionService.PredictETAAsync(request.Routes, cancellationToken);
-            return Result<BatchPredictionResponse<ETAResult>>.Success(result, "ETA predictions generated successfully");
+            return Result<List<ETAResult>>.Success(result, "ETA predictions generated successfully");
         }
         catch (HttpRequestException ex)
         {

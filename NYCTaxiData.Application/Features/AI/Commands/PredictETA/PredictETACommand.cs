@@ -9,4 +9,4 @@ namespace NYCTaxiData.Application.Features.AI.Commands.PredictETA;
 /// </summary>
 public record PredictETACommand(
     List<ETAInput> Routes
-) : IRequest<Result<BatchPredictionResponse<ETAResult>>>;
+) : IRequest<Result<List<ETAResult>>>;

@@ -9,4 +9,4 @@ namespace NYCTaxiData.Application.Features.AI.Commands.PredictStockOut;
 /// </summary>
 public record PredictStockOutCommand(
     List<StockOutInput> Zones
-) : IRequest<Result<BatchPredictionResponse<StockOutResult>>>;
+) : IRequest<Result<List<StockOutResult>>>;

@@ -8,10 +8,10 @@ namespace NYCTaxiData.Application.DTOs.Identity
     public class VerifyOtpDto
     {
         [Required]
-        public string PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "OTP code required")]
-        public string OtpCode { get; set; }
+        public string OtpCode { get; set; } = string.Empty;
     }
 
 }

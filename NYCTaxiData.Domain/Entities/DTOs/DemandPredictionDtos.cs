@@ -1,5 +1,6 @@
 using NYCTaxiData.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace NYCTaxiData.Application.Features.AI.DTOs;
 
@@ -28,11 +29,36 @@ public record Demand15MinInput(
 /// Result of a 15-minute demand prediction for a single zone.
 /// </summary>
 public record Demand15MinResult(
-    int ZoneId,
-    double P50,
-    double P90,
-    double LowerBound,
-    double UpperBound
+    string Status,
+    [property: JsonPropertyName("PULocationID")] int PickupLocationId,
+    [property: JsonPropertyName("Predicted_Demand_15min")] double PredictedDemand15Min,
+    [property: JsonPropertyName("shp_file")] GeoJsonFeatureCollection ShapeFile
+);
+
+public record GeoJsonFeatureCollection(
+    string Type,
+    List<GeoJsonFeature> Features
+);
+
+public record GeoJsonFeature(
+    string Id,
+    string Type,
+    GeoJsonProperties Properties,
+    GeoJsonGeometry Geometry
+);
+
+public record GeoJsonProperties(
+    int OBJECTID,
+    double Shape_Leng,
+    double Shape_Area,
+    string Zone,
+    int LocationID,
+    string Borough
+);
+
+public record GeoJsonGeometry(
+    string Type,
+    List<List<List<double>>> Coordinates
 );
 
 /// <summary>
@@ -58,11 +84,10 @@ public record Demand6hInput(
 /// Result of a 6-hour demand prediction for a single zone.
 /// </summary>
 public record Demand6hResult(
-    int ZoneId,
-    double P50,
-    double P90,
-    double ConfidenceIntervalLower,
-    double ConfidenceIntervalUpper
+    string Status,
+    [property: JsonPropertyName("PULocationID")] int PickupLocationId,
+    [property: JsonPropertyName("Predicted_Demand_6h")] double PredictedDemand6h,
+    [property: JsonPropertyName("shp_file")] GeoJsonFeatureCollection ShapeFile
 );
 
 /// <summary>
@@ -82,22 +107,24 @@ public record ETAInput(
 /// Result of an ETA prediction for a zone pair.
 /// </summary>
 public record ETAResult(
-    int PickupZoneId,
-    int DropoffZoneId,
-    double P50Seconds,
-    double P90Seconds
-)
-{
-    /// <summary>
-    /// Median ETA in minutes.
-    /// </summary>
-    public double P50Minutes => P50Seconds / 60;
+    string Status,
+    [property: JsonPropertyName("predictions")] ETAPredictions Predictions,
+    [property: JsonPropertyName("info")] ETAInfo Info,
+    [property: JsonPropertyName("shp_file")] GeoJsonFeatureCollection PickupShapeFile,
+    [property: JsonPropertyName("pickup_shp_file")] GeoJsonFeatureCollection PickupShapeFileAlt,
+    [property: JsonPropertyName("dropoff_shp_file")] GeoJsonFeatureCollection DropoffShapeFile
+);
 
-    /// <summary>
-    /// 90th percentile ETA in minutes.
-    /// </summary>
-    public double P90Minutes => P90Seconds / 60;
-}
+public record ETAPredictions(
+    [property: JsonPropertyName("median_eta_seconds")] double MedianEtaSeconds,
+    [property: JsonPropertyName("upper_bound_eta_seconds")] double UpperBoundEtaSeconds,
+    [property: JsonPropertyName("median_eta_minutes")] double MedianEtaMinutes
+);
+
+public record ETAInfo(
+    [property: JsonPropertyName("pickup")] string Pickup,
+    [property: JsonPropertyName("distance")] double Distance
+);
 
 /// <summary>
 /// Input features for revenue prediction per zone.
@@ -125,10 +152,10 @@ public record RevenueInput(
 /// Result of a revenue prediction for a single zone.
 /// </summary>
 public record RevenueResult(
-    int ZoneId,
-    double P50,
-    double P90,
-    double ExpectedTotalRevenue
+    [property: JsonPropertyName("PULocationID")] int PickupLocationId,
+    [property: JsonPropertyName("Predicted_Revenue_P50")] double PredictedRevenueP50,
+    [property: JsonPropertyName("Predicted_Revenue_P90")] double PredictedRevenueP90,
+    [property: JsonPropertyName("shp_file")] GeoJsonFeatureCollection ShapeFile
 );
 
 /// <summary>
@@ -158,23 +185,26 @@ public record StockOutInput(
 /// Result of a stock-out prediction for a single zone.
 /// </summary>
 public record StockOutResult(
-    int ZoneId,
-    double Probability
+    [property: JsonPropertyName("zone_id")] int ZoneId,
+    [property: JsonPropertyName("Probability_of_StockOut")] double ProbabilityOfStockOut,
+    [property: JsonPropertyName("Will_StockOut")] int WillStockOutRaw,
+    [property: JsonPropertyName("Risk_Level")] string RiskLevelRaw,
+    [property: JsonPropertyName("shp_file")] GeoJsonFeatureCollection ShapeFile
 )
 {
     /// <summary>
     /// Indicates whether the zone is predicted to stock out.
     /// </summary>
-    public bool WillStockOut => Probability > 0.5;
+    public bool WillStockOut => WillStockOutRaw == 1;
 
     /// <summary>
     /// The assessed risk level based on the stock-out probability.
     /// </summary>
-    public RiskLevel RiskLevel => Probability switch
+    public RiskLevel RiskLevel => RiskLevelRaw.ToUpper() switch
     {
-        > 0.8 => RiskLevel.Critical,
-        > 0.5 => RiskLevel.High,
-        > 0.3 => RiskLevel.Medium,
+        "CRITICAL" => RiskLevel.Critical,
+        "HIGH" => RiskLevel.High,
+        "MEDIUM" => RiskLevel.Medium,
         _ => RiskLevel.Low
     };
 }

@@ -1,6 +1,5 @@
 ﻿// NYCTaxiData.Application/Common/Interfaces/IDispatchNotificationService.cs
 using NYCTaxiData.Application.DTOs.Tracking;
-using NYCTaxiData.Application.DTOs.Tracking;
 
 namespace NYCTaxiData.Application.Common.Interfaces;
 

@@ -6,11 +6,7 @@ using NYCTaxiData.Application.Features.AI.Commands.PredictDemand6h;
 using NYCTaxiData.Application.Features.AI.Commands.PredictETA;
 using NYCTaxiData.Application.Features.AI.Commands.PredictRevenue;
 using NYCTaxiData.Application.Features.AI.Commands.PredictStockOut;
-using NYCTaxiData.Application.Features.AI.Commands.RankProfitZones;
-using NYCTaxiData.Application.Features.AI.Commands.EstimateCausalImpact;
 using NYCTaxiData.Application.Features.AI.Commands.OptimizeRepositioning;
-using NYCTaxiData.Application.Features.AI.Commands.StartFleetExpansionSimulation;
-using NYCTaxiData.Application.Features.AI.Queries.GetSimulationResult;
 using NYCTaxiData.Application.Features.AI.DTOs;
 using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Domain.Enums;
@@ -52,7 +48,7 @@ public class AiController : ControllerBase
     /// Predicts 15-minute demand for a list of zones.
     /// </summary>
     [HttpPost("predict/demand-15min")]
-    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<Demand15MinResult>>>> PredictDemand15Min(
+    public async Task<ActionResult<ApiResponse<List<Demand15MinResult>>>> PredictDemand15Min(
         [FromBody] PredictDemand15MinCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -103,27 +99,7 @@ public class AiController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Ranks zones by expected profit.
-    /// </summary>
-    [HttpPost("predict/profit-zones")]
-    public async Task<ActionResult<ApiResponse<List<ProfitZoneResult>>>> RankProfitZones(
-        [FromBody] RankProfitZonesCommand command, CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-        return Ok(result);
-    }
 
-    /// <summary>
-    /// Estimates the causal impact of a treatment event on demand in a zone.
-    /// </summary>
-    [HttpPost("predict/causal-impact")]
-    public async Task<ActionResult<ApiResponse<CausalImpactResult>>> EstimateCausalImpact(
-        [FromBody] EstimateCausalImpactCommand command, CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-        return Ok(result);
-    }
 
     // ========================================================================
     // NEW endpoints - Optimization & Simulation
@@ -137,34 +113,6 @@ public class AiController : ControllerBase
         [FromBody] OptimizeRepositioningCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Starts a fleet expansion simulation job.
-    /// </summary>
-    [HttpPost("simulate/fleet-expansion")]
-    public async Task<ActionResult<ApiResponse<SimulationJobResponse>>> StartFleetExpansionSimulation(
-        [FromBody] StartFleetExpansionSimulationCommand command, CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-        return Accepted(result);
-    }
-
-    /// <summary>
-    /// Retrieves the result of a simulation by its ID.
-    /// Returns 202 Accepted if the simulation is still running.
-    /// </summary>
-    [HttpGet("simulate/{simulationId}")]
-    public async Task<ActionResult<ApiResponse<PaginatedList<SimulationResult>>>> GetSimulationResult(
-        [FromRoute] string simulationId,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
-        CancellationToken ct = default)
-    {
-        var query = new GetSimulationResultQuery(simulationId, pageNumber, pageSize);
-        var result = await _mediator.Send(query, ct);
-
         return Ok(result);
     }
 }

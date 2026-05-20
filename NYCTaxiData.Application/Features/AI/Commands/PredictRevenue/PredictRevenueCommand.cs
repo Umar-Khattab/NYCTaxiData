@@ -9,4 +9,4 @@ namespace NYCTaxiData.Application.Features.AI.Commands.PredictRevenue;
 /// </summary>
 public record PredictRevenueCommand(
     List<RevenueInput> Zones
-) : IRequest<Result<BatchPredictionResponse<RevenueResult>>>;
+) : IRequest<Result<List<RevenueResult>>>;

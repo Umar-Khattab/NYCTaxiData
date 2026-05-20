@@ -8,6 +8,6 @@ namespace NYCTaxiData.Application.DTOs.Identity
     public class ForgetPasswordDto
     {
         [Required(ErrorMessage = "Phone number is required.")]
-        public string PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = string.Empty;
     }
 }

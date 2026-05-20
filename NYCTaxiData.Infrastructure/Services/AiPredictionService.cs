@@ -28,97 +28,61 @@ public class AiPredictionService : IAiPredictionService
     }
 
     /// <inheritdoc />
-    public async Task<BatchPredictionResponse<Demand15MinResult>> PredictDemand15MinAsync(
+    public async Task<List<Demand15MinResult>> PredictDemand15MinAsync(
         List<Demand15MinInput> zones, bool roundToInt, CancellationToken ct = default)
     {
-        var stopwatch = Stopwatch.StartNew();
         var response = await _httpClient.PostAsJsonAsync("/predict/demand_15min", new { zones, round_to_int = roundToInt }, ct);
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<BatchPredictionResponse<Demand15MinResult>>(ct);
-        stopwatch.Stop();
-        return result! with { Metadata = result.Metadata with { InferenceTimeMs = stopwatch.ElapsedMilliseconds } };
+        var result = await response.Content.ReadFromJsonAsync<List<Demand15MinResult>>(ct);
+        return result ?? new List<Demand15MinResult>();
     }
 
     /// <inheritdoc />
-    public async Task<BatchPredictionResponse<Demand6hResult>> PredictDemand6hAsync(
+    public async Task<List<Demand6hResult>> PredictDemand6hAsync(
         List<Demand6hInput> zones, CancellationToken ct = default)
     {
         var stopwatch = Stopwatch.StartNew();
         var response = await _httpClient.PostAsJsonAsync("/predict/demand_6h", new { zones }, ct);
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<BatchPredictionResponse<Demand6hResult>>(ct);
+        var result = await response.Content.ReadFromJsonAsync<List<Demand6hResult>>(ct);
         stopwatch.Stop();
-        return result! with { Metadata = result.Metadata with { InferenceTimeMs = stopwatch.ElapsedMilliseconds } };
+        return result ?? new List<Demand6hResult>();
     }
 
     /// <inheritdoc />
-    public async Task<BatchPredictionResponse<ETAResult>> PredictETAAsync(
+    public async Task<List<ETAResult>> PredictETAAsync(
         List<ETAInput> routes, CancellationToken ct = default)
     {
         var stopwatch = Stopwatch.StartNew();
         var response = await _httpClient.PostAsJsonAsync("/predict/eta", new { routes }, ct);
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<BatchPredictionResponse<ETAResult>>(ct);
+        var result = await response.Content.ReadFromJsonAsync<List<ETAResult>>(ct);
         stopwatch.Stop();
-        return result! with { Metadata = result.Metadata with { InferenceTimeMs = stopwatch.ElapsedMilliseconds } };
+        return result ?? new List<ETAResult>();
     }
 
     /// <inheritdoc />
-    public async Task<BatchPredictionResponse<RevenueResult>> PredictRevenueAsync(
+    public async Task<List<RevenueResult>> PredictRevenueAsync(
         List<RevenueInput> zones, CancellationToken ct = default)
     {
         var stopwatch = Stopwatch.StartNew();
         var response = await _httpClient.PostAsJsonAsync("/predict/revenue", new { zones }, ct);
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<BatchPredictionResponse<RevenueResult>>(ct);
+        var result = await response.Content.ReadFromJsonAsync<List<RevenueResult>>(ct);
         stopwatch.Stop();
-        return result! with { Metadata = result.Metadata with { InferenceTimeMs = stopwatch.ElapsedMilliseconds } };
+        return result ?? new List<RevenueResult>();
     }
 
     /// <inheritdoc />
-    public async Task<BatchPredictionResponse<StockOutResult>> PredictStockOutAsync(
+    public async Task<List<StockOutResult>> PredictStockOutAsync(
         List<StockOutInput> zones, CancellationToken ct = default)
     {
         var stopwatch = Stopwatch.StartNew();
         var response = await _httpClient.PostAsJsonAsync("/predict/stockout", new { zones }, ct);
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<BatchPredictionResponse<StockOutResult>>(ct);
+        var result = await response.Content.ReadFromJsonAsync<List<StockOutResult>>(ct);
         stopwatch.Stop();
-        return result! with { Metadata = result.Metadata with { InferenceTimeMs = stopwatch.ElapsedMilliseconds } };
-    }
-
-    /// <inheritdoc />
-    public async Task<List<ProfitZoneResult>> RankZonesByProfitAsync(
-        List<int> zoneIds, int currentHour, int dayOfWeek, bool considerStockOutRisk, int? topK, CancellationToken ct = default)
-    {
-        var response = await _httpClient.PostAsJsonAsync("/predict/profit_zones", new
-        {
-            zone_ids = zoneIds,
-            current_hour = currentHour,
-            day_of_week = dayOfWeek,
-            consider_stockout_risk = considerStockOutRisk,
-            top_k = topK
-        }, ct);
-        response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<List<ProfitZoneResult>>(ct);
-        return result ?? new List<ProfitZoneResult>();
-    }
-
-    /// <inheritdoc />
-    public async Task<CausalImpactResult> EstimateCausalImpactAsync(
-        int zoneId, DateTime eventDate, string treatmentType, double baselineDemand, DateTime? baselineDate, CancellationToken ct = default)
-    {
-        var response = await _httpClient.PostAsJsonAsync("/predict/causal_impact", new
-        {
-            zone_id = zoneId,
-            event_date = eventDate,
-            treatment_type = treatmentType,
-            baseline_demand = baselineDemand,
-            baseline_date = baselineDate
-        }, ct);
-        response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<CausalImpactResult>(ct);
-        return result!;
+        return result ?? new List<StockOutResult>();
     }
 
     /// <inheritdoc />
@@ -134,34 +98,5 @@ public class AiPredictionService : IAiPredictionService
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<RepositioningPlan>(ct);
         return result!;
-    }
-
-    /// <inheritdoc />
-    public async Task<SimulationJobResponse> StartSimulationAsync(
-        DateTime baseScenarioDate, int additionalVehicles, DeploymentStrategy strategy,
-        int simulationDurationHours, double operationalCostPerVehiclePerDay,
-        List<int>? targetZones, CancellationToken ct = default)
-    {
-        var response = await _httpClient.PostAsJsonAsync("/simulate/fleet_expansion", new
-        {
-            base_scenario_date = baseScenarioDate,
-            additional_vehicles = additionalVehicles,
-            strategy = strategy.ToString(),
-            simulation_duration_hours = simulationDurationHours,
-            operational_cost_per_vehicle_per_day = operationalCostPerVehiclePerDay,
-            target_zones = targetZones
-        }, ct);
-        response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync<SimulationJobResponse>(ct);
-        return result!;
-    }
-
-    /// <inheritdoc />
-    public async Task<SimulationResult?> GetSimulationResultAsync(string simulationId, CancellationToken ct = default)
-    {
-        var response = await _httpClient.GetAsync($"/simulate/{simulationId}", ct);
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<SimulationResult>(ct);
     }
 }

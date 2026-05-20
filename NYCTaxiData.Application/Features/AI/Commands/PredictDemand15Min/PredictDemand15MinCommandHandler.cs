@@ -10,7 +10,7 @@ namespace NYCTaxiData.Application.Features.AI.Commands.PredictDemand15Min;
 /// <summary>
 /// Handler for <see cref="PredictDemand15MinCommand"/>.
 /// </summary>
-public class PredictDemand15MinCommandHandler : IRequestHandler<PredictDemand15MinCommand, Result<BatchPredictionResponse<Demand15MinResult>>>
+public class PredictDemand15MinCommandHandler : IRequestHandler<PredictDemand15MinCommand, Result<List<Demand15MinResult>>>
 {
     private readonly IAiPredictionService _aiPredictionService;
     private readonly ILogger<PredictDemand15MinCommandHandler> _logger;
@@ -25,12 +25,12 @@ public class PredictDemand15MinCommandHandler : IRequestHandler<PredictDemand15M
     }
 
     /// <inheritdoc />
-    public async Task<Result<BatchPredictionResponse<Demand15MinResult>>> Handle(PredictDemand15MinCommand request, CancellationToken cancellationToken)
+    public async Task<Result<List<Demand15MinResult>>> Handle(PredictDemand15MinCommand request, CancellationToken cancellationToken)
     {
         try
         {
             var result = await _aiPredictionService.PredictDemand15MinAsync(request.Zones, request.RoundToInt, cancellationToken);
-            return Result<BatchPredictionResponse<Demand15MinResult>>.Success(result, "Demand forecast (15min) generated successfully");
+            return Result<List<Demand15MinResult>>.Success(result, "Demand forecast (15min) generated successfully");
         }
         catch (HttpRequestException ex)
         {
