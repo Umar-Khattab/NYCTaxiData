@@ -21,7 +21,8 @@ public record Demand15MinInput(
     double TempC,
     [Range(0, double.MaxValue)] double RainMm,
     bool IsRain,
-    int WeatherCode
+    int WeatherCode,
+    [Range(0, int.MaxValue)] int PickupCount
 );
 
 /// <summary>
@@ -51,7 +52,8 @@ public record Demand6hInput(
     double TempC,
     [Range(0, double.MaxValue)] double RainMm,
     bool IsRain,
-    int WeatherCode
+    int WeatherCode,
+    [Range(0, int.MaxValue)] int PickupCount
 );
 
 /// <summary>
@@ -71,11 +73,22 @@ public record Demand6hResult(
 public record ETAInput(
     [Range(1, 265)] int PickupZoneId,
     [Range(1, 265)] int DropoffZoneId,
-    DateTime PickupDateTime,
-    [Range(0, double.MaxValue)] double TripDistance,
-    double? TempC,
-    [Range(0, double.MaxValue)] double? RainMm,
-    int? WeatherCode
+    decimal? TempC,
+    decimal? RainMm,
+    int? WeatherCode,
+    decimal DistanceProxy,
+    int PUHour,
+    int PUDow,
+    int PUMonth,
+    int PUMinute,
+    bool IsWeekend,
+    bool IsRushHour,
+    DateTime PU15MinBucket,
+    string DistanceBucketLabel,
+    decimal DurationSec,
+    decimal OdHourMedianDuration,
+    decimal PUHourSlowdownIndex,
+    int DistMedianDuration
 );
 
 /// <summary>
@@ -107,11 +120,14 @@ public record RevenueInput(
     [Range(0, 23)] int PickupHour,
     [Range(0, 6)] int DayOfWeek,
     bool IsWeekend,
-    [Range(0, double.MaxValue)] double ForecastedDemand6h,
+    int lag1_6h,
+    int lag2_6h,
+    int lag4_6h,
     double RevLag1_6h,
     double RevLag1Week,
     double RevRollingMean7d,
     double RevRollingMean30d,
+    decimal? RollingMean24h,
     [Range(0, double.MaxValue)] double AvgFare,
     [Range(0, 1)] double TipRate,
     double? TempC,
@@ -136,22 +152,22 @@ public record RevenueResult(
 /// </summary>
 public record StockOutInput(
     [Range(1, 265)] int ZoneId,
-    [Range(0, 23)] int Hour,
-    [Range(0, 6)] int DayOfWeek,
-    bool IsWeekend,
+    DateTime TimeBucket6h,
     double PickupCount,
     double DropoffCount,
     double NetFlow,
+    [Range(0, 23)] int Hour,
+    [Range(0, 6)] int DayOfWeek,
+    bool IsWeekend,
+    bool IsHoliday,
     double ActivityRatio,
+    double TempC,
+    [Range(0, double.MaxValue)] double RainMm,
+    bool IsRain, 
     double Lag1Pickup,
     double Lag1Dropoff,
     double Lag1NetFlow,
-    [Range(0, double.MaxValue)] double ForecastedDemand6h,
-    double TempC,
-    [Range(0, double.MaxValue)] double RainMm,
-    bool IsRain,
-    int WeatherCode,
-    bool IsHoliday
+    int WeatherCode
 );
 
 /// <summary>
