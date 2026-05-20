@@ -49,7 +49,7 @@ public class AiController : ControllerBase
     /// Predicts 15-minute demand for a list of zones.
     /// </summary>
     [HttpPost("predict/demand-15min")]
-    public async Task<ActionResult<ApiResponse<List<Demand15MinResult>>>> PredictDemand15Min(
+    public async Task<ActionResult<ApiResponse<List<Domain.DTOs.Demand15MinResult>>>> PredictDemand15Min(
         [FromBody] PredictDemand15MinCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -60,7 +60,7 @@ public class AiController : ControllerBase
     /// Predicts 6-hour demand for a list of zones.
     /// </summary>
     [HttpPost("predict/demand-6h")]
-    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<Demand6hResult>>>> PredictDemand6h(
+    public async Task<ActionResult<ApiResponse<Domain.DTOs.BatchPredictionResponse<Domain.DTOs.Demand6hResult>>>> PredictDemand6h(
         [FromBody] PredictDemand6hCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -71,7 +71,7 @@ public class AiController : ControllerBase
     /// Predicts ETA for a list of zone pairs (routes).
     /// </summary>
     [HttpPost("predict/eta")]
-    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<ETAResult>>>> PredictETA(
+    public async Task<ActionResult<ApiResponse<Domain.DTOs.BatchPredictionResponse<Domain.DTOs.ETAResult>>>> PredictETA(
         [FromBody] PredictETACommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -82,7 +82,7 @@ public class AiController : ControllerBase
     /// Predicts revenue for a list of zones.
     /// </summary>
     [HttpPost("predict/revenue")]
-    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<RevenueResult>>>> PredictRevenue(
+    public async Task<ActionResult<ApiResponse<Domain.DTOs.BatchPredictionResponse<Domain.DTOs.RevenueResult>>>> PredictRevenue(
         [FromBody] PredictRevenueCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -93,7 +93,7 @@ public class AiController : ControllerBase
     /// Predicts stock-out probability for a list of zones.
     /// </summary>
     [HttpPost("predict/stockout")]
-    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<StockOutResult>>>> PredictStockOut(
+    public async Task<ActionResult<ApiResponse<Domain.DTOs.BatchPredictionResponse<Domain.DTOs.StockOutResult>>>> PredictStockOut(
         [FromBody] PredictStockOutCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -110,7 +110,7 @@ public class AiController : ControllerBase
     /// Optimizes vehicle repositioning across zones.
     /// </summary>
     [HttpPost("optimize/repositioning")]
-    public async Task<ActionResult<ApiResponse<RepositioningPlan>>> OptimizeRepositioning(
+    public async Task<ActionResult<ApiResponse<Domain.DTOs.RepositioningPlan>>> OptimizeRepositioning(
         [FromBody] OptimizeRepositioningCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);

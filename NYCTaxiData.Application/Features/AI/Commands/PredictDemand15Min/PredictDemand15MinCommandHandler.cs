@@ -1,8 +1,10 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using NYCTaxiData.Application.Behaviors;
 using NYCTaxiData.Application.Common;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.Common.Exceptions;
 
 namespace NYCTaxiData.Application.Features.AI.Commands.PredictDemand15Min;
 
@@ -31,7 +33,7 @@ public class PredictDemand15MinCommandHandler : IRequestHandler<PredictDemand15M
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Failed to connect to ML service for demand-15min prediction");
-            throw new ConflictException("ML prediction service is currently unavailable. Please try again later.");
+            throw new Common.Exceptions.ConflictException("ML prediction service is currently unavailable. Please try again later.");
         }
     }
 }

@@ -21,7 +21,6 @@ public class PredictRevenueCommandValidator : AbstractValidator<PredictRevenueCo
             zone.RuleFor(z => z.ZoneId).InclusiveBetween(1, 265);
             zone.RuleFor(z => z.AvgFare).GreaterThanOrEqualTo(0);
             zone.RuleFor(z => z.TipRate).InclusiveBetween(0, 1);
-            zone.RuleFor(z => z.ForecastedDemand6h).GreaterThanOrEqualTo(0);
         });
     }
 }

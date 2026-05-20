@@ -25,7 +25,6 @@ public class PredictStockOutCommandValidator : AbstractValidator<PredictStockOut
             zone.RuleFor(z => z.DropoffCount).NotNull();
             zone.RuleFor(z => z.NetFlow).NotNull();
             zone.RuleFor(z => z.ActivityRatio).NotNull();
-            zone.RuleFor(z => z.ForecastedDemand6h).GreaterThanOrEqualTo(0);
             zone.RuleFor(z => z.RainMm).GreaterThanOrEqualTo(0);
         });
     }

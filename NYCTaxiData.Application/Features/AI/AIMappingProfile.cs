@@ -97,7 +97,7 @@ public class AIMappingProfile : Profile
             .ForMember(dest => dest.ZoneId, opt => opt.MapFrom(src => src.ZoneId))
             .ForMember(dest => dest.TimeBucket6h, opt => opt.MapFrom(src => src.TimeBucket6h ?? DateTime.MinValue))
             .ForMember(dest => dest.PickupCount, opt => opt.MapFrom(src => src.PickupCount ?? 0))
-            .ForMember(dest => dest.DropoffCount, opt => opt.MapFrom(src => src.DropoffCount ?? 0)
+            .ForMember(dest => dest.DropoffCount, opt => opt.MapFrom(src => src.DropoffCount ?? 0))
             .ForMember(dest => dest.NetFlow, opt => opt.MapFrom(src => src.NetFlow ?? 0))
             .ForMember(dest => dest.Hour, opt => opt.MapFrom(src => src.Hour ?? 0))
             .ForMember(dest => dest.DayOfWeek, opt => opt.MapFrom(src => src.DayOfWeek ?? 0))
@@ -110,7 +110,7 @@ public class AIMappingProfile : Profile
             .ForMember(dest => dest.WeatherCode, opt => opt.MapFrom(src => src.WeatherCode ?? 0))
             .ForMember(dest => dest.Lag1Pickup, opt => opt.MapFrom(src => src.Lag1Pickup ?? 0))
             .ForMember(dest => dest.Lag1Dropoff, opt => opt.MapFrom(src => src.Lag1Dropoff ?? 0))
-            .ForMember(dest => dest.Lag1NetFlow, opt => opt.MapFrom(src => src.Lag1NetFlow ?? 0)));
+            .ForMember(dest => dest.Lag1NetFlow, opt => opt.MapFrom(src => src.Lag1NetFlow ?? 0));
 
 
 
@@ -123,15 +123,15 @@ public class AIMappingProfile : Profile
             .ForMember(dest => dest.StockOutRisk, opt => opt.Ignore())
             .ForMember(dest => dest.ExpectedRevenue, opt => opt.Ignore());
 
-        // Simulation result nested mappings
-        _ = CreateMap<Simulationrequest, Domain.DTOs.SimulationResult>()
-            .ForMember(dest => dest.SimulationId, opt => opt.MapFrom(src => src.SimulationId))
-            .ForMember(dest => dest.Status, opt => opt.Ignore())
-            .ForMember(dest => dest.CompletedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.BaselineMetrics, opt => opt.Ignore())
-            .ForMember(dest => dest.SimulatedMetrics, opt => opt.Ignore())
-            .ForMember(dest => dest.FinancialImpact, opt => opt.Ignore())
-            .ForMember(dest => dest.ZoneBreakdown, opt => opt.Ignore())
-            .ForMember(dest => dest.Recommendation, opt => opt.Ignore());
+        //// Simulation result nested mappings
+        //_ = CreateMap<Simulationrequest, Domain.DTOs.SimulationResult>()
+        //    .ForMember(dest => dest.SimulationId, opt => opt.MapFrom(src => src.SimulationId))
+        //    .ForMember(dest => dest.Status, opt => opt.Ignore())
+        //    .ForMember(dest => dest.CompletedAt, opt => opt.Ignore())
+        //    .ForMember(dest => dest.BaselineMetrics, opt => opt.Ignore())
+        //    .ForMember(dest => dest.SimulatedMetrics, opt => opt.Ignore())
+        //    .ForMember(dest => dest.FinancialImpact, opt => opt.Ignore())
+        //    .ForMember(dest => dest.ZoneBreakdown, opt => opt.Ignore())
+        //    .ForMember(dest => dest.Recommendation, opt => opt.Ignore());
     }
 }

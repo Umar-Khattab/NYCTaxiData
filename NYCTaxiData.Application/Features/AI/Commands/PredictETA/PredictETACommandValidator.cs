@@ -19,10 +19,6 @@ public class PredictETACommandValidator : AbstractValidator<PredictETACommand>
         {
             route.RuleFor(r => r.PickupZoneId).InclusiveBetween(1, 265);
             route.RuleFor(r => r.DropoffZoneId).InclusiveBetween(1, 265);
-            route.RuleFor(r => r.PickupDateTime)
-                .GreaterThanOrEqualTo(DateTime.Now.AddMinutes(-1))
-                .WithMessage("Pickup date time cannot be in the past");
-            route.RuleFor(r => r.TripDistance).GreaterThanOrEqualTo(0);
         });
     }
 }
