@@ -1,9 +1,8 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
-using NYCTaxiData.Application.Common.Exceptions;
-using NYCTaxiData.Application.Common.Interfaces;
-using NYCTaxiData.Application.Features.AI.DTOs;
 using NYCTaxiData.Application.Common;
+using NYCTaxiData.Application.Common.Interfaces;
+using NYCTaxiData.Domain.DTOs;
 
 namespace NYCTaxiData.Application.Features.AI.Commands.PredictDemand15Min;
 
@@ -12,12 +11,9 @@ namespace NYCTaxiData.Application.Features.AI.Commands.PredictDemand15Min;
 /// </summary>
 public class PredictDemand15MinCommandHandler : IRequestHandler<PredictDemand15MinCommand, Result<List<Demand15MinResult>>>
 {
-    private readonly IAiPredictionService _aiPredictionService;
+    private readonly IAiPredictionService _aiPredictionService; // نستخدم الـ Interface
     private readonly ILogger<PredictDemand15MinCommandHandler> _logger;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="PredictDemand15MinCommandHandler"/> class.
-    /// </summary>
     public PredictDemand15MinCommandHandler(IAiPredictionService aiPredictionService, ILogger<PredictDemand15MinCommandHandler> logger)
     {
         _aiPredictionService = aiPredictionService;

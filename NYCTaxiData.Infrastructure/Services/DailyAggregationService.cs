@@ -39,14 +39,16 @@ namespace NYCTaxiData.Infrastructure.Services
                 var activeDrivers = trips.Where(t => t.DriverId.HasValue).Select(t => t.DriverId!.Value).Distinct().Count();
 
                 var avgMinutes = completedTrips.Any()
-                    ? completedTrips.Average(t => (t.EndedAt!.Value - t.StartedAt!.Value).TotalMinutes)
-                    : 0;
+                   ? completedTrips.Average(t => ((t.EndedAt - t.StartedAt).Value).TotalMinutes)
+                   : 0;
 
                 var totalRevenue = completedTrips.Sum(t => t.TotalAmount ?? 0);
                 var avgFare = completedTrips.Any() ? totalRevenue / completedTrips.Count : 0;
 
+                var targetDateOnly = DateOnly.FromDateTime(targetDate);
+
                 var existing = await _context.DailyStats
-                    .FirstOrDefaultAsync(s => s.Date == targetDate, cancellationToken);
+                    .FirstOrDefaultAsync(s => s.Date == targetDateOnly, cancellationToken);
 
                 if (existing != null)
                 {
@@ -61,9 +63,9 @@ namespace NYCTaxiData.Infrastructure.Services
                 }
                 else
                 {
-                    await _context.DailyStats.AddAsync(new DailyStats
+                    await _context.DailyStats.AddAsync(new DailyStat
                     {
-                        Date = targetDate,  
+                        Date = targetDateOnly,
                         TotalTrips = trips.Count,
                         TotalRevenue = totalRevenue,
                         ActiveDrivers = activeDrivers,

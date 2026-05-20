@@ -98,7 +98,13 @@ public class AuthController(ISender _mediator) : BaseController
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command)
     {
-        return HandleResult((dynamic)await Mediator.Send(command));
+        var result = await Mediator.Send(command);
+
+        // لو الـ Handler بتاعك بيرجع UserResultDto مباشرة مش مغلف بـ Result
+        if (result.IsSuccess)
+            return Ok(result);
+
+        return Unauthorized(result);
     }
 
     // 8. Get Profile

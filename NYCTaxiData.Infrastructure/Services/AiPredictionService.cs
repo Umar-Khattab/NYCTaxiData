@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NYCTaxiData.Application.Common.Interfaces;
-using NYCTaxiData.Application.Features.AI.DTOs;
+using NYCTaxiData.Domain.DTOs;
 using NYCTaxiData.Domain.Enums;
 
 namespace NYCTaxiData.Infrastructure.Services;
@@ -21,9 +21,9 @@ public class AiPredictionService : IAiPredictionService
     /// <summary>
     /// Initializes a new instance of the <see cref="AiPredictionService"/> class.
     /// </summary>
-    public AiPredictionService(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<AiPredictionService> logger)
+    public AiPredictionService(HttpClient httpClient, ILogger<AiPredictionService> logger)
     {
-        var _ = _httpClient = httpClientFactory.CreateClient("MlService");
+        _httpClient = httpClient;
         _logger = logger;
     }
 
@@ -54,7 +54,8 @@ public class AiPredictionService : IAiPredictionService
         List<ETAInput> routes, CancellationToken ct = default)
     {
         var stopwatch = Stopwatch.StartNew();
-        var response = await _httpClient.PostAsJsonAsync("/predict/eta", new { routes }, ct);
+        // الكود بتاعك سليم بس محتاج الـ BaseAddress يكون محقون صح
+        var response = await _httpClient.PostAsJsonAsync("predict/eta", new { routes }, ct);
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<List<ETAResult>>(ct);
         stopwatch.Stop();

@@ -11,6 +11,7 @@ using NYCTaxiData.Application.Features.AI.DTOs;
 using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Application.DTOs;
+using NYCTaxiData.Domain.DTOs;
 
 namespace NYCTaxiData.API.Controllers;
 

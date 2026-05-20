@@ -17,11 +17,7 @@ public class UnitOfWork :  IUnitOfWork
     private IGenericRepository<Driver>? _drivers;
     private IGenericRepository<Trip>? _trips;
     private IGenericRepository<Zone>? _zones;
-    private IGenericRepository<Location>? _locations;
-    private IGenericRepository<Simulationrequest>? _simulationRequests;
-    private IGenericRepository<Simulationresult>? _simulationResults;
-    private IGenericRepository<Demandprediction>? _demandPredictions;
-    private IGenericRepository<Weathersnapshot>? _weatherSnapshots;
+    private IGenericRepository<Location>? _locations; 
 
     public UnitOfWork(TaxiDbContext context)
     {
@@ -44,20 +40,7 @@ public class UnitOfWork :  IUnitOfWork
         => _zones ??= new GenericRepository<Zone>(_context);
 
     public IGenericRepository<Location> Locations
-        => _locations ??= new GenericRepository<Location>(_context);
-
-    public IGenericRepository<Simulationrequest> SimulationRequests
-        => _simulationRequests ??= new GenericRepository<Simulationrequest>(_context);
-
-    public IGenericRepository<Simulationresult> SimulationResults
-        => _simulationResults ??= new GenericRepository<Simulationresult>(_context);
-
-    public IGenericRepository<Demandprediction> DemandPredictions
-        => _demandPredictions ??= new GenericRepository<Demandprediction>(_context);
-
-    public IGenericRepository<Weathersnapshot> WeatherSnapshots
-        => _weatherSnapshots ??= new GenericRepository<Weathersnapshot>(_context);
-
+        => _locations ??= new GenericRepository<Location>(_context); 
 
     public void Dispose()
     {
@@ -77,22 +60,30 @@ public class UnitOfWork :  IUnitOfWork
     }
     public async Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken ct)
     {
+        // 1. تشيك لو فيه Transaction شغالة حالياً
+        if (_context.Database.CurrentTransaction != null)
+        {
+            // لو فيه واحدة، نفذ العملية فوراً من غير ما تفتح واحدة جديدة
+            return await operation(ct);
+        }
+
+        // 2. لو مفيش، افتح واحدة جديدة باستخدام الاستراتيجية
         var strategy = _context.Database.CreateExecutionStrategy();
 
         return await strategy.ExecuteAsync(async () =>
-        { 
+        {
             using var transaction = await _context.Database.BeginTransactionAsync(ct);
             try
             {
                 var result = await operation(ct);
-                await _context.SaveChangesAsync(ct);  
+                await _context.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
                 return result;
             }
             catch (Exception)
             {
                 await transaction.RollbackAsync(ct);
-                throw;  
+                throw;
             }
         });
     }

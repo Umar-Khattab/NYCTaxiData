@@ -28,7 +28,7 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
 
         public async Task<IEnumerable<T>> GetAllBySpecAsync(ISpecification<T> spec)
      => await SpecificationEvaluator<T>
-         .GetQuery(_dbSet.AsNoTracking(), spec)  
+         .GetQuery(_dbSet.AsQueryable(), spec)  
          .ToListAsync();
 
         public async Task<IEnumerable<T>> GetAllAsync()

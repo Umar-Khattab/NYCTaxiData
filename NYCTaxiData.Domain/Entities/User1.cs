@@ -12,7 +12,7 @@ public partial class User1
 
     public string LastName { get; set; } = null!;
 
-    public string PhoneNumber { get; set; } = null!; 
+    public string PhoneNumber { get; set; } = null!;
 
     public string PasswordHash { get; set; } = null!;
 
@@ -23,7 +23,6 @@ public partial class User1
     public virtual Driver? Driver { get; set; }
 
     public virtual Manager? Manager { get; set; }
-
-    public virtual ICollection<Simulationrequest> Simulationrequests { get; set; } = new List<Simulationrequest>();
-    public string? Userrole { get; set; } 
+     
+    public string? Userrole { get; set; }
 }

@@ -43,11 +43,22 @@ public class DispatchNotification : IDispatchNotificationService
                 UpdatedAt = DateTime.UtcNow
             });
     }
+    public async Task NotifyDriversOfHighDemandAsync(string area, string time)
+    {
+        var alert = new
+        {
+            Title = "Warning: Expected traffic congestion area",
+            Message = $"Hey champ, high pressure is expected in the {area} area at {time}. Go there to boost your profits! 🚀",
+            Timestamp = DateTime.UtcNow
+        };
+
+        await _hubContext.Clients.Group("Drivers").SendAsync("ReceiveDemandAlert", alert);
+    }
 
     // ✅ AI Dispatch Order
     public async Task SendAiDispatchOrderAsync(string driverPhone, AiDispatchOrderDto order)
     {
-        Console.WriteLine($"[SignalR] Sending Notification to Phone: {driverPhone}"); // 👈 ضيف ده
+        Console.WriteLine($"[SignalR] Sending Notification to Phone: {driverPhone}"); 
         await _hubContext.Clients
             .User(driverPhone)
             .SendAsync("AiDispatchOrder", order);

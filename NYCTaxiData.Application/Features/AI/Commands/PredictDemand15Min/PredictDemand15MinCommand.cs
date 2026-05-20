@@ -1,6 +1,6 @@
 using MediatR;
 using NYCTaxiData.Application.Common;
-using NYCTaxiData.Application.Features.AI.DTOs;
+using NYCTaxiData.Domain.DTOs;
 
 namespace NYCTaxiData.Application.Features.AI.Commands.PredictDemand15Min;
 

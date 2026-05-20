@@ -1,4 +1,5 @@
-﻿using NYCTaxiData.Domain.Entities;
+﻿ 
+using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Infrastructure.Services.Specifications;
 using System;
@@ -9,10 +10,13 @@ namespace NYCTaxiData.Domain.Specifications.Drivers
 {
     public class AvailableDriversSpec : BaseSpecification<Driver>
     {
-        public AvailableDriversSpec()
-            : base(d => d.Status == CurrentStatus.Available)
+        public AvailableDriversSpec(int page, int limit)
         {
-            AddOrderBy(d => d.FullName!);
+            AddCriteria(d => d.Status == CurrentStatus.Available);
+
+            AddInclude(d => d.User!);
+            AddOrderBy(d => d.User!.FirstName!);
+            ApplyPaging((page - 1) * limit, limit);
         }
     }
 }

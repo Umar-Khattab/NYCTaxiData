@@ -59,9 +59,7 @@ public class AdminController(
             });
         }
     }
-
-    // ✅ تشغيل الـ Aggregation يدوي
-    // ✅ جيب الإحصائيات مع Handling للـ Dates والـ UTC
+     
     [HttpGet("stats")]
     public async Task<IActionResult> GetStatsAsync(
     [FromQuery] DateTime? from,
@@ -88,9 +86,12 @@ public class AdminController(
             }
 
             // 4. الاستعلام من الداتابيز
+            var fromDateOnly = DateOnly.FromDateTime(fromDate);
+            var toDateOnly = DateOnly.FromDateTime(toDate);
+             
             var stats = await _context.DailyStats
                 .AsNoTracking()
-                .Where(s => s.Date >= fromDate && s.Date <= toDate)
+                .Where(s => s.Date >= fromDateOnly && s.Date <= toDateOnly)  
                 .OrderByDescending(s => s.Date)
                 .ToListAsync(cancellationToken);
 
@@ -108,14 +109,12 @@ public class AdminController(
             return StatusCode(500, new { Message = "An error occurred while fetching dashboard statistics." });
         }
     }
-
-    // ✅ تعديل الـ Manual Trigger للتوافق مع الـ UTC
+     
     [HttpPost("aggregate/{date}")]
     public async Task<IActionResult> AggregateByDateAsync(
     [FromRoute] DateTime date,
     CancellationToken cancellationToken)
-    {
-        // نضمن إن التاريخ UTC قبل المقارنة والارسال
+    { 
         var targetDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
 
         if (targetDate > DateTime.UtcNow.Date)

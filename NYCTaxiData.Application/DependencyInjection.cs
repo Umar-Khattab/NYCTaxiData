@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NYCTaxiData.Application.Behaviors;
+using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Domain.Interfaces;
 using System.Reflection;
 namespace NYCTaxiData.Application
@@ -88,8 +89,7 @@ namespace NYCTaxiData.Application
                 cfg.LicenseKey = configuration["AutoMapper:LicenseKey"];
 
                 // You can also configure global mapping options here if needed
-            }, assembly);
-
+            }, assembly); 
             return services;
         }
     }

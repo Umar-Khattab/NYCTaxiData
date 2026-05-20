@@ -13,7 +13,5 @@ public partial class Zone
 
     public string? ServiceZone { get; set; }
 
-    public virtual ICollection<Inferencelog> Inferencelogs { get; set; } = new List<Inferencelog>();
-
     public virtual ICollection<Location> Locations { get; set; } = new List<Location>();
 }
