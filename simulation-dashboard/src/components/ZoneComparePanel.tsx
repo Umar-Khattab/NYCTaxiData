@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Legend,
@@ -23,15 +23,17 @@ export function ZoneComparePanel({
   const [zoneA, setZoneA] = useState<number | null>(null)
   const [zoneB, setZoneB] = useState<number | null>(null)
 
-  useEffect(() => {
-    if (availableZones.length >= 2) {
-      setZoneA((prev) => prev ?? availableZones[0])
-      setZoneB((prev) => prev ?? availableZones[1])
-    }
-  }, [availableZones])
+  const zoneASelection = zoneA ?? availableZones[0] ?? null
+  const zoneBSelection = zoneB ?? availableZones[1] ?? null
 
-  const historyA = zoneA ? zoneHistory[zoneA] ?? [] : []
-  const historyB = zoneB ? zoneHistory[zoneB] ?? [] : []
+  const historyA = useMemo(
+    () => (zoneASelection ? zoneHistory[zoneASelection] ?? [] : []),
+    [zoneASelection, zoneHistory],
+  )
+  const historyB = useMemo(
+    () => (zoneBSelection ? zoneHistory[zoneBSelection] ?? [] : []),
+    [zoneBSelection, zoneHistory],
+  )
 
   const chartData = useMemo(() => {
     const length = Math.max(historyA.length, historyB.length)
@@ -55,7 +57,7 @@ export function ZoneComparePanel({
         <label>
           Zone A
           <select
-            value={zoneA ?? ''}
+            value={zoneASelection ?? ''}
             onChange={(event) => setZoneA(Number(event.target.value))}
           >
             {availableZones.map((zone) => (
@@ -68,7 +70,7 @@ export function ZoneComparePanel({
         <label>
           Zone B
           <select
-            value={zoneB ?? ''}
+            value={zoneBSelection ?? ''}
             onChange={(event) => setZoneB(Number(event.target.value))}
           >
             {availableZones.map((zone) => (
@@ -90,7 +92,7 @@ export function ZoneComparePanel({
             <Line
               type="monotone"
               dataKey="zoneA"
-              name={zoneA ? `Zone ${zoneA}` : 'Zone A'}
+              name={zoneASelection ? `Zone ${zoneASelection}` : 'Zone A'}
               stroke="#f97316"
               strokeWidth={2}
               isAnimationActive
@@ -99,7 +101,7 @@ export function ZoneComparePanel({
             <Line
               type="monotone"
               dataKey="zoneB"
-              name={zoneB ? `Zone ${zoneB}` : 'Zone B'}
+              name={zoneBSelection ? `Zone ${zoneBSelection}` : 'Zone B'}
               stroke="#0ea5e9"
               strokeWidth={2}
               isAnimationActive

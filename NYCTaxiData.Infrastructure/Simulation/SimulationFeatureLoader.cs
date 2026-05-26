@@ -122,7 +122,7 @@ public sealed class SimulationFeatureLoader : ISimulationFeatureLoader
             record.BaseRevenue * 0.6,
             record.BaseRevenue * 0.4,
             record.BaseRevenue * 0.3,
-            record.BaseRevenue / 24,
+            (decimal?)(record.BaseRevenue / 24),
             record.AvgFare,
             record.TipRate,
             record.TempC,
