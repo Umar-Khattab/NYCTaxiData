@@ -8,5 +8,6 @@ public enum SimulationStatus
     Queued,
     Running,
     Completed,
-    Failed
+    Failed,
+    Stopped
 }

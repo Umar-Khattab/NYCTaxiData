@@ -8,12 +8,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Interfaces.Simulation;
 using NYCTaxiData.Domain.Common.Interfaces;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Data.Repository;
 using NYCTaxiData.Infrastructure.Interceptors;
 using NYCTaxiData.Infrastructure.Services;
+using NYCTaxiData.Infrastructure.Simulation;
 using Polly;
 using Polly.Extensions.Http;
 
@@ -32,6 +34,12 @@ namespace NYCTaxiData.Infrastructure
             services.AddScoped<IIdempotencyService, IdempotencyService>();
             services.AddScoped<IAiPredictionService, AiPredictionService>();
             services.AddScoped<IDailyAggregationService, DailyAggregationService>();
+            services.Configure<SimulationOptions>(configuration.GetSection("Simulation"));
+            services.AddSingleton<ISimulationFeatureLoader, SimulationFeatureLoader>();
+            services.AddSingleton<ISimulationStateManager, SimulationStateManager>();
+            services.AddSingleton<ISimulationRuleEngine, SimulationRuleEngine>();
+            services.AddSingleton<ISimulationResultStore, SimulationResultStore>();
+            services.AddSingleton<ISimulationOrchestrator, SimulationOrchestrator>();
             // C#
             services
         .AddHttpClient<IAiPredictionService, AiPredictionService>((sp, client) =>
