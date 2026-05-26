@@ -107,6 +107,7 @@ NYCTaxiData/
 - Causal impact estimation
 - Repositioning optimization
 - Fleet expansion simulation start and retrieval
+- Faster-than-real-time operational simulation engine (hourly steps + WebSocket streaming)
 
 > Note: `ZonesController` is currently commented out in source, so zone REST endpoints are intentionally inactive in the current host configuration. This appears to be a planned-but-incomplete API surface (no active route mapping yet), and should be treated as under development until the controller is re-enabled.
 
@@ -182,6 +183,18 @@ Base route pattern: `api/v1/{controller}` unless explicitly set (AI uses `api/v1
 - `POST /simulate/fleet-expansion`
 - `GET /simulate/{simulationId}?pageNumber=1&pageSize=10`
 
+### Simulation Engine (`/api/v1/simulation`)
+- `POST /start`
+- `POST /pause`
+- `POST /resume`
+- `POST /stop`
+- `POST /speed`
+- `GET /status`
+- `GET /playback?startHour=0&endHour=23`
+- `GET /zones`
+- `GET /zones/{zoneId}/history`
+- `GET /zones/compare?zoneA=1&zoneB=2`
+
 ---
 
 ## SignalR Hubs
@@ -190,6 +203,7 @@ Configured endpoints:
 - `/hubs/taxi`
 - `/hubs/tracking`
 - `/hubs/dispatch`
+- `/hubs/simulation`
 
 ### Authentication for Hubs
 JWT is accepted from query string `access_token` for `/hubs/*` paths via `SignalRJwtExtension`.
@@ -248,6 +262,14 @@ dotnet build --no-restore
 ```bash
 cd NYCTaxiData.API
 dotnet run
+```
+
+5. Run simulation dashboard:
+
+```bash
+cd simulation-dashboard
+npm install
+npm run dev
 ```
 
 Default local URLs from `NYCTaxiData.API/Properties/launchSettings.json` (verify if you changed launch profiles):
