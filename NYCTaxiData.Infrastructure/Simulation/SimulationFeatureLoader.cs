@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NYCTaxiData.Application.Common.Interfaces.Simulation;
 using NYCTaxiData.Application.Simulation.Models;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.AI;
 
 namespace NYCTaxiData.Infrastructure.Simulation;
 

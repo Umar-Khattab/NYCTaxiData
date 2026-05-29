@@ -1,6 +1,6 @@
 using NYCTaxiData.Application.Common.Interfaces.Simulation;
 using NYCTaxiData.Application.Simulation.Models;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.Simulation;
 using NYCTaxiData.Domain.Enums;
 
 namespace NYCTaxiData.Infrastructure.Simulation;

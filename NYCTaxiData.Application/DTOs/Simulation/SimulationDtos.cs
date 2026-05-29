@@ -1,7 +1,9 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using NYCTaxiData.Domain.Enums;
 
-namespace NYCTaxiData.Domain.DTOs;
+namespace NYCTaxiData.Application.DTOs.Simulation;
 
 /// <summary>
 /// Request to start a faster-than-real-time simulation run.

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using NYCTaxiData.API.Contracts;
 using NYCTaxiData.Application.Common.Interfaces.Simulation;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.Simulation;
 
 namespace NYCTaxiData.API.Controllers;
 

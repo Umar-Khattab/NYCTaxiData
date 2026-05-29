@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using NYCTaxiData.Application.Common.Interfaces;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.AI;
 using NYCTaxiData.Domain.Enums;
 
 namespace NYCTaxiData.Infrastructure.Services;

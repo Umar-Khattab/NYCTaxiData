@@ -1,9 +1,8 @@
 using AutoMapper;
 using NYCTaxiData.Application.Common.Models;
-using NYCTaxiData.Application.Features.AI.DTOs;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Infrastructure;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.AI;
 using NYCTaxiData.Infrastructure.Domain.EntitiesAi;
 using NYCTaxiData.Domain.EntitiesAi;
 
@@ -19,15 +18,13 @@ public class AIMappingProfile : Profile
     /// </summary>
     public AIMappingProfile()
     {
-
-
         // Demand prediction mappings
-        CreateMap<Demandfeature, Domain.DTOs.Demand6hInput>()
+        CreateMap<Demandfeature, Demand6hInput>()
             .ForMember(dest => dest.ZoneId, opt => opt.MapFrom(src => src.PuLocationId))
             .ForMember(dest => dest.PickupHour, opt => opt.MapFrom(src => src.PickupHour))
             .ForMember(dest => dest.DayOfWeek, opt => opt.MapFrom(src => src.DayOfWeek))
             .ForMember(dest => dest.IsWeekend, opt => opt.MapFrom(src => src.IsWeekend == 1))
-            .ForMember(dest => dest.TempC , opt => opt.MapFrom(src => src.TempC ?? 0))
+            .ForMember(dest => dest.TempC, opt => opt.MapFrom(src => src.TempC ?? 0))
             .ForMember(dest => dest.RainMm, opt => opt.MapFrom(src => src.RainMm ?? 0))
             .ForMember(dest => dest.IsRain, opt => opt.MapFrom(src => src.IsRain == 1))
             .ForMember(dest => dest.WeatherCode, opt => opt.MapFrom(src => src.WeatherCode ?? 0))
@@ -37,7 +34,8 @@ public class AIMappingProfile : Profile
             .ForMember(dest => dest.IsHoliday, opt => opt.MapFrom(src => src.IsHoliday ?? 1))
             .ForMember(dest => dest.PickupCount, opt => opt.MapFrom(src => src.PickupCount ?? 0))
             .ForMember(dest => dest.RollingMean24h, opt => opt.MapFrom(src => src.RollingMean24h ?? 0));
-        CreateMap<Demand15min, Domain.DTOs.Demand15MinInput>()
+
+        CreateMap<Demand15min, Demand15MinInput>()
             .ForMember(dest => dest.ZoneId, opt => opt.MapFrom(src => src.PuLocationId))
             .ForMember(dest => dest.Hour, opt => opt.MapFrom(src => src.Hour))
             .ForMember(dest => dest.Minute, opt => opt.MapFrom(src => src.Minute))
@@ -54,7 +52,8 @@ public class AIMappingProfile : Profile
             .ForMember(dest => dest.IsRain, opt => opt.MapFrom(src => src.IsRain ?? 0))
             .ForMember(dest => dest.WeatherCode, opt => opt.MapFrom(src => src.WeatherCode ?? 0))
             .ForMember(dest => dest.PickupCount, opt => opt.MapFrom(src => src.PickupCnt ?? 0));
-        CreateMap<Etum, Domain.DTOs.ETAInput>()
+
+        CreateMap<Etum, ETAInput>()
             .ForMember(dest => dest.PickupZoneId, opt => opt.MapFrom(src => src.PuLocationId))
             .ForMember(dest => dest.DropoffZoneId, opt => opt.MapFrom(src => src.DoLocationId))
             .ForMember(dest => dest.TempC, opt => opt.MapFrom(src => src.TempC ?? 0))
@@ -73,7 +72,8 @@ public class AIMappingProfile : Profile
             .ForMember(dest => dest.OdHourMedianDuration, opt => opt.MapFrom(src => src.OdHourMedianDuration ?? 0))
             .ForMember(dest => dest.PUHourSlowdownIndex, opt => opt.MapFrom(src => src.PuHourSlowdownIndex ?? 0))
             .ForMember(dest => dest.DistMedianDuration, opt => opt.MapFrom(src => src.DistMedianDuration ?? 0));
-        CreateMap<Revenuefeature, Domain.DTOs.RevenueInput>()
+
+        CreateMap<Revenuefeature, RevenueInput>()
             .ForMember(dest => dest.ZoneId, opt => opt.MapFrom(src => src.PuLocationId))
             .ForMember(dest => dest.PickupHour, opt => opt.MapFrom(src => src.PickupHour))
             .ForMember(dest => dest.DayOfWeek, opt => opt.MapFrom(src => src.DayOfWeek))
@@ -93,7 +93,8 @@ public class AIMappingProfile : Profile
             .ForMember(dest => dest.AvgFare, opt => opt.MapFrom(src => src.AvgFare ?? 0))
             .ForMember(dest => dest.TipRate, opt => opt.MapFrom(src => src.TipRate ?? 0))
             .ForMember(dest => dest.WeatherCode, opt => opt.MapFrom(src => src.WeatherCode ?? 0));
-        CreateMap<Stockoutfeature, Domain.DTOs.StockOutInput>()
+
+        CreateMap<Stockoutfeature, StockOutInput>()
             .ForMember(dest => dest.ZoneId, opt => opt.MapFrom(src => src.ZoneId))
             .ForMember(dest => dest.TimeBucket6h, opt => opt.MapFrom(src => src.TimeBucket6h ?? DateTime.MinValue))
             .ForMember(dest => dest.PickupCount, opt => opt.MapFrom(src => src.PickupCount ?? 0))
@@ -112,26 +113,12 @@ public class AIMappingProfile : Profile
             .ForMember(dest => dest.Lag1Dropoff, opt => opt.MapFrom(src => src.Lag1Dropoff ?? 0))
             .ForMember(dest => dest.Lag1NetFlow, opt => opt.MapFrom(src => src.Lag1NetFlow ?? 0));
 
-
-
-
         // Zone supply state mappings
-        CreateMap<Zone, Domain.DTOs.ZoneSupplyState>()
+        CreateMap<Zone, ZoneSupplyState>()
             .ForMember(dest => dest.CurrentSupply, opt => opt.Ignore())
             .ForMember(dest => dest.ActiveTrips, opt => opt.Ignore())
             .ForMember(dest => dest.ForecastedDemand, opt => opt.Ignore())
             .ForMember(dest => dest.StockOutRisk, opt => opt.Ignore())
             .ForMember(dest => dest.ExpectedRevenue, opt => opt.Ignore());
-
-        //// Simulation result nested mappings
-        //_ = CreateMap<Simulationrequest, Domain.DTOs.SimulationResult>()
-        //    .ForMember(dest => dest.SimulationId, opt => opt.MapFrom(src => src.SimulationId))
-        //    .ForMember(dest => dest.Status, opt => opt.Ignore())
-        //    .ForMember(dest => dest.CompletedAt, opt => opt.Ignore())
-        //    .ForMember(dest => dest.BaselineMetrics, opt => opt.Ignore())
-        //    .ForMember(dest => dest.SimulatedMetrics, opt => opt.Ignore())
-        //    .ForMember(dest => dest.FinancialImpact, opt => opt.Ignore())
-        //    .ForMember(dest => dest.ZoneBreakdown, opt => opt.Ignore())
-        //    .ForMember(dest => dest.Recommendation, opt => opt.Ignore());
     }
 }

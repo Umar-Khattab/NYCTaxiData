@@ -1,16 +1,9 @@
 using AutoMapper;
-using NYCTaxiData.Application.Features.AI.DTOs;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.AI;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.EntitiesAi;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Infrastructure.Domain.EntitiesAi;
-using Demand15MinInput = NYCTaxiData.Application.Features.AI.DTOs.Demand15MinInput;
-using Demand6hInput = NYCTaxiData.Application.Features.AI.DTOs.Demand6hInput;
-using ETAInput = NYCTaxiData.Application.Features.AI.DTOs.ETAInput;
-using RevenueInput = NYCTaxiData.Application.Features.AI.DTOs.RevenueInput;
-using StockOutInput = NYCTaxiData.Application.Features.AI.DTOs.StockOutInput;
-using ZoneSupplyState = NYCTaxiData.Domain.DTOs.ZoneSupplyState;
 
 namespace NYCTaxiData.Application.Common.Mappings;
 

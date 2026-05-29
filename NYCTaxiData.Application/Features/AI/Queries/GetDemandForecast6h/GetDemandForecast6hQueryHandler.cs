@@ -1,31 +1,28 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
-using NYCTaxiData.Application.Common.Exceptions;
-using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.Common.Interfaces;
+using NYCTaxiData.Application.DTOs.AI;
+using NYCTaxiData.Application.Common.Exceptions;
 
-namespace NYCTaxiData.Application.Features.AI.Commands.PredictDemand6h;
+namespace NYCTaxiData.Application.Features.AI.Queries.GetDemandForecast6h;
 
 /// <summary>
-/// Handler for <see cref="PredictDemand6hCommand"/>.
+/// Handler for <see cref="GetDemandForecast6hQuery"/>.
 /// </summary>
-public class PredictDemand6hCommandHandler : IRequestHandler<PredictDemand6hCommand, Result<List<Demand6hResult>>>
+public class GetDemandForecast6hQueryHandler : IRequestHandler<GetDemandForecast6hQuery, Result<List<Demand6hResult>>>
 {
     private readonly IAiPredictionService _aiPredictionService;
-    private readonly ILogger<PredictDemand6hCommandHandler> _logger;
+    private readonly ILogger<GetDemandForecast6hQueryHandler> _logger;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="PredictDemand6hCommandHandler"/> class.
-    /// </summary>
-    public PredictDemand6hCommandHandler(IAiPredictionService aiPredictionService, ILogger<PredictDemand6hCommandHandler> logger)
+    public GetDemandForecast6hQueryHandler(IAiPredictionService aiPredictionService, ILogger<GetDemandForecast6hQueryHandler> logger)
     {
         _aiPredictionService = aiPredictionService;
         _logger = logger;
     }
 
     /// <inheritdoc />
-    public async Task<Result<List<Demand6hResult>>> Handle(PredictDemand6hCommand request, CancellationToken cancellationToken)
+    public async Task<Result<List<Demand6hResult>>> Handle(GetDemandForecast6hQuery request, CancellationToken cancellationToken)
     {
         try
         {

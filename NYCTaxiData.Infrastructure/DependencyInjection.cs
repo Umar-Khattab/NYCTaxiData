@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,6 +48,11 @@ namespace NYCTaxiData.Infrastructure
             var baseUrl = config["MlService:BaseUrl"] ?? "http://127.0.0.1:8000/";
             client.BaseAddress = new Uri(baseUrl.EndsWith("/") ? baseUrl : baseUrl + "/");
             client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.AcceptEncoding.Add(new System.Net.Http.Headers.StringWithQualityHeaderValue("gzip"));
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
         })
         // Use a local DelegatingHandler to apply the Polly policy without requiring PolicyHttpMessageHandler type
         .AddHttpMessageHandler(sp =>

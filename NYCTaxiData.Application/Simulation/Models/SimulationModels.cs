@@ -1,5 +1,6 @@
 using NYCTaxiData.Domain.Enums;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.AI;
+using NYCTaxiData.Application.DTOs.Simulation;
 
 namespace NYCTaxiData.Application.Simulation.Models;
 

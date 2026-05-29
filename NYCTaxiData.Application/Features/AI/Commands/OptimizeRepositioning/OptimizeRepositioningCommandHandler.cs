@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.AI;
 
 namespace NYCTaxiData.Application.Features.AI.Commands.OptimizeRepositioning;
 

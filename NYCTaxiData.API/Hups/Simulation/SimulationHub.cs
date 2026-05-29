@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using NYCTaxiData.Application.Common.Interfaces.Simulation;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.Simulation;
 
 namespace NYCTaxiData.API.Hups.Simulation;
 

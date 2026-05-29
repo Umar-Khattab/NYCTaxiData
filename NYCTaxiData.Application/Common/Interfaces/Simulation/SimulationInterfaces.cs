@@ -1,5 +1,5 @@
 using NYCTaxiData.Application.Simulation.Models;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.Simulation;
 
 namespace NYCTaxiData.Application.Common.Interfaces.Simulation;
 

@@ -1,17 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using NYCTaxiData.API.Contracts;
-using NYCTaxiData.Application.Features.AI.Commands.PredictDemand15Min;
-using NYCTaxiData.Application.Features.AI.Commands.PredictDemand6h;
-using NYCTaxiData.Application.Features.AI.Commands.PredictETA;
-using NYCTaxiData.Application.Features.AI.Commands.PredictRevenue;
-using NYCTaxiData.Application.Features.AI.Commands.PredictStockOut;
+using NYCTaxiData.Application.Features.AI.Queries.GetDemandForecast15Min;
+using NYCTaxiData.Application.Features.AI.Queries.GetDemandForecast6h;
+using NYCTaxiData.Application.Features.AI.Queries.GetEtaPrediction;
+using NYCTaxiData.Application.Features.AI.Queries.GetRevenuePrediction;
+using NYCTaxiData.Application.Features.AI.Queries.GetStockOutPrediction;
 using NYCTaxiData.Application.Features.AI.Commands.OptimizeRepositioning;
-using NYCTaxiData.Application.Features.AI.DTOs;
 using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Application.DTOs;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.AI;
 
 namespace NYCTaxiData.API.Controllers;
 
@@ -33,10 +32,10 @@ public class AiController : ControllerBase
     /// Predicts 15-minute demand for a list of zones.
     /// </summary>
     [HttpPost("predict/demand-15min")]
-    public async Task<ActionResult<ApiResponse<List<Domain.DTOs.Demand15MinResult>>>> PredictDemand15Min(
-        [FromBody] PredictDemand15MinCommand command, CancellationToken ct)
+    public async Task<ActionResult<ApiResponse<List<Demand15MinResult>>>> PredictDemand15Min(
+        [FromBody] GetDemandForecast15MinQuery query, CancellationToken ct)
     {
-        var result = await _mediator.Send(command, ct);
+        var result = await _mediator.Send(query, ct);
         return Ok(result);
     }
 
@@ -44,10 +43,10 @@ public class AiController : ControllerBase
     /// Predicts 6-hour demand for a list of zones.
     /// </summary>
     [HttpPost("predict/demand-6h")]
-    public async Task<ActionResult<ApiResponse<Domain.DTOs.BatchPredictionResponse<Domain.DTOs.Demand6hResult>>>> PredictDemand6h(
-        [FromBody] PredictDemand6hCommand command, CancellationToken ct)
+    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<Demand6hResult>>>> PredictDemand6h(
+        [FromBody] GetDemandForecast6hQuery query, CancellationToken ct)
     {
-        var result = await _mediator.Send(command, ct);
+        var result = await _mediator.Send(query, ct);
         return Ok(result);
     }
 
@@ -55,10 +54,10 @@ public class AiController : ControllerBase
     /// Predicts ETA for a list of zone pairs (routes).
     /// </summary>
     [HttpPost("predict/eta")]
-    public async Task<ActionResult<ApiResponse<Domain.DTOs.BatchPredictionResponse<Domain.DTOs.ETAResult>>>> PredictETA(
-        [FromBody] PredictETACommand command, CancellationToken ct)
+    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<ETAResult>>>> PredictETA(
+        [FromBody] GetEtaPredictionQuery query, CancellationToken ct)
     {
-        var result = await _mediator.Send(command, ct);
+        var result = await _mediator.Send(query, ct);
         return Ok(result);
     }
 
@@ -66,10 +65,10 @@ public class AiController : ControllerBase
     /// Predicts revenue for a list of zones.
     /// </summary>
     [HttpPost("predict/revenue")]
-    public async Task<ActionResult<ApiResponse<Domain.DTOs.BatchPredictionResponse<Domain.DTOs.RevenueResult>>>> PredictRevenue(
-        [FromBody] PredictRevenueCommand command, CancellationToken ct)
+    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<RevenueResult>>>> PredictRevenue(
+        [FromBody] GetRevenuePredictionQuery query, CancellationToken ct)
     {
-        var result = await _mediator.Send(command, ct);
+        var result = await _mediator.Send(query, ct);
         return Ok(result);
     }
 
@@ -77,10 +76,10 @@ public class AiController : ControllerBase
     /// Predicts stock-out probability for a list of zones.
     /// </summary>
     [HttpPost("predict/stockout")]
-    public async Task<ActionResult<ApiResponse<Domain.DTOs.BatchPredictionResponse<Domain.DTOs.StockOutResult>>>> PredictStockOut(
-        [FromBody] PredictStockOutCommand command, CancellationToken ct)
+    public async Task<ActionResult<ApiResponse<BatchPredictionResponse<StockOutResult>>>> PredictStockOut(
+        [FromBody] GetStockOutPredictionQuery query, CancellationToken ct)
     {
-        var result = await _mediator.Send(command, ct);
+        var result = await _mediator.Send(query, ct);
         return Ok(result);
     }
 
@@ -94,7 +93,7 @@ public class AiController : ControllerBase
     /// Optimizes vehicle repositioning across zones.
     /// </summary>
     [HttpPost("optimize/repositioning")]
-    public async Task<ActionResult<ApiResponse<Domain.DTOs.RepositioningPlan>>> OptimizeRepositioning(
+    public async Task<ActionResult<ApiResponse<RepositioningPlan>>> OptimizeRepositioning(
         [FromBody] OptimizeRepositioningCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);

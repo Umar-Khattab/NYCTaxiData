@@ -1,6 +1,6 @@
 using NYCTaxiData.Domain.Enums;
 
-namespace NYCTaxiData.Application.Features.AI.DTOs;
+namespace NYCTaxiData.Application.DTOs.AI;
 
 /// <summary>
 /// Standard wrapper for batch prediction responses returned by the ML service.

@@ -1,7 +1,9 @@
 using NYCTaxiData.Domain.Enums;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace NYCTaxiData.Domain.DTOs;
+namespace NYCTaxiData.Application.DTOs.AI;
 
 /// <summary>
 /// Input features for 15-minute demand prediction per zone.

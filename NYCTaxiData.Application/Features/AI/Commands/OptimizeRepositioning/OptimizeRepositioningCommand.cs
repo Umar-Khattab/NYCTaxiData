@@ -1,7 +1,7 @@
 using MediatR;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 using NYCTaxiData.Application.Common;
-using NYCTaxiData.Domain.DTOs;
+using NYCTaxiData.Application.DTOs.AI;
 
 namespace NYCTaxiData.Application.Features.AI.Commands.OptimizeRepositioning;
 
