@@ -29,22 +29,6 @@ public class AiController : ControllerBase
     /// </summary>
     public AiController(IMediator mediator) => _mediator = mediator;
 
-    // ========================================================================
-    // EXISTING endpoints (keep them - do not remove)
-    // ========================================================================
-    // [HttpGet("demand-forecast")]
-    // [HttpGet("dispatch-recommendation")]
-    // [HttpGet("optimal-driver-schedule")]
-    // [HttpGet("explainable-ai-insight")]
-    // [HttpPost("voice-assistant")]
-    // [HttpPost("simulate/operational")]
-    // [HttpPost("simulate/strategic")]
-    // [HttpPost("model/retrain")]
-
-    // ========================================================================
-    // NEW endpoints - Demand Predictions
-    // ========================================================================
-
     /// <summary>
     /// Predicts 15-minute demand for a list of zones.
     /// </summary>
