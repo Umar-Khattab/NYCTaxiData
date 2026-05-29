@@ -1,5 +1,6 @@
-﻿using AutoMapper;
+using AutoMapper;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NYCTaxiData.API.Controllers.Base;
@@ -9,18 +10,34 @@ using NYCTaxiData.Application.Common.Plumping;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Application.Features.Drivers.Commands.UpdateDriverStatus;
+using NYCTaxiData.Application.Features.Trips.Commands.CreateTrip;
+using NYCTaxiData.Application.Features.Trips.Commands.DeleteTrip;
 using NYCTaxiData.Application.Features.Trips.Commands.EndTrip;
 using NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch;
-using NYCTaxiData.Application.Features.Trips.Commands.StartTrip; 
+using NYCTaxiData.Application.Features.Trips.Commands.StartTrip;
+using NYCTaxiData.Application.Features.Trips.Commands.UpdateTrip;
+using NYCTaxiData.Application.Features.Trips.Queries.GetAllTrips;
+using NYCTaxiData.Application.Features.Trips.Queries.GetDemandStatistics;
+using NYCTaxiData.Application.Features.Trips.Queries.GetDriverActivity;
 using NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed;
+using NYCTaxiData.Application.Features.Trips.Queries.GetPeakHours;
+using NYCTaxiData.Application.Features.Trips.Queries.GetRevenueStatistics;
+using NYCTaxiData.Application.Features.Trips.Queries.GetTripById;
 using NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory;
+using NYCTaxiData.Application.Features.Trips.Queries.GetTripsByZone;
+using NYCTaxiData.Application.Features.Trips.Queries.GetTripsStatistics;
+using NYCTaxiData.Application.Features.Trips.Queries.GetTripTrends;
+using NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Domain.Specifications.Drivers;
 using NYCTaxiData.Domain.Specifications.Trips;
 using NYCTaxiData.Infrastructure;
-using NYCTaxiData.Infrastructure.Data.Contexts; 
+using NYCTaxiData.Infrastructure.Data.Contexts;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace NYCTaxiData.API.Controllers;
 
@@ -31,7 +48,60 @@ public class TripsController(
     IMapper _mapper,
     TaxiDbContext _context,
     ICurrentUserService _currentUserService) : BaseController
-{ 
+{
+    // ==========================================
+    // CORE CRUD ENDPOINTS
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllTrips(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] Guid? driverId = null,
+        [FromQuery] string? processStatus = null)
+    {
+        return HandleResult(await Mediator.Send(new GetAllTripsQuery(pageNumber, pageSize, startDate, endDate, driverId, processStatus)));
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetTripById(int id)
+    {
+        return HandleResult(await Mediator.Send(new GetTripByIdQuery(id)));
+    }
+
+    [HttpGet("zone/{zoneId}")]
+    public async Task<IActionResult> GetTripsByZone(int zoneId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    {
+        return HandleResult(await Mediator.Send(new GetTripsByZoneQuery(zoneId, pageNumber, pageSize)));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateTrip([FromBody] CreateTripCommand command)
+    {
+        return HandleResult(await Mediator.Send(command));
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateTrip(int id, [FromBody] UpdateTripCommand command)
+    {
+        if (id != command.TripId)
+            return BadRequest("ID in URL must match ID in body.");
+
+        return HandleResult(await Mediator.Send(command));
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteTrip(int id)
+    {
+        return HandleResult(await Mediator.Send(new DeleteTripCommand(id)));
+    }
+
+    // ==========================================
+    // PRESERVED LEGACY ACTION ENDPOINTS
+    // ==========================================
+
     [HttpPost("start")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -39,7 +109,7 @@ public class TripsController(
     {
         return HandleResult(await Mediator.Send(command));
     }
-     
+
     [HttpPost("end")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -47,7 +117,7 @@ public class TripsController(
     {
         return HandleResult(await Mediator.Send(command));
     }
-     
+
     [HttpGet("history")]
     public async Task<IActionResult> GetTripHistory([FromQuery] GetTripHistoryQuery query)
     {
@@ -59,7 +129,7 @@ public class TripsController(
     {
         var spec = new AvailableDriversSpec(page, limit);
 
-        var drivers = await _unitOfWork.Drivers.GetAllBySpecAsync(spec); 
+        var drivers = await _unitOfWork.Drivers.GetAllBySpecAsync(spec);
 
         var totalCount = await _unitOfWork.Drivers.CountAsync(spec);
         var driverDtos = _mapper.Map<List<DriverListDto>>(drivers);
@@ -73,22 +143,22 @@ public class TripsController(
     {
         return HandleResult(await Mediator.Send(query));
     }
-     
+
     [HttpPost("dispatch/manual")]
     public async Task<IActionResult> ManualDispatch([FromBody] ManualDispatchCommand command)
     {
         return HandleResult(await Mediator.Send(command));
     }
-     
+
     [HttpPatch("driver/status")]
     public async Task<IActionResult> UpdateDriverStatus([FromBody] UpdateDriverStatusCommand command)
     {
-        var result = await Mediator.Send(command); 
+        var result = await Mediator.Send(command);
         return result.IsSuccess
         ? HandleResult(Result<object>.Success(null))
         : HandleResult(Result<object>.Failure(result.Error, "UpdateFailed"));
     }
-     
+
     [HttpPost("test-audit")]
     public async Task<IActionResult> TestAudit()
     {
@@ -106,18 +176,50 @@ public class TripsController(
 
         return HandleResult(Result<object>.Success(responseData));
     }
-     
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteTrip(int id)
+
+    // ==========================================
+    // DETAILED TRIP ANALYTICS ENDPOINTS
+    // ==========================================
+
+    [HttpGet("statistics")]
+    public async Task<IActionResult> GetTripsStatistics()
     {
-        var trip = await _context.Trips.FirstOrDefaultAsync(t => t.TripId == id);
+        return HandleResult(await Mediator.Send(new GetTripsStatisticsQuery()));
+    }
 
-        if (trip == null)
-            return HandleResult(Result<object>.Failure($"Trip {id} not found", "NotFound"));
+    [HttpGet("statistics/revenue")]
+    public async Task<IActionResult> GetRevenueStatistics([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    {
+        return HandleResult(await Mediator.Send(new GetRevenueStatisticsQuery(startDate, endDate)));
+    }
 
-        _context.Trips.Remove(trip);
-        await _context.SaveChangesAsync();
+    [HttpGet("statistics/demand")]
+    public async Task<IActionResult> GetDemandStatistics([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    {
+        return HandleResult(await Mediator.Send(new GetDemandStatisticsQuery(startDate, endDate)));
+    }
 
-        return HandleResult(Result<object>.Success(new { trip.TripId, trip.DeletedBy, trip.DeletedAt }));
+    [HttpGet("statistics/zones")]
+    public async Task<IActionResult> GetZoneStatistics()
+    {
+        return HandleResult(await Mediator.Send(new GetZoneStatisticsQuery()));
+    }
+
+    [HttpGet("statistics/peak-hours")]
+    public async Task<IActionResult> GetPeakHours()
+    {
+        return HandleResult(await Mediator.Send(new GetPeakHoursQuery()));
+    }
+
+    [HttpGet("statistics/trends")]
+    public async Task<IActionResult> GetTripTrends()
+    {
+        return HandleResult(await Mediator.Send(new GetTripTrendsQuery()));
+    }
+
+    [HttpGet("statistics/drivers")]
+    public async Task<IActionResult> GetDriverActivity()
+    {
+        return HandleResult(await Mediator.Send(new GetDriverActivityQuery()));
     }
 }

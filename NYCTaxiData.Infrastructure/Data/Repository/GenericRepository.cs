@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Domain.Common.Interfaces;
 using NYCTaxiData.Domain.Interfaces.Specifications;
@@ -25,6 +25,8 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
             _context = context;
             _dbSet = context.Set<T>();
         }
+
+        public IQueryable<T> Query() => _dbSet.AsQueryable();
 
         public async Task<IEnumerable<T>> GetAllBySpecAsync(ISpecification<T> spec)
      => await SpecificationEvaluator<T>

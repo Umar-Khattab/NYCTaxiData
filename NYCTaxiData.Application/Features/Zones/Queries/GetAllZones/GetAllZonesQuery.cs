@@ -1,10 +1,9 @@
-﻿using System;
+using MediatR;
+using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.DTOs.Zone;
 using System.Collections.Generic;
-using System.Text;
 
 namespace NYCTaxiData.Application.Features.Zones.Queries.GetAllZones
 {
-    internal class GetAllZonesQuery
-    {
-    }
+    public record GetAllZonesQuery() : IRequest<Result<List<ZoneDto>>>;
 }
