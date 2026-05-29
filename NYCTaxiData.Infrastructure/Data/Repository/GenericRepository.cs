@@ -4,6 +4,7 @@ using NYCTaxiData.Domain.Common.Interfaces;
 using NYCTaxiData.Domain.Interfaces.Specifications;
 using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Services;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace NYCTaxiData.Infrastructure.Data.Repository
@@ -25,6 +26,9 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
             _context = context;
             _dbSet = context.Set<T>();
         }
+
+        public IQueryable<T> Query(bool trackChanges = false)
+            => trackChanges ? _dbSet.AsQueryable() : _dbSet.AsNoTracking();
 
         public async Task<IEnumerable<T>> GetAllBySpecAsync(ISpecification<T> spec)
      => await SpecificationEvaluator<T>

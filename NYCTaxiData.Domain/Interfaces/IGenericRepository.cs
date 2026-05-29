@@ -1,6 +1,7 @@
 ﻿using NYCTaxiData.Domain.Interfaces.Specifications;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -8,6 +9,8 @@ namespace NYCTaxiData.Domain.Common.Interfaces
 {
     public interface IGenericRepository<T> where T : class
     { 
+        IQueryable<T> Query(bool trackChanges = false);
+
         Task<IEnumerable<T>> GetAllAsync();
 
         Task<int> CountAsync(ISpecification<T> spec);
