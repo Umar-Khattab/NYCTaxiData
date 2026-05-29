@@ -171,6 +171,11 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
             return await query.ToListAsync();
         }
 
+        public IQueryable<T> Query(bool trackChanges = false)
+        {
+            return trackChanges ? _dbSet : _dbSet.AsNoTracking();
+        }
+
         private IQueryable<T> ApplySpecification(ISpecification<T> spec)
         { 
             return SpecificationEvaluator<T>.GetQuery(_dbSet.AsQueryable(), spec);

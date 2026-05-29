@@ -1,6 +1,7 @@
 ﻿using NYCTaxiData.Domain.Interfaces.Specifications;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -60,5 +61,7 @@ namespace NYCTaxiData.Domain.Common.Interfaces
         Task<IEnumerable<T>> FindByConditionWithIncludesAsync(
             Expression<Func<T, bool>> predicate,
             params Expression<Func<T, object>>[] includes);
+
+        IQueryable<T> Query(bool trackChanges = false);
     }
 } 
