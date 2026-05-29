@@ -13,11 +13,13 @@ namespace NYCTaxiData.Application.Features.AI.Queries.GetEtaPrediction;
 public class GetEtaPredictionQueryHandler : IRequestHandler<GetEtaPredictionQuery, Result<List<ETAResult>>>
 {
     private readonly IAiPredictionService _aiPredictionService;
+    private readonly IAiFeatureProvider _aiFeatureProvider;
     private readonly ILogger<GetEtaPredictionQueryHandler> _logger;
 
-    public GetEtaPredictionQueryHandler(IAiPredictionService aiPredictionService, ILogger<GetEtaPredictionQueryHandler> logger)
+    public GetEtaPredictionQueryHandler(IAiPredictionService aiPredictionService, IAiFeatureProvider aiFeatureProvider, ILogger<GetEtaPredictionQueryHandler> logger)
     {
         _aiPredictionService = aiPredictionService;
+        _aiFeatureProvider = aiFeatureProvider;
         _logger = logger;
     }
 
@@ -26,7 +28,8 @@ public class GetEtaPredictionQueryHandler : IRequestHandler<GetEtaPredictionQuer
     {
         try
         {
-            var result = await _aiPredictionService.PredictETAAsync(request.Routes, cancellationToken);
+            var features = await _aiFeatureProvider.GetEtaFeaturesAsync(request.Routes, cancellationToken);
+            var result = await _aiPredictionService.PredictETAAsync(features, cancellationToken);
             return Result<List<ETAResult>>.Success(result, "ETA prediction generated successfully");
         }
         catch (HttpRequestException ex)

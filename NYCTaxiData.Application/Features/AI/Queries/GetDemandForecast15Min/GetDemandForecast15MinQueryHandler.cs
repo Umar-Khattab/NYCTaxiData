@@ -14,12 +14,14 @@ namespace NYCTaxiData.Application.Features.AI.Queries.GetDemandForecast15Min;
 public class GetDemandForecast15MinQueryHandler : IRequestHandler<GetDemandForecast15MinQuery, Result<List<Demand15MinResult>>>
 {
     private readonly IAiPredictionService _aiPredictionService;
+    private readonly IAiFeatureProvider _aiFeatureProvider;
     private readonly IMediator _mediator;
     private readonly ILogger<GetDemandForecast15MinQueryHandler> _logger;
 
-    public GetDemandForecast15MinQueryHandler(IAiPredictionService aiPredictionService, IMediator mediator, ILogger<GetDemandForecast15MinQueryHandler> logger)
+    public GetDemandForecast15MinQueryHandler(IAiPredictionService aiPredictionService, IAiFeatureProvider aiFeatureProvider, IMediator mediator, ILogger<GetDemandForecast15MinQueryHandler> logger)
     {
         _aiPredictionService = aiPredictionService;
+        _aiFeatureProvider = aiFeatureProvider;
         _mediator = mediator;
         _logger = logger;
     }
@@ -29,7 +31,11 @@ public class GetDemandForecast15MinQueryHandler : IRequestHandler<GetDemandForec
     {
         try
         {
-            var result = await _aiPredictionService.PredictDemand15MinAsync(request.Zones, request.RoundToInt, cancellationToken);
+            // 🔍 Retrieve engineered feature vector internally from AI DbContext via Feature Provider
+            var features = await _aiFeatureProvider.GetDemand15MinFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
+
+            // 🤖 Execute prediction using the loaded feature payload
+            var result = await _aiPredictionService.PredictDemand15MinAsync(features, request.RoundToInt, cancellationToken);
             
             // Asynchronously publish prediction event for consumers (e.g. Zones/Heatmaps)
             await _mediator.Publish(new PredictionGeneratedEvent("Demand15Min", Demand15MinResults: result), cancellationToken);

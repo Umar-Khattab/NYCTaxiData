@@ -13,11 +13,13 @@ namespace NYCTaxiData.Application.Features.AI.Queries.GetStockOutPrediction;
 public class GetStockOutPredictionQueryHandler : IRequestHandler<GetStockOutPredictionQuery, Result<List<StockOutResult>>>
 {
     private readonly IAiPredictionService _aiPredictionService;
+    private readonly IAiFeatureProvider _aiFeatureProvider;
     private readonly ILogger<GetStockOutPredictionQueryHandler> _logger;
 
-    public GetStockOutPredictionQueryHandler(IAiPredictionService aiPredictionService, ILogger<GetStockOutPredictionQueryHandler> logger)
+    public GetStockOutPredictionQueryHandler(IAiPredictionService aiPredictionService, IAiFeatureProvider aiFeatureProvider, ILogger<GetStockOutPredictionQueryHandler> logger)
     {
         _aiPredictionService = aiPredictionService;
+        _aiFeatureProvider = aiFeatureProvider;
         _logger = logger;
     }
 
@@ -26,7 +28,8 @@ public class GetStockOutPredictionQueryHandler : IRequestHandler<GetStockOutPred
     {
         try
         {
-            var result = await _aiPredictionService.PredictStockOutAsync(request.Zones, cancellationToken);
+            var features = await _aiFeatureProvider.GetStockOutFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
+            var result = await _aiPredictionService.PredictStockOutAsync(features, cancellationToken);
             return Result<List<StockOutResult>>.Success(result, "Stock-out prediction generated successfully");
         }
         catch (HttpRequestException ex)

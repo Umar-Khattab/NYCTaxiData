@@ -64,9 +64,15 @@ namespace NYCTaxiData.Infrastructure
             return new PolicyDelegatingHandler(retryPolicy);
         });
             services.AddScoped<ICacheService, CacheService>();
+            services.AddMemoryCache();
             services.AddDistributedMemoryCache();
-            //services.AddDbContext<AiDbContext>(options =>
-            //options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection2")));
+
+            services.AddScoped<AiFeatureProvider>();
+            services.AddScoped<IAiFeatureProvider>(sp => 
+                new CachingAiFeatureProvider(
+                    sp.GetRequiredService<AiFeatureProvider>(), 
+                    sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>()));
+            services.AddDbContext<AiDbContext>();
 
             services.AddDbContext<TaxiDbContext>((sp, options) =>
             {

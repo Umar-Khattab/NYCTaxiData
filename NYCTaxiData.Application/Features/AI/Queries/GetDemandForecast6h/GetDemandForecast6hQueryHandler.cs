@@ -13,11 +13,13 @@ namespace NYCTaxiData.Application.Features.AI.Queries.GetDemandForecast6h;
 public class GetDemandForecast6hQueryHandler : IRequestHandler<GetDemandForecast6hQuery, Result<List<Demand6hResult>>>
 {
     private readonly IAiPredictionService _aiPredictionService;
+    private readonly IAiFeatureProvider _aiFeatureProvider;
     private readonly ILogger<GetDemandForecast6hQueryHandler> _logger;
 
-    public GetDemandForecast6hQueryHandler(IAiPredictionService aiPredictionService, ILogger<GetDemandForecast6hQueryHandler> logger)
+    public GetDemandForecast6hQueryHandler(IAiPredictionService aiPredictionService, IAiFeatureProvider aiFeatureProvider, ILogger<GetDemandForecast6hQueryHandler> logger)
     {
         _aiPredictionService = aiPredictionService;
+        _aiFeatureProvider = aiFeatureProvider;
         _logger = logger;
     }
 
@@ -26,7 +28,8 @@ public class GetDemandForecast6hQueryHandler : IRequestHandler<GetDemandForecast
     {
         try
         {
-            var result = await _aiPredictionService.PredictDemand6hAsync(request.Zones, cancellationToken);
+            var features = await _aiFeatureProvider.GetDemand6hFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
+            var result = await _aiPredictionService.PredictDemand6hAsync(features, cancellationToken);
             return Result<List<Demand6hResult>>.Success(result, "Demand forecast (6h) generated successfully");
         }
         catch (HttpRequestException ex)

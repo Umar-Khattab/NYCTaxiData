@@ -13,11 +13,13 @@ namespace NYCTaxiData.Application.Features.AI.Queries.GetRevenuePrediction;
 public class GetRevenuePredictionQueryHandler : IRequestHandler<GetRevenuePredictionQuery, Result<List<RevenueResult>>>
 {
     private readonly IAiPredictionService _aiPredictionService;
+    private readonly IAiFeatureProvider _aiFeatureProvider;
     private readonly ILogger<GetRevenuePredictionQueryHandler> _logger;
 
-    public GetRevenuePredictionQueryHandler(IAiPredictionService aiPredictionService, ILogger<GetRevenuePredictionQueryHandler> logger)
+    public GetRevenuePredictionQueryHandler(IAiPredictionService aiPredictionService, IAiFeatureProvider _aiFeatureProvider, ILogger<GetRevenuePredictionQueryHandler> logger)
     {
         _aiPredictionService = aiPredictionService;
+        this._aiFeatureProvider = _aiFeatureProvider;
         _logger = logger;
     }
 
@@ -26,7 +28,8 @@ public class GetRevenuePredictionQueryHandler : IRequestHandler<GetRevenuePredic
     {
         try
         {
-            var result = await _aiPredictionService.PredictRevenueAsync(request.Zones, cancellationToken);
+            var features = await _aiFeatureProvider.GetRevenueFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
+            var result = await _aiPredictionService.PredictRevenueAsync(features, cancellationToken);
             return Result<List<RevenueResult>>.Success(result, "Revenue prediction generated successfully");
         }
         catch (HttpRequestException ex)
