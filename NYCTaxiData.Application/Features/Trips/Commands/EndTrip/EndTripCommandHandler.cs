@@ -1,7 +1,7 @@
-ï»¿using AutoMapper;
+using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore; 
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
@@ -18,25 +18,25 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
             EndTripCommand request,
             CancellationToken cancellationToken)
         {
-            // 1. Ø¬Ù„Ø¨ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø±Ø­Ù„Ø©
+            // 1. ÌáÈ ÈíÇäÇÊ ÇáÑÍáÉ
             var trip = await _unitOfWork.Trips.GetByIdAsync(request.TripId);
 
             if (trip == null)
                 return Result<TripEndResultDto>.Failure("Trip not found", "NotFound");
 
-            // 2. Ø§Ù„ØªØ£ÙƒØ¯ Ø§Ù„Ø¢Ù…Ù† Ø¥Ù† Ø§Ù„Ø±Ø­Ù„Ø© Ø¨Ø¯Ø£Øª (ÙØ­Øµ Ø§Ù„Ù€ null Ø§Ù„ØµØ±ÙŠØ­)
+            // 2. ÇáÊÃßÏ ÇáÂãä Åä ÇáÑÍáÉ ÈÏÃÊ (İÍÕ ÇáÜ null ÇáÕÑíÍ)
             if (trip.StartedAt == null)
                 return Result<TripEndResultDto>.Failure("Trip has not been started yet", "Conflict");
 
-            // 3. Ø§Ù„ØªØ£ÙƒØ¯ Ø¥Ù†Ù‡Ø§ Ù…Ù†ØªÙ‡ØªØ´ Ù‚Ø¨Ù„ ÙƒØ¯Ø©
+            // 3. ÇáÊÃßÏ ÅäåÇ ãäÊåÊÔ ŞÈá ßÏÉ
             if (trip.EndedAt != null)
                 return Result<TripEndResultDto>.Failure("Trip has already ended", "Conflict");
 
-            // 4. Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„ÙˆÙ‚Øª ÙˆØ§Ù„Ù€ Fare
+            // 4. ÍÓÇÈÇÊ ÇáæŞÊ æÇáÜ Fare
             var endedAt = DateTime.UtcNow;
             var durationMinutes = (endedAt - trip.StartedAt.Value).TotalMinutes;
 
-            // ØªØ£Ù…ÙŠÙ† Ø§Ù„Ø­Ø³Ø§Ø¨Ø§Øª Ù„Ùˆ Ø§Ù„Ø±Ø­Ù„Ø© Ø§ØªÙ‚ÙÙ„Øª ÙÙŠ Ù†ÙØ³ Ø§Ù„Ø¯Ù‚ÙŠÙ‚Ø© (Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„ Ù†Ø­Ø³Ø¨ Ø¯Ù‚ÙŠÙ‚Ø© ÙˆØ§Ø­Ø¯Ø©)
+            // ÊÃãíä ÇáÍÓÇÈÇÊ áæ ÇáÑÍáÉ ÇÊŞİáÊ İí äİÓ ÇáÏŞíŞÉ (Úáì ÇáÃŞá äÍÓÈ ÏŞíŞÉ æÇÍÏÉ)
             if (durationMinutes <= 0) durationMinutes = 1;
 
             var totalFare = Math.Round(((decimal)durationMinutes * request.FarePerMinute + request.BaseFare) * request.SurgeMultiplier, 2);

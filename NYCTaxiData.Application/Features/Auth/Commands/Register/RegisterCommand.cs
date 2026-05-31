@@ -1,10 +1,10 @@
-ï»¿using MediatR;
-using NYCTaxiData.Application.DTOs.Identity; // ğŸ‘ˆ Ø§Ù„Ø³Ø·Ø± Ø¯Ù‡ Ù‡Ùˆ Ø§Ù„Ù„ÙŠ Ù†Ø§Ù‚Øµ
-using NYCTaxiData.Application.Common.Plumping; // ğŸ‘ˆ Ø³ØªØ­ØªØ§Ø¬Ù‡ Ø£ÙŠØ¶Ø§Ù‹ Ø¹Ø´Ø§Ù† ÙƒÙ„Ø§Ø³ Ø§Ù„Ù€ Result
+using MediatR;
+using NYCTaxiData.Application.DTOs.Identity; // ?? ÇáÓØÑ Ïå åæ Çááí äÇŞÕ
+using NYCTaxiData.Application.Common.Plumbing; // ?? ÓÊÍÊÇÌå ÃíÖÇğ ÚÔÇä ßáÇÓ ÇáÜ Result
 
 namespace NYCTaxiData.Application.Auth.Commands.RegisterDriver
 {
-    // ØªØ£ÙƒØ¯ Ù…Ù† ØªØºÙŠÙŠØ± Ø§Ù„Ù†ÙˆØ¹ Ø§Ù„Ù…Ø±Ø¬Ø¹ Ù„ÙŠÙƒÙˆÙ† Result<UserResultDto> ÙƒÙ…Ø§ Ø§ØªÙÙ‚Ù†Ø§
+    // ÊÃßÏ ãä ÊÛííÑ ÇáäæÚ ÇáãÑÌÚ áíßæä Result<UserResultDto> ßãÇ ÇÊİŞäÇ
     public record RegisterDriverCommand(
         string FirstName,
         string LastName,

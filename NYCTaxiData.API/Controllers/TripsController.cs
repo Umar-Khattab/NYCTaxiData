@@ -1,12 +1,13 @@
 using AutoMapper;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using NYCTaxiData.API.Controllers.Base;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Models;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
+using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Application.Features.Drivers.Commands.UpdateDriverStatus;
@@ -28,13 +29,9 @@ using NYCTaxiData.Application.Features.Trips.Queries.GetTripsByZone;
 using NYCTaxiData.Application.Features.Trips.Queries.GetTripsStatistics;
 using NYCTaxiData.Application.Features.Trips.Queries.GetTripTrends;
 using NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics;
-using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Domain.Specifications.Drivers;
-using NYCTaxiData.Domain.Specifications.Trips;
-using NYCTaxiData.Infrastructure;
-using NYCTaxiData.Infrastructure.Data.Contexts;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -46,7 +43,6 @@ namespace NYCTaxiData.API.Controllers;
 public class TripsController(
     IUnitOfWork _unitOfWork,
     IMapper _mapper,
-    TaxiDbContext _context,
     ICurrentUserService _currentUserService) : BaseController
 {
     // ==========================================
@@ -156,15 +152,27 @@ public class TripsController(
         var result = await Mediator.Send(command);
         return result.IsSuccess
         ? HandleResult(Result<object>.Success(null))
-        : HandleResult(Result<object>.Failure(result.Error, "UpdateFailed"));
+        : HandleResult(Result<object>.Failure(result.Message ?? "UpdateFailed", "UpdateFailed"));
     }
 
+    /// <remarks>
+    /// This endpoint is intended for development/audit verification only.
+    /// It is restricted to administrators and development environments.
+    /// </remarks>
     [HttpPost("test-audit")]
-    public async Task<IActionResult> TestAudit()
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> TestAudit([FromServices] NYCTaxiData.Infrastructure.Data.Contexts.TaxiDbContext context)
     {
-        var newTrip = new Trip { StartedAt = DateTime.UtcNow };
-        _context.Trips.Add(newTrip);
-        await _context.SaveChangesAsync();
+        if (!HttpContext.RequestServices
+                .GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>()
+                .IsDevelopment())
+        {
+            return Forbid();
+        }
+
+        var newTrip = new NYCTaxiData.Domain.Entities.Trip { StartedAt = DateTime.UtcNow };
+        context.Trips.Add(newTrip);
+        await context.SaveChangesAsync();
 
         var responseData = new
         {

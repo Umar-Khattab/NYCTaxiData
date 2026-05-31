@@ -1,6 +1,7 @@
-﻿using AutoMapper;
+using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Common;
+using NYCTaxiData.Application.Common.Plumbing;
+using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
 
@@ -29,7 +30,7 @@ public sealed class GetActiveFleetQueryHandler
 
         var mappedItems = _mapper.Map<IReadOnlyList<ActiveFleetDriverDto>>(items.ToList());
 
-        var paginated = new PaginatedList<ActiveFleetDriverDto>(
+        var paginated = PaginatedList<ActiveFleetDriverDto>.Create(
             mappedItems,
             totalCount,
             request.PageNumber,

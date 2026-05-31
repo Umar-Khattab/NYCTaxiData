@@ -1,6 +1,6 @@
 using MediatR;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
-using NYCTaxiData.Application.Common;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.DTOs.AI;
 
 namespace NYCTaxiData.Application.Features.AI.Commands.OptimizeRepositioning;

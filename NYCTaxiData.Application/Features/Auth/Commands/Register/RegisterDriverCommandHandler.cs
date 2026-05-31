@@ -1,7 +1,7 @@
-ï»¿using AutoMapper;
+using AutoMapper;
 using MediatR;
 using NYCTaxiData.Application.Common.Interfaces.Services;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
@@ -31,10 +31,10 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterDriver
             var user = _mapper.Map<User1>(request);
             var driver = _mapper.Map<Driver>(request);
 
-            // âœ… Ø§Ù„Ø®Ø·ÙˆØ© Ø§Ù„Ø°Ù‡Ø¨ÙŠØ©: ØªØ´ÙÙŠØ± Ø§Ù„Ø¨Ø§Ø³ÙˆØ±Ø¯ ÙˆÙ…Ù„Ø¡ Ø§Ù„Ø¹Ù…ÙˆØ¯ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨ ÙÙŠ Ø§Ù„Ø¯Ø§ØªØ§Ø¨ÙŠØ²
+            // ? ÇáÎØæÉ ÇáĞåÈíÉ: ÊÔİíÑ ÇáÈÇÓæÑÏ æãáÁ ÇáÚãæÏ ÇáãØáæÈ İí ÇáÏÇÊÇÈíÒ
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-            // Ø§Ù„Ø±Ø¨Ø· Ø§Ù„Ø³Ø­Ø±ÙŠ (Navigation Property)
+            // ÇáÑÈØ ÇáÓÍÑí (Navigation Property)
             user.Driver = driver;
             user.Userrole = "Driver";
 
@@ -42,7 +42,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterDriver
             var saveResult = await _uow.ExecuteInTransactionAsync(async ct =>
             {
                 await _uow.Users.AddAsync(user);
-                // Ø§Ù„Ù€ EF Ù‡ÙŠØ³ÙŠÙ Ø§Ù„ÙŠÙˆØ²Ø± Ø£ÙˆÙ„Ø§Ù‹ØŒ ÙŠØ§Ø®Ø¯ Ø§Ù„Ù€ IDØŒ ÙŠØ­Ø·Ù‡ Ù„Ù„Ø³ÙˆØ§Ù‚ØŒ ÙˆÙŠØ³ÙŠÙ Ø§Ù„Ø³ÙˆØ§Ù‚.. ÙƒÙ„Ù‡ ÙÙŠ Transaction ÙˆØ§Ø­Ø¯Ø©
+                // ÇáÜ EF åíÓíİ ÇáíæÒÑ ÃæáÇğ¡ íÇÎÏ ÇáÜ ID¡ íÍØå ááÓæÇŞ¡ æíÓíİ ÇáÓæÇŞ.. ßáå İí Transaction æÇÍÏÉ
                 return await _uow.SaveChangesAsync(ct);
             }, cancellationToken);
 

@@ -1,7 +1,7 @@
-﻿using FluentValidation;
+using FluentValidation;
 using MediatR;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.DTOs.Trip;
 using System;
 

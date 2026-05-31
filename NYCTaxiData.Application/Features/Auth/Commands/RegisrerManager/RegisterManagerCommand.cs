@@ -1,6 +1,6 @@
-﻿using MediatR;
+using MediatR;
 using NYCTaxiData.Application.DTOs.Identity;
-using NYCTaxiData.Application.Common.Plumping;  
+using NYCTaxiData.Application.Common.Plumbing;  
 
 namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
 {

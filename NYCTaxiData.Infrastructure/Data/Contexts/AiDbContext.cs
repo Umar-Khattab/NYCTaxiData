@@ -1,4 +1,4 @@
-﻿    using System;
+    using System;
     using System.Collections.Generic;
     using Microsoft.EntityFrameworkCore;
     using NYCTaxiData.Domain.EntitiesAi;
@@ -28,6 +28,16 @@
         public virtual DbSet<Stockoutfeature> Stockoutfeatures { get; set; }
 
     
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            // Connection is configured externally via DI (Infrastructure/DependencyInjection.cs).
+            // Do not add a connection string here — it would override the one from appsettings.json.
+            if (!optionsBuilder.IsConfigured)
+                throw new InvalidOperationException(
+                    "AiDbContext must be configured via dependency injection. " +
+                    "Ensure 'AiConnection' is set in appsettings.json and AddInfrastructureServices is called.");
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder

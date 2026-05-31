@@ -1,6 +1,6 @@
 using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;

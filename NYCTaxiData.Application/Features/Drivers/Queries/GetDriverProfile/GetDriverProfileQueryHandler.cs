@@ -1,6 +1,6 @@
 using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Common.Plumping; // توحيد الـ Result
+using NYCTaxiData.Application.Common.Plumbing; // توحيد الـ Result
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
 

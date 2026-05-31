@@ -1,7 +1,7 @@
-ï»¿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using NYCTaxiData.API.Controllers.Base;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.Auth.Commands.Login;
 using NYCTaxiData.Application.Auth.Commands.RegisterDriver;
 using NYCTaxiData.Application.Auth.Commands.RegisterManager;
@@ -100,7 +100,7 @@ public class AuthController(ISender _mediator) : BaseController
     {
         var result = await Mediator.Send(command);
 
-        // Ù„Ùˆ Ø§Ù„Ù€ Handler Ø¨ØªØ§Ø¹Ùƒ Ø¨ÙŠØ±Ø¬Ø¹ UserResultDto Ù…Ø¨Ø§Ø´Ø±Ø© Ù…Ø´ Ù…ØºÙ„Ù Ø¨Ù€ Result
+        // áæ ÇáÜ Handler ÈÊÇÚß ÈíÑÌÚ UserResultDto ãÈÇÔÑÉ ãÔ ãÛáİ ÈÜ Result
         if (result.IsSuccess)
             return Ok(result);
 

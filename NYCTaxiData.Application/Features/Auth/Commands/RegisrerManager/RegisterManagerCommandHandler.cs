@@ -1,7 +1,7 @@
-ï»¿using AutoMapper;
+using AutoMapper;
 using MediatR;
 using NYCTaxiData.Application.Common.Interfaces.Services;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces; 
@@ -13,7 +13,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
     {
         public async Task<Result<UserResultDto>> Handle(RegisterManagerCommand request, CancellationToken ct)
         {
-            // 1. Ø§Ù„ØªØ£ÙƒØ¯ Ù…Ù† Ø¹Ø¯Ù… Ø§Ù„ØªÙƒØ±Ø§Ø± (Ø®Ø§Ø±Ø¬ Ø§Ù„Ù€ Transaction)
+            // 1. ÇáÊÃßÏ ãä ÚÏã ÇáÊßÑÇÑ (ÎÇÑÌ ÇáÜ Transaction)
             if (await _uow.Users.AnyAsync(u => u.PhoneNumber == request.PhoneNumber))
                 return Result.Failure<UserResultDto>("Phone number already exists", "Conflict");
 
@@ -24,7 +24,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
             {
                 var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-                // 2. Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„ÙŠÙˆØ²Ø± "Ø¨Ø¯ÙˆÙ†" ÙˆØ¶Ø¹ ID ÙŠØ¯ÙˆÙŠØ§Ù‹
+                // 2. ÅäÔÇÁ ÇáíæÒÑ "ÈÏæä" æÖÚ ID íÏæíÇð
                 var user = new User1
                 {
                     FirstName = request.FirstName,

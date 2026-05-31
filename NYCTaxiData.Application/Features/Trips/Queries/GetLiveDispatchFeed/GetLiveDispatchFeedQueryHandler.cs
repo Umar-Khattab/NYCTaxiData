@@ -1,11 +1,11 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Domain.Specifications.Trips;
@@ -21,7 +21,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
         {
             try
             {
-                // 1. Ø¬Ù„Ø¨ Ø§Ù„Ø³Ø§Ø¦Ù‚ÙŠÙ† Ù…Ù† Ø§Ù„Ø¯Ø§ØªØ§Ø¨ÙŠØ² Ù…Ø¹ Ø§Ù„Ù€ Includes Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© ÙÙŠ Ø§Ù„Ù€ Spec
+                // 1. ÌáÈ ÇáÓÇÆŞíä ãä ÇáÏÇÊÇÈíÒ ãÚ ÇáÜ Includes ÇáãÍÏÏÉ İí ÇáÜ Spec
                 var spec = new DispatchFeedSpec(request.Limit);
                 var activeDrivers = await _unitOfWork.Drivers.GetAllBySpecAsync(spec);
 
@@ -30,7 +30,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
 
                 var dispatchItems = new List<DispatchFeedItemDto>();
 
-                // 2. Ø¨Ù†Ø§Ø¡ Ø§Ù„Ù€ DTO Ø®Ø·ÙˆØ© Ø¨Ø®Ø·ÙˆØ© Ø¨Ø§Ù„Ø§Ø¹ØªÙ…Ø§Ø¯ Ø¹Ù„Ù‰ Ø§Ù„Ù€ UserId Ø§Ù„Ù…Ø¶Ù…ÙˆÙ†
+                // 2. ÈäÇÁ ÇáÜ DTO ÎØæÉ ÈÎØæÉ ÈÇáÇÚÊãÇÏ Úáì ÇáÜ UserId ÇáãÖãæä
                 foreach (var driver in activeDrivers)
                 {
                     var lastTrip = driver.Trips?
@@ -40,7 +40,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
 
                     var item = new DispatchFeedItemDto
                     {
-                        // ğŸš€ ØªØ¹Ø¨Ø¦Ø© Ø§Ù„Ù€ dispatchId Ø¨Ø§Ù„Ù€ UserId Ø§Ù„Ø­Ù‚ÙŠÙ‚ÙŠ Ø¨ØªØ§Ø¹ Ø§Ù„Ø³Ø§Ø¦Ù‚ Ù…Ù† Ø§Ù„Ù€ DB
+                        // ?? ÊÚÈÆÉ ÇáÜ dispatchId ÈÇáÜ UserId ÇáÍŞíŞí ÈÊÇÚ ÇáÓÇÆŞ ãä ÇáÜ DB
                         DispatchId = driver.UserId.ToString(),
                         PhoneNumber = driver.User?.PhoneNumber ?? "No Phone In DB",
                         DriverName = driver.User != null
@@ -61,10 +61,10 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
                         TimeElapsed = "0 mins"
                     };
 
-                    // 3. ğŸš€ ØªØ¹Ø¨Ø¦Ø© Ø§Ù„Ù€ Zones Ø§Ù„Ø­Ù‚ÙŠÙ‚ÙŠØ© Ø¨Ø§Ù„Ø£Ø³Ù…Ø§Ø¡ Ø§Ù„Ø´ØºØ§Ù„Ø© ÙˆØ§Ù„Ù…Ø·Ø§Ø¨Ù‚Ø© Ù„Ù„Ù€ Database Ø¹Ù†Ø¯Ùƒ
+                    // 3. ?? ÊÚÈÆÉ ÇáÜ Zones ÇáÍŞíŞíÉ ÈÇáÃÓãÇÁ ÇáÔÛÇáÉ æÇáãØÇÈŞÉ ááÜ Database ÚäÏß
                     if (lastTrip != null)
                     {
-                        // âœ¨ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø³Ø­Ø±ÙŠ Ù‡Ù†Ø§: Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø§Ù„Ù…Ø³Ù…ÙŠØ§Øª Ø§Ù„ØµØ­ÙŠØ­Ø© Ø§Ù„Ù„ÙŠ Ø§Ø´ØªØºÙ„Øª ÙÙŠ Ø§Ù„Ù€ StartTrip
+                        // ? ÇáÊÚÏíá ÇáÓÍÑí åäÇ: ÇÓÊÎÏÇã ÇáãÓãíÇÊ ÇáÕÍíÍÉ Çááí ÇÔÊÛáÊ İí ÇáÜ StartTrip
                         item.PickupZone = lastTrip.PickupLocationId.ToString();
                         item.DropoffZone = lastTrip.DropoffLocationId.ToString();
 
@@ -83,7 +83,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
                     dispatchItems.Add(item);
                 }
 
-                // 4. ØªØ¬Ù‡ÙŠØ² Ø§Ù„Ù†ØªÙŠØ¬Ø© Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠØ© Ø§Ù„Ù†Ø¸ÙŠÙØ© Ù„Ù„Ù€ Dashboard
+                // 4. ÊÌåíÒ ÇáäÊíÌÉ ÇáäåÇÆíÉ ÇáäÙíİÉ ááÜ Dashboard
                 var result = new LiveDispatchFeedResultDto
                 {
                     Items = dispatchItems,
@@ -95,7 +95,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetLiveDispatchFeed
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"âš ï¸ [DATABASE MAPPING ERROR] : {ex.Message}");
+                Console.WriteLine($"?? [DATABASE MAPPING ERROR] : {ex.Message}");
                 return Result<LiveDispatchFeedResultDto>.Failure(
                     "An error occurred while pulling live data from database.",
                     "InternalServerError");

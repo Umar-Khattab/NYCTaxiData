@@ -1,4 +1,4 @@
-ï»¿using MediatR;
+using MediatR;
 using NYCTaxiData.Application.DTOs.DriverAnalytics;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using Dapper;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 
 namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
 {
@@ -19,7 +19,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
 
         public GetDriverEarningsQueryHandler(IDbConnection db) => _db = db;
 
-        // 1ï¸âƒ£ ÙƒÙ„Ø§Ø³Ø§Øª Ø¯Ø§Ø®Ù„ÙŠØ© ØµØ±ÙŠØ­Ø© Ù„Ù…Ù†Ø¹ Ø§Ù„Ù€ dynamic ÙˆØ§Ù„Ù€ RuntimeBinderException Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹
+        // 1?? ßáÇÓÇÊ ÏÇÎáíÉ ÕÑíÍÉ áãäÚ ÇáÜ dynamic æÇáÜ RuntimeBinderException äåÇÆíÇğ
         private class DbHeaderSummaryResult
         {
             public decimal TotalEarnings { get; set; }
@@ -30,7 +30,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
         private class DbDailyBreakdownResult
         {
             public string Day { get; set; }
-            public decimal Amount { get; set; } // Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ Ø§Ù„Ù€ decimal Ø§Ù„Ù‚Ø§Ø¯Ù… Ù…Ù† SUM
+            public decimal Amount { get; set; } // ÇÓÊŞÈÇá ÇáÜ decimal ÇáŞÇÏã ãä SUM
         }
 
         private class DbRecentTripResult
@@ -52,7 +52,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
             var p = new { DriverId = request.DriverId, StartRange = startRange, EndRange = endRange };
             var prev = new { DriverId = request.DriverId, StartRange = prevStart, EndRange = prevEnd };
 
-            // âœ… 1. Header Summary Query
+            // ? 1. Header Summary Query
             const string headerSql = """
             SELECT
                 COALESCE(SUM(total_amount), 0.0)                                                AS TotalEarnings,
@@ -76,7 +76,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
             double earningsPerHour = hours > 0 ? totalEarnings / hours : 0.0;
             string trend = ComputeTrend(totalEarnings, prevEarnings);
 
-            // âœ… 2. Daily Breakdown Query
+            // ? 2. Daily Breakdown Query
             const string breakdownSql = """
             SELECT
                 TO_CHAR(started_at, 'Dy')          AS Day,
@@ -89,14 +89,14 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
             ORDER BY date_trunc('day', started_at) ASC
             """;
 
-            // ğŸ› ï¸ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø¬ÙˆÙ‡Ø±ÙŠ: Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© Ø¹Ø¨Ø± ÙƒÙ„Ø§Ø³ ÙˆØ³ÙŠØ· Ø«Ù… Ø§Ù„Ù€ Cast Ù„Ù€ double Ù„Ù…Ù†Ø¹ Ø§Ù„Ù€ Exception
+            // ??? ÇáÊÚÏíá ÇáÌæåÑí: ÇáŞÑÇÁÉ ÚÈÑ ßáÇÓ æÓíØ Ëã ÇáÜ Cast áÜ double áãäÚ ÇáÜ Exception
             var breakdownRows = await _db.QueryAsync<DbDailyBreakdownResult>(breakdownSql, p);
             var breakdown = breakdownRows.Select(b => new DailyBreakdownDto(
                 Day: b.Day,
                 Amount: (double)b.Amount
             )).ToList();
 
-            // âœ… 3. Recent Trips Query
+            // ? 3. Recent Trips Query
             const string recentSql = """
             SELECT
                 pz.zone_name                                                    AS "From",
@@ -125,7 +125,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
                 Fare: (double)r.Fare
             )).ToList();
 
-            // âœ… 4. Build DTO
+            // ? 4. Build DTO
             var dto = new DriverEarningsDto(
                 HeaderSummary: new HeaderSummaryDto(
                     TotalEarnings: Math.Round(totalEarnings, 2),

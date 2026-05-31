@@ -1,7 +1,7 @@
-ï»¿using MediatR;
-using NYCTaxiData.Application.Common.Plumping;
+using MediatR;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
-using NYCTaxiData.Application.DTOs.Trip; // Ø¯Ù‡ Ø§Ù„Ù…Ù‡Ù… Ø¹Ø´Ø§Ù† Ø§Ù„Ù€ TripEndResultDto
+using NYCTaxiData.Application.DTOs.Trip; // Ïå Çáãåã ÚÔÇä ÇáÜ TripEndResultDto
 using System;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip

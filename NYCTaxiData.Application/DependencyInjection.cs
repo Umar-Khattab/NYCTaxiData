@@ -44,38 +44,37 @@ namespace NYCTaxiData.Application
                 // PIPELINE BEHAVIORS (Execution order: Outermost → Innermost)
                 // =======================================================================
 
-                // 1. Global Exception Handling
-                // Catches exceptions from ALL inner behaviors and handlers
+                // Pipeline execution order: first registered = outermost wrapper.
+                // ExceptionHandling → Metrics → Performance → Logging → Authorization
+                // → Validation → Idempotency → Caching → Timeout → Retry → Transaction
+
+                // 1. Outermost: catches all exceptions from inner behaviors
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ExceptionHandlingBehavior<,>));
 
-                // 2. Observability (Monitoring & Logging)
+                // 2. Observability
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(MetricsBehavior<,>));
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 
-                // 3. Authorization (Security Gate)
-                // Ensures user is allowed BEFORE doing any heavy work
+                // 3. Security gate — validate identity before doing any work
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
 
-                // 4. Validation
-                // Validates request data after authorization
+                // 4. Input validation — reject bad requests early
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
-                // 5. Caching
-                // Returns cached responses if available (only for valid + authorized requests)
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
-
-                // 6. Idempotency
-                // Prevents duplicate processing (important for commands with side effects)
+                // 5. Idempotency — deduplicate before hitting cache or DB
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 
-                // 7. Resilience (Retry + Timeout)
-                // Wraps execution with retry and timeout policies
-                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(RetryBehavior<,>));
+                // 6. Caching — return early if response is cached
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
+
+                // 7. Timeout — each individual attempt gets its own budget
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TimeoutBehavior<,>));
 
-                // 8. Transaction (Innermost)
-                // Ensures DB operations are atomic (last step before handler execution)
+                // 8. Retry — retries the full Timeout+Transaction block on transient failure
+                config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(RetryBehavior<,>));
+
+                // 9. Innermost: wraps DB writes in a transaction
                 config.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
             });
 

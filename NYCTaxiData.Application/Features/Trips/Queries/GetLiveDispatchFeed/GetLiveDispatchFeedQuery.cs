@@ -1,5 +1,5 @@
-ï»¿using MediatR;
-using NYCTaxiData.Application.Common.Plumping; // Ø§ØªØ£ÙƒØ¯ Ø¥Ù† Ø¯Ù‡ Ù…Ø³Ø§Ø± Ø§Ù„Ù€ Result Ø¨ØªØ§Ø¹Ùƒ
+using MediatR;
+using NYCTaxiData.Application.Common.Plumbing; // ÇÊÃßÏ Åä Ïå ãÓÇÑ ÇáÜ Result ÈÊÇÚß
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 using System;
 using System.Collections.Generic;

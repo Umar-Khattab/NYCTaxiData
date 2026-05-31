@@ -1,5 +1,5 @@
-﻿using MediatR;
-using NYCTaxiData.Application.Common;
+using MediatR;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
 namespace NYCTaxiData.Application.Features.Analytics.Queries.GetSystemThresholds

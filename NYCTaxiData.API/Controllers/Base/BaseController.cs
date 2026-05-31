@@ -1,9 +1,10 @@
-ï»¿// NYCTaxiData.API/Controllers/Base/BaseController.cs
+// NYCTaxiData.API/Controllers/Base/BaseController.cs
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using NYCTaxiData.API.Contracts;
 using NYCTaxiData.Application.Common.Models;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
+using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Domain.Common;
 
 namespace NYCTaxiData.API.Controllers.Base;
@@ -14,7 +15,7 @@ public abstract class BaseController : ControllerBase
 {
     private ISender? _mediator;
 
-    // âœ… Lazy Injection Ù…Ù† Ø§Ù„Ù€ Services
+    // ? Lazy Injection ãä ÇáÜ Services
     protected ISender Mediator =>
         _mediator ??= HttpContext.RequestServices
                                  .GetRequiredService<ISender>();
@@ -61,7 +62,7 @@ public abstract class BaseController : ControllerBase
     #region Result Pattern Handlers
     // =========================================
 
-    // âœ… Ù„Ù„Ù€ Result<T> Ø§Ù„Ù„ÙŠ ÙÙŠÙ‡ Data
+    // ? ááÜ Result<T> Çááí İíå Data
     protected IActionResult HandleResult<T>(Result<T> result)
     {
         if (result is null)
@@ -73,7 +74,7 @@ public abstract class BaseController : ControllerBase
         return MapError(result.ErrorCode, result.Message);
     }
 
-    // âœ… Ù„Ù„Ù€ Result Ø¨Ø¯ÙˆÙ† Data
+    // ? ááÜ Result ÈÏæä Data
     protected IActionResult HandleResult(Result result)
     {
         if (result is null)
@@ -85,7 +86,7 @@ public abstract class BaseController : ControllerBase
         return MapError(result.ErrorCode, result.Message);
     }
 
-    // âœ… Ù„Ù„Ù€ PaginatedList
+    // ? ááÜ PaginatedList
     protected IActionResult HandlePagedResult<T>(Result<PaginatedList<T>> result)
     {
         if (result is null)
@@ -97,7 +98,7 @@ public abstract class BaseController : ControllerBase
         return MapError(result.ErrorCode, result.Message);
     }
 
-    // âœ… Map Error Codes Ù„Ù€ HTTP Status Codes
+    // ? Map Error Codes áÜ HTTP Status Codes
     private IActionResult MapError(string? errorCode, string? message)
     {
         return errorCode switch
@@ -125,7 +126,7 @@ public abstract class BaseController : ControllerBase
         if (result is null) return NotFoundResult("Resource not found");
 
         if (result.IsSuccess)
-            // Ø¨Ù†Ø¨Ø¹Øª null Ù„Ø£Ù† Ø§Ù„Ù€ Unit Ù…Ø¹Ù†Ø§Ù‡Ø§ Ù…ÙÙŠØ´ Ø¯Ø§ØªØ§ ÙØ¹Ù„ÙŠØ©
+            // ÈäÈÚÊ null áÃä ÇáÜ Unit ãÚäÇåÇ ãİíÔ ÏÇÊÇ İÚáíÉ
             return Ok(ApiResponse<object>.Success(null!, result.Message));
 
         return MapError(result.ErrorCode, result.Message);

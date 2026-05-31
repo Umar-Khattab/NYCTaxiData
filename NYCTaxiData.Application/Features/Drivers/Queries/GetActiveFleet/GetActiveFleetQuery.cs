@@ -1,5 +1,6 @@
-﻿using MediatR;
-using NYCTaxiData.Application.Common;
+using MediatR;
+using NYCTaxiData.Application.Common.Plumbing;
+using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
 namespace NYCTaxiData.Application.Features.Drivers.Queries.GetActiveFleet;

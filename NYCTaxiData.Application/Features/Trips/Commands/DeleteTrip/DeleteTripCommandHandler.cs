@@ -1,6 +1,6 @@
 using MediatR;
 using NYCTaxiData.Application.Common.Interfaces;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Domain.Interfaces;
 using System;
 using System.Threading;

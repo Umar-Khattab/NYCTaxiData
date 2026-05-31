@@ -1,5 +1,5 @@
-ï»¿using MediatR;
-using NYCTaxiData.Application.Common.Plumping; // ØªÙˆØ­ÙŠØ¯ Ø§Ù„Ù€ Namespace Ù„Ù„Ù€ Result
+using MediatR;
+using NYCTaxiData.Application.Common.Plumbing; // ÊæÍíÏ ÇáÜ Namespace ááÜ Result
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
 
@@ -16,7 +16,7 @@ public sealed class GetShiftStatisticsQueryHandler : IRequestHandler<GetShiftSta
 
     public async Task<Result<ShiftStatisticsDto>> Handle(GetShiftStatisticsQuery request, CancellationToken cancellationToken)
     {
-        // Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø§Ù„Ù€ Entity Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø© Ù„Ù„Ù€ Driver
+        // ÇÓÊÎÏÇã ÇáÜ Entity ÇáÌÏíÏÉ ááÜ Driver
         var driver = await _unitOfWork.Drivers.GetByIdAsync(request.DriverId);
         if (driver is null)
         {
@@ -26,21 +26,21 @@ public sealed class GetShiftStatisticsQueryHandler : IRequestHandler<GetShiftSta
         var shiftEnd = request.ShiftEndUtc ?? DateTime.UtcNow;
         var shiftStart = request.ShiftStartUtc ?? shiftEnd.AddHours(-8);
 
-        // ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ù€ Query: StartedAt Ù…Ø¨Ù‚ØªØ´ Nullable ÙÙ…Ø´ Ù…Ø­ØªØ§Ø¬ÙŠÙ† HasValue ÙˆÙ„Ø§ Value
+        // ÊÚÏíá ÇáÜ Query: StartedAt ãÈŞÊÔ Nullable İãÔ ãÍÊÇÌíä HasValue æáÇ Value
         var trips = (await _unitOfWork.Trips.FindByConditionAsync(t =>
             t.DriverId == request.DriverId
             && t.StartedAt >= shiftStart
             && t.StartedAt <= shiftEnd)).ToList();
 
-        // EndedAt Ù„Ø³Ù‡ Nullable ÙØ¨Ù†Ø³ÙŠØ¨ HasValue Ø²ÙŠ Ù…Ø§ Ù‡ÙŠ
+        // EndedAt áÓå Nullable İÈäÓíÈ HasValue Òí ãÇ åí
         var completedTrips = trips.Count(t => t.EndedAt.HasValue);
 
-        // ØªØºÙŠÙŠØ± ActualFare Ù„Ù€ TotalAmount Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ù€ Entity Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©
+        // ÊÛííÑ ActualFare áÜ TotalAmount ÈäÇÁğ Úáì ÇáÜ Entity ÇáÌÏíÏÉ
         var totalEarnings = trips.Sum(t => t.TotalAmount ?? 0m);
 
         var activeMinutes = trips.Sum(t =>
         {
-            var started = t.StartedAt; // Ù†ÙˆØ¹Ù‡Ø§ DateTime Ù…Ø¨Ø§Ø´Ø±Ø©
+            var started = t.StartedAt; // äæÚåÇ DateTime ãÈÇÔÑÉ
             var ended = t.EndedAt ?? shiftEnd;
 
             if (ended < shiftStart || started > shiftEnd)

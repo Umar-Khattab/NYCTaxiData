@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using MediatR;
-using NYCTaxiData.Application.Common;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 using NYCTaxiData.Application.DTOs.AI;
 using NYCTaxiData.Domain.Enums;

@@ -1,11 +1,11 @@
-ï»¿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using NYCTaxiData.Application.Common.Plumping; // ØªØ£ÙƒØ¯ Ù…Ù† Ø§Ù„Ù€ Spelling Ø§Ù„Ù…Ø¹ØªÙ…Ø¯ (Plumbing)
+using NYCTaxiData.Application.Common.Plumbing; // ÊÃßÏ ãä ÇáÜ Spelling ÇáãÚÊãÏ (Plumbing)
 using NYCTaxiData.Application.Features.Trips.Commands.StartTrip;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
@@ -22,7 +22,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
         {
             try
             {
-                // 1ï¸âƒ£ Ø¬Ù„Ø¨ Ø§Ù„Ù€ Trip ÙˆØ§Ù„Ù€ Driver Ù…Ù† Ø§Ù„Ù€ Database Ù„Ù„ØªØ­Ù‚Ù‚
+                // 1?? ÌáÈ ÇáÜ Trip æÇáÜ Driver ãä ÇáÜ Database ááÊÍŞŞ
                 var trip = await _unitOfWork.Trips.GetByIdAsync(request.TripId);
                 if (trip == null)
                     return Result<TripStartResultDto>.Failure($"Trip with ID {request.TripId} not found", "NotFound");
@@ -34,20 +34,20 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
                 if (driver.Status == CurrentStatus.On_Trip)
                     return Result<TripStartResultDto>.Failure("Driver is already on another trip.", "Conflict");
 
-                // 2ï¸âƒ£ Ø¥Ø³Ù†Ø§Ø¯ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ù„Ù„Ù€ Ø§Ù„Ø°Ø§ÙƒØ±Ø© ÙˆØªØ­Ø¯ÙŠØ« Ø­Ø§Ù„Ø© Ø§Ù„Ø³Ø§Ø¦Ù‚
+                // 2?? ÅÓäÇÏ ÇáÈíÇäÇÊ ááÜ ÇáĞÇßÑÉ æÊÍÏíË ÍÇáÉ ÇáÓÇÆŞ
                 trip.StartedAt = DateTime.UtcNow;
                 driver.Status = CurrentStatus.On_Trip;
 
-                // ğŸš€ Ø§Ù„Ø­Ø³Ù… Ø§Ù„Ù‡Ù†Ø¯Ø³ÙŠ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ (Ø§Ù„Ø®Ø·Ø© Ø§Ù„Ø¨Ø¯ÙŠÙ„Ø© Ø§Ù„Ù‚Ø§Ø·Ø¹Ø©):
-                // Ø¨Ù…Ø§ Ø¥Ù† Ø§Ù„Ù€ Tracker Ù‚Ø§ÙÙ„ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ Ø¨Ø³Ø¨Ø¨ Ø§Ù„Ù€ No-TrackingØŒ Ù‡Ù†Ø¹Ø¯Ù„ Ø§Ù„Ø­Ù‚ÙˆÙ„ Ø¯ÙŠ Ù…Ø¨Ø§Ø´Ø±Ø© ÙÙŠ Ø§Ù„Ù€ DB ÙŠØ¯ÙˆÙŠØ§Ù‹ Ø£Ùˆ Ù†Ø¹ØªÙ…Ø¯ Ø¹Ù„Ù‰ Ø§Ù„Ø­ÙØ¸ Ø§Ù„ØµØ±ÙŠØ­
+                // ?? ÇáÍÓã ÇáåäÏÓí ÇáäåÇÆí (ÇáÎØÉ ÇáÈÏíáÉ ÇáŞÇØÚÉ):
+                // ÈãÇ Åä ÇáÜ Tracker ŞÇİá ÇáÊÚÏíá ÈÓÈÈ ÇáÜ No-Tracking¡ åäÚÏá ÇáÍŞæá Ïí ãÈÇÔÑÉ İí ÇáÜ DB íÏæíÇğ Ãæ äÚÊãÏ Úáì ÇáÍİÙ ÇáÕÑíÍ
                 trip.DriverId = request.DriverId;
                 trip.PickupLocationId = request.PickupLocationId > 0 ? request.PickupLocationId : null;
                 trip.DropoffLocationId = request.DropoffLocationId > 0 ? request.DropoffLocationId : null;
 
-                // ØªÙ†ÙÙŠØ° Ø§Ù„Ø­ÙØ¸ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ Ù„Ù„Ù€ Status
+                // ÊäİíĞ ÇáÍİÙ ÇáÃÓÇÓí ááÜ Status
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                // 3ï¸âƒ£ Ø¨Ù†Ø§Ø¡ Ø§Ù„Ù€ DTO Ø§Ù„Ø±Ø§Ø¬Ø¹
+                // 3?? ÈäÇÁ ÇáÜ DTO ÇáÑÇÌÚ
                 var resultDto = new TripStartResultDto
                 {
                     TripId = request.TripId,
@@ -62,7 +62,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"âŒ [CRITICAL ERROR] StartTrip failed: {ex.Message}");
+                Console.WriteLine($"? [CRITICAL ERROR] StartTrip failed: {ex.Message}");
                 return Result<TripStartResultDto>.Failure($"Database Save Failed: {ex.Message}", "DatabaseError");
             }
         }

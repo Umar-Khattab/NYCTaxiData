@@ -1,5 +1,5 @@
-ï»¿using MediatR;
-using NYCTaxiData.Application.Common.Plumping; // Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø¬ÙˆÙ‡Ø±ÙŠ Ù„ØªÙˆØ­ÙŠØ¯ Ø§Ù„Ù€ Result
+using MediatR;
+using NYCTaxiData.Application.Common.Plumbing; // ÇáÊÚÏíá ÇáÌæåÑí áÊæÍíÏ ÇáÜ Result
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
 namespace NYCTaxiData.Application.Features.Drivers.Queries.GetShiftStatistics;

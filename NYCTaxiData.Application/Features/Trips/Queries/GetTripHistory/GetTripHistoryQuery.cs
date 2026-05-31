@@ -1,14 +1,15 @@
-ï»¿using MediatR;
+using MediatR;
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 using NYCTaxiData.Application.Common.Models;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
+using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Application.DTOs.Trip;
 using System;
 
 namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripHistory
 {
-    // 1. ØªØ¹Ø±ÙŠÙ Ø§Ù„Ù€ Query Ø§Ù„Ù…ÙˆØ­Ø¯Ø©
-    // Ø§Ø³ØªØ®Ø¯Ù…Ù†Ø§ PageNumber Ùˆ PageSize Ø¹Ø´Ø§Ù† ØªØªÙ…Ø§Ø´Ù‰ Ù…Ø¹ Ø§Ù„Ù€ PaginatedList Ø§Ù„Ù„ÙŠ ÙÙŠ Ø§Ù„Ù€ Handler
+    // 1. ÊÚÑíİ ÇáÜ Query ÇáãæÍÏÉ
+    // ÇÓÊÎÏãäÇ PageNumber æ PageSize ÚÔÇä ÊÊãÇÔì ãÚ ÇáÜ PaginatedList Çááí İí ÇáÜ Handler
     public record GetTripHistoryQuery(
         Guid? DriverId = null,
         int PageNumber = 1,

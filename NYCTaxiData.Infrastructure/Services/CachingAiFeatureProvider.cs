@@ -17,7 +17,16 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
 {
     private readonly IAiFeatureProvider _innerProvider;
     private readonly IMemoryCache _memoryCache;
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(6);
+
+    /// <summary>Sliding expiration — resets on each access within the window.</summary>
+    private static readonly TimeSpan SlidingExpiration = TimeSpan.FromHours(6);
+
+    /// <summary>Absolute cap — cache entry is always evicted after this period regardless of traffic.</summary>
+    private static readonly TimeSpan AbsoluteExpiration = TimeSpan.FromHours(24);
+
+    private MemoryCacheEntryOptions CacheOptions => new MemoryCacheEntryOptions()
+        .SetSlidingExpiration(SlidingExpiration)
+        .SetAbsoluteExpiration(AbsoluteExpiration);
 
     public CachingAiFeatureProvider(IAiFeatureProvider innerProvider, IMemoryCache memoryCache)
     {
@@ -53,7 +62,7 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
             foreach (var item in loaded)
             {
                 var cacheKey = $"feat:demand15m:{item.ZoneId}:{timeKey:yyyyMMddHHmm}";
-                _memoryCache.Set(cacheKey, item, new MemoryCacheEntryOptions { SlidingExpiration = CacheDuration });
+                _memoryCache.Set(cacheKey, item, CacheOptions);
                 results.Add(item);
             }
         }
@@ -88,7 +97,7 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
             foreach (var item in loaded)
             {
                 var cacheKey = $"feat:demand6h:{item.ZoneId}:{timeKey:yyyyMMddHH}";
-                _memoryCache.Set(cacheKey, item, new MemoryCacheEntryOptions { SlidingExpiration = CacheDuration });
+                _memoryCache.Set(cacheKey, item, CacheOptions);
                 results.Add(item);
             }
         }
@@ -130,7 +139,7 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
                     var timeKey = new DateTime(route.TargetTime.Year, route.TargetTime.Month, route.TargetTime.Day, route.TargetTime.Hour, roundedMinute, 0);
                     var cacheKey = $"feat:eta:{item.PickupZoneId}:{item.DropoffZoneId}:{timeKey:yyyyMMddHHmm}";
 
-                    _memoryCache.Set(cacheKey, item, new MemoryCacheEntryOptions { SlidingExpiration = CacheDuration });
+                    _memoryCache.Set(cacheKey, item, CacheOptions);
                 }
                 results.Add(item);
             }
@@ -166,7 +175,7 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
             foreach (var item in loaded)
             {
                 var cacheKey = $"feat:rev:{item.ZoneId}:{timeKey:yyyyMMddHH}";
-                _memoryCache.Set(cacheKey, item, new MemoryCacheEntryOptions { SlidingExpiration = CacheDuration });
+                _memoryCache.Set(cacheKey, item, CacheOptions);
                 results.Add(item);
             }
         }
@@ -201,7 +210,7 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
             foreach (var item in loaded)
             {
                 var cacheKey = $"feat:stock:{item.ZoneId}:{timeKey:yyyyMMddHH}";
-                _memoryCache.Set(cacheKey, item, new MemoryCacheEntryOptions { SlidingExpiration = CacheDuration });
+                _memoryCache.Set(cacheKey, item, CacheOptions);
                 results.Add(item);
             }
         }

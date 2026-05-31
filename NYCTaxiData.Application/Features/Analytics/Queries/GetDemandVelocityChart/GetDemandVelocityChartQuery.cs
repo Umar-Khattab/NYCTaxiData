@@ -1,5 +1,5 @@
-﻿using MediatR;
-using NYCTaxiData.Application.Common;
+using MediatR;
+using NYCTaxiData.Application.Common.Plumbing;
 
 namespace NYCTaxiData.Application.Features.Analytics.Queries.GetDemandVelocityChart
 {

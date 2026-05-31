@@ -1,4 +1,4 @@
-ï»¿using MediatR;
+using MediatR;
 using NYCTaxiData.Application.DTOs.DriverAnalytics;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using Dapper;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 
 namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
 {
@@ -19,11 +19,11 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
 
         public GetDriverAnalyticsQueryHandler(IDbConnection db) => _db = db;
 
-        // 1ï¸âƒ£ ÙƒÙ„Ø§Ø³Ø§Øª Ø¯Ø§Ø®Ù„ÙŠØ© ØµØ±ÙŠØ­Ø© Ù„Ù…Ù†Ø¹ Ø§Ù„Ù€ dynamic ÙˆØ§Ù„Ù€ RuntimeBinderException ØªÙ…Ø§Ù…Ø§Ù‹
+        // 1?? ßáÇÓÇÊ ÏÇÎáíÉ ÕÑíÍÉ áãäÚ ÇáÜ dynamic æÇáÜ RuntimeBinderException ÊãÇãÇğ
         private class DbSummaryResult
         {
             public decimal TotalEarnings { get; set; }
-            public long CompletedTrips { get; set; } // Ø§Ù„Ù€ COUNT(*) ÙÙŠ PostgreSQL Ø¨ØªØ±Ø¬Ø¹ bigint/long
+            public long CompletedTrips { get; set; } // ÇáÜ COUNT(*) İí PostgreSQL ÈÊÑÌÚ bigint/long
             public decimal OnlineHours { get; set; }
         }
 
@@ -48,20 +48,20 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
              
             var today = DateTime.UtcNow.Date;
 
-            // 2. Ø­Ø³Ø§Ø¨ ÙƒÙ… ÙŠÙˆÙ… ÙØ§Øª Ø¹Ù„Ù‰ Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹ (Ø¨ÙØ±Ø¶ Ø¥Ù† Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹ ÙŠØ¨Ø¯Ø£ Ø§Ù„Ø¥Ø«Ù†ÙŠÙ† Ù…Ø«Ù„Ø§Ù‹ DayOfWeek.Monday)
+            // 2. ÍÓÇÈ ßã íæã İÇÊ Úáì ÈÏÇíÉ ÇáÃÓÈæÚ (ÈİÑÖ Åä ÇáÃÓÈæÚ íÈÏÃ ÇáÅËäíä ãËáÇğ DayOfWeek.Monday)
             int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
-            var startRange = today.AddDays(-diff); // ØªØ§Ø±ÙŠØ® ÙŠÙˆÙ… Ø§Ù„Ø¥Ø«Ù†ÙŠÙ† Ø§Ù„Ù…Ø§Ø¶ÙŠ Ø§Ù„Ø³Ø§Ø¹Ø© 12 Ø¨Ø§Ù„Ù„ÙŠÙ„
+            var startRange = today.AddDays(-diff); // ÊÇÑíÎ íæã ÇáÅËäíä ÇáãÇÖí ÇáÓÇÚÉ 12 ÈÇááíá
 
-            // 3. Ù†Ù‡Ø§ÙŠØ© Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹ Ø§Ù„Ø­Ø§Ù„ÙŠ (Ø§Ù„Ø£Ø­Ø¯ Ø§Ù„Ù‚Ø§Ø¯Ù… Ø§Ù„Ø³Ø§Ø¹Ø© 11:59 Ù…Ø³Ø§Ø¡Ù‹)
+            // 3. äåÇíÉ ÇáÃÓÈæÚ ÇáÍÇáí (ÇáÃÍÏ ÇáŞÇÏã ÇáÓÇÚÉ 11:59 ãÓÇÁğ)
             var endRange = startRange.AddDays(7).AddTicks(-1);
 
-            // Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹ Ø§Ù„Ø³Ø§Ø¨Ù‚ (Trends) Ù‡ØªÙ…Ø´ÙŠ Ø£ÙˆØªÙˆÙ…Ø§ØªÙŠÙƒ Ø¨Ø±Ø¶Ù‡:
+            // ÍÓÇÈÇÊ ÇáÃÓÈæÚ ÇáÓÇÈŞ (Trends) åÊãÔí ÃæÊæãÇÊíß ÈÑÖå:
             var prevStart = startRange.AddDays(-7);
             var prevEnd = endRange.AddDays(-7);
 
             var p = new { DriverId = request.DriverId, StartRange = startRange, EndRange = endRange };
 
-            // âœ… 1. Weekly Summary Query
+            // ? 1. Weekly Summary Query
             const string summarySql = """
             SELECT
                 COALESCE(SUM(total_amount), 0.0)                                                AS TotalEarnings,
@@ -73,7 +73,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
               AND started_at BETWEEN @StartRange AND @EndRange
             """;
 
-            // Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¨Ù†ÙˆØ¹ ØµØ±ÙŠØ­ ÙˆØ¢Ù…Ù†
+            // ŞÑÇÁÉ ÇáÈíÇäÇÊ ÈäæÚ ÕÑíÍ æÂãä
             var summary = await _db.QuerySingleOrDefaultAsync<DbSummaryResult>(summarySql, p);
 
             double totalEarnings = summary != null ? (double)summary.TotalEarnings : 0.0;
@@ -81,7 +81,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
             int completedTrips = summary != null ? (int)summary.CompletedTrips : 0;
             double avgPerHour = onlineHours > 0 ? totalEarnings / onlineHours : 0.0;
 
-            // âœ… 2. Trends Query (Ù…Ù‚Ø§Ø±Ù†Ø© Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹ Ø§Ù„Ø­Ø§Ù„ÙŠ Ø¨Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹ Ø§Ù„Ø³Ø§Ø¨Ù‚)
+            // ? 2. Trends Query (ãŞÇÑäÉ ÇáÃÓÈæÚ ÇáÍÇáí ÈÇáÃÓÈæÚ ÇáÓÇÈŞ)
             var prevP = new { DriverId = request.DriverId, StartRange = prevStart, EndRange = prevEnd };
             var prev = await _db.QuerySingleOrDefaultAsync<DbSummaryResult>(summarySql, prevP);
 
@@ -91,7 +91,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
             string earningsTrend = ComputeTrend(totalEarnings, prevEarnings);
             string tripsTrend = ComputeTrend(completedTrips, prevTrips);
 
-            // âœ… 3. Earnings Trend (7 days)
+            // ? 3. Earnings Trend (7 days)
             const string trendSql = """
             SELECT COALESCE(SUM(total_amount), 0.0) AS Amount
             FROM trips
@@ -101,11 +101,11 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
             ORDER BY date_trunc('day', started_at) ASC
             """;
 
-            // ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ù†ÙˆØ¹ decimal Ù‡Ù†Ø§ Ù„Ø£Ù† Ø§Ù„Ù€ SUM Ø¨ÙŠØ±Ø¬Ø¹ Ø±Ù‚Ù… Ø¹Ø´Ø±ÙŠ Ø¯Ù‚ÙŠÙ‚ Ù…Ù† Ø§Ù„Ù€ DB Ø«Ù… ØªØ­ÙˆÙŠÙ„Ù‡ Ù„Ù€ double
+            // ÊÍÏíÏ ÇáäæÚ decimal åäÇ áÃä ÇáÜ SUM ÈíÑÌÚ ÑŞã ÚÔÑí ÏŞíŞ ãä ÇáÜ DB Ëã ÊÍæíáå áÜ double
             var trendDecimals = await _db.QueryAsync<decimal>(trendSql, p);
             var trend = trendDecimals.Select(amt => (double)amt).ToList();
 
-            // âœ… 4. Peak Hours Query
+            // ? 4. Peak Hours Query
             const string peakSql = """
             SELECT
                 CASE
@@ -133,7 +133,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
                     : 0.0
             )).ToList();
 
-            // âœ… 5. Top Routes Query
+            // ? 5. Top Routes Query
             const string routesSql = """
             SELECT
                 (pz.zone_name || ' -> ' || dz.zone_name)   AS RouteName,
@@ -160,7 +160,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
                 Status: r.TripsCount > 5 ? "trending" : "stable"
             )).ToList();
 
-            // âœ… 6. Build DTO Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ
+            // ? 6. Build DTO ÇáäåÇÆí
             var dto = new DriverAnalyticsDto(
                 WeeklySummary: new WeeklySummaryDto(
                     TotalEarnings: Math.Round(totalEarnings, 2),

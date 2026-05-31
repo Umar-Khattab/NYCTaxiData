@@ -1,5 +1,5 @@
-ï»¿using MediatR;
-using NYCTaxiData.Application.Common.Plumping; // Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø¬ÙˆÙ‡Ø±ÙŠ Ù‡Ù†Ø§
+using MediatR;
+using NYCTaxiData.Application.Common.Plumbing; // ÇáÊÚÏíá ÇáÌæåÑí åäÇ
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 
 namespace NYCTaxiData.Application.Features.Analytics.Queries.GetTopLevelKpis

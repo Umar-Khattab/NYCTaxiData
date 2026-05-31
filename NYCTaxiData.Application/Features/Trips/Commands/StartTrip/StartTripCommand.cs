@@ -1,17 +1,17 @@
-ï»¿using MediatR;
-using NYCTaxiData.Application.Common.Plumping;  
+using MediatR;
+using NYCTaxiData.Application.Common.Plumbing;  
 using NYCTaxiData.Application.Common.Interfaces.MarkerInterfaces;
 using System;
 
 namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
 {
-    // ğŸš€ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„: Ø´ÙŠÙ„ ITransactionalCommand Ø¹Ø´Ø§Ù† Ø§Ù„Ù€ SaveChanges ÙŠØ±Ù…ÙŠ ÙÙŠ Ø§Ù„Ù€ DB Ù…Ø¨Ø§Ø´Ø±Ø© Ø¨Ø¯ÙˆÙ† Rollback Ù…Ù† Ø§Ù„Ù€ Behavior
+    // ?? ÇáÊÚÏíá: Ôíá ITransactionalCommand ÚÔÇä ÇáÜ SaveChanges íÑãí İí ÇáÜ DB ãÈÇÔÑÉ ÈÏæä Rollback ãä ÇáÜ Behavior
     public record StartTripCommand(
         int TripId,
         Guid DriverId,
         int PickupLocationId,
         int DropoffLocationId
-    ) : IRequest<Result<TripStartResultDto>>, ISecureRequest; // ğŸ‘ˆ Ø´ÙŠÙ„Ù†Ø§Ù‡Ø§ Ù…Ù† Ù‡Ù†Ø§
+    ) : IRequest<Result<TripStartResultDto>>, ISecureRequest; // ?? ÔíáäÇåÇ ãä åäÇ
     public class TripStartResultDto
     {
         public int TripId { get; set; }

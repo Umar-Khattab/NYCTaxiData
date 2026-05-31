@@ -37,7 +37,7 @@ namespace NYCTaxiData.Infrastructure
             // 2. تسجيل الـ DbContexts
             services.AddDbContext<AiDbContext>(options =>
                 options.UseNpgsql(aiConn, npgsql => {
-                    npgsql.CommandTimeout(120);
+                    npgsql.CommandTimeout(35); // Fast with indexes; matches MediatR TimeoutBehavior
                     npgsql.EnableRetryOnFailure(3);
                 }));
 
@@ -88,17 +88,10 @@ namespace NYCTaxiData.Infrastructure
             AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
         })
         // Use a local DelegatingHandler to apply the Polly policy without requiring PolicyHttpMessageHandler type
-        .AddHttpMessageHandler(sp =>
-        {
-            var retryPolicy = HttpPolicyExtensions
-                .HandleTransientHttpError()
-                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-
-            return new PolicyDelegatingHandler(retryPolicy);
-        });
-            services.AddScoped<ICacheService, CacheService>();
-            services.AddMemoryCache();
-            services.AddDistributedMemoryCache();
+        // Polly retry removed: RetryBehavior in the MediatR pipeline already handles
+        // transient failures at the handler level. Having both would cause up to 9 ML
+        // service calls per request (3 MediatR retries × 3 HTTP retries).
+        ;
 
             services.AddScoped<AuditableEntityInterceptor>();
             services.AddScoped<AuditLogInterceptor>();

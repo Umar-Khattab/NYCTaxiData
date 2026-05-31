@@ -1,5 +1,5 @@
 using MediatR;
-using NYCTaxiData.Application.Common.Plumping;
+using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.DTOs.Trip;
 
 namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripById

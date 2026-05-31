@@ -1,11 +1,12 @@
 using AutoMapper;
 using MediatR;
-using NYCTaxiData.Application.Common;
+using NYCTaxiData.Application.Common.Plumbing;
+using NYCTaxiData.Application.Common.Models;
 using NYCTaxiData.Application.DTOs.Identity; // 🚀 للتوافق مع الـ DriverListDto
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
-using NYCTaxiData.Infrastructure;
+using NYCTaxiData.Domain.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -56,7 +57,7 @@ public sealed class GetDriverListQueryHandler
         // 🚀 التعديل الذهبي بتاعك شغال الحين 100% وهيقرأ الـ Profile المتقفل صخر
         var mappedItems = _mapper.Map<IReadOnlyList<DriverListDto>>(items.ToList());
 
-        var result = new PaginatedList<DriverListDto>(
+        var result = PaginatedList<DriverListDto>.Create(
             mappedItems,
             totalCount,
             request.PageNumber,

@@ -1,6 +1,6 @@
-﻿//using MediatR;
+//using MediatR;
 //using Microsoft.Extensions.Caching.Distributed;
-//using NYCTaxiData.Application.Common;
+//using NYCTaxiData.Application.Common.Plumbing;
 //using NYCTaxiData.Domain.Interfaces;
 //using System.Text.Json;
 

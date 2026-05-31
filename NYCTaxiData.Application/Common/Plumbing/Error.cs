@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace NYCTaxiData.Application.Common.Plumping;
+namespace NYCTaxiData.Application.Common.Plumbing;
 
 public sealed record Error(string Code, string Message)
 {
