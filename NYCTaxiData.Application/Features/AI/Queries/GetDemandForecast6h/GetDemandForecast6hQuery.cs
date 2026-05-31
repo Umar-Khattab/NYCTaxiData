@@ -10,7 +10,8 @@ namespace NYCTaxiData.Application.Features.AI.Queries.GetDemandForecast6h;
 /// Query to predict 6-hour demand for a list of zones.
 /// Accepts minimal input parameters from frontend.
 /// </summary>
-public record GetDemandForecast6hQuery(
-    List<int> ZoneIds,
-    DateTime TargetTime
-) : IRequest<Result<List<Demand6hResult>>>;
+public record GetDemandForecast6hQuery : IRequest<Result<List<Demand6hResult>>>
+{
+    public List<int> ZoneIds { get; init; } = [];
+    public DateTime TargetTime { get; init; }
+}

@@ -33,22 +33,24 @@ public class AiFeatureProvider : IAiFeatureProvider
         var month = targetTime.Month;
         var hour = targetTime.Hour;
 
+        // Fetch all zones in one query instead of N round-trips
+        var features = await _aiDbContext.Demand15mins
+            .AsNoTracking()
+            .Where(d => zoneIds.Contains(d.PuLocationId!.Value)
+                     && d.Hour == hour
+                     && d.Minute == roundedMinute
+                     && d.DayOfWeek == dayOfWeek
+                     && d.Month == month)
+            .ToListAsync(ct);
+
         var results = new List<Demand15MinInput>();
 
         foreach (var zoneId in zoneIds)
         {
-            var feature = await _aiDbContext.Demand15mins
-                .AsNoTracking()
-                .FirstOrDefaultAsync(d => d.PuLocationId == zoneId 
-                                       && d.Hour == hour 
-                                       && d.Minute == roundedMinute 
-                                       && d.DayOfWeek == dayOfWeek 
-                                       && d.Month == month, ct);
+            var feature = features.FirstOrDefault(d => d.PuLocationId == zoneId);
 
             if (feature is null)
-            {
                 throw new NotFoundException($"Demand15Min historical feature vector not found in AI database for PU Zone {zoneId} at Rounded Time {hour:D2}:{roundedMinute:D2}.");
-            }
 
             results.Add(new Demand15MinInput(
                 feature.PuLocationId ?? zoneId,
@@ -79,20 +81,22 @@ public class AiFeatureProvider : IAiFeatureProvider
         var dayOfWeek = (int)targetTime.DayOfWeek;
         var hour = targetTime.Hour;
 
+        // Fetch all zones in one query instead of N round-trips
+        var features = await _aiDbContext.Demandfeatures
+            .AsNoTracking()
+            .Where(d => zoneIds.Contains(d.PuLocationId!.Value)
+                     && d.PickupHour == hour
+                     && d.DayOfWeek == dayOfWeek)
+            .ToListAsync(ct);
+
         var results = new List<Demand6hInput>();
 
         foreach (var zoneId in zoneIds)
         {
-            var feature = await _aiDbContext.Demandfeatures
-                .AsNoTracking()
-                .FirstOrDefaultAsync(d => d.PuLocationId == zoneId 
-                                       && d.PickupHour == hour 
-                                       && d.DayOfWeek == dayOfWeek, ct);
+            var feature = features.FirstOrDefault(d => d.PuLocationId == zoneId);
 
             if (feature is null)
-            {
                 throw new NotFoundException($"Demand6h historical feature vector not found in AI database for Zone {zoneId} at Hour {hour}.");
-            }
 
             results.Add(new Demand6hInput(
                 feature.PuLocationId ?? zoneId,
@@ -114,6 +118,7 @@ public class AiFeatureProvider : IAiFeatureProvider
 
         return results;
     }
+
 
     /// <inheritdoc />
     public async Task<List<ETAInput>> GetEtaFeaturesAsync(List<RouteRequest> routes, CancellationToken ct = default)
@@ -171,20 +176,22 @@ public class AiFeatureProvider : IAiFeatureProvider
         var dayOfWeek = (int)targetTime.DayOfWeek;
         var hour = targetTime.Hour;
 
+        // Fetch all zones in one query instead of N round-trips
+        var features = await _aiDbContext.Revenuefeatures
+            .AsNoTracking()
+            .Where(r => zoneIds.Contains(r.PuLocationId!.Value)
+                     && r.PickupHour == hour
+                     && r.DayOfWeek == dayOfWeek)
+            .ToListAsync(ct);
+
         var results = new List<RevenueInput>();
 
         foreach (var zoneId in zoneIds)
         {
-            var feature = await _aiDbContext.Revenuefeatures
-                .AsNoTracking()
-                .FirstOrDefaultAsync(r => r.PuLocationId == zoneId 
-                                       && r.PickupHour == hour 
-                                       && r.DayOfWeek == dayOfWeek, ct);
+            var feature = features.FirstOrDefault(r => r.PuLocationId == zoneId);
 
             if (feature is null)
-            {
                 throw new NotFoundException($"Revenue historical feature vector not found in AI database for Zone {zoneId} at Hour {hour}.");
-            }
 
             results.Add(new RevenueInput(
                 feature.PuLocationId ?? zoneId,
@@ -218,20 +225,22 @@ public class AiFeatureProvider : IAiFeatureProvider
         var dayOfWeek = (int)targetTime.DayOfWeek;
         var hour = targetTime.Hour;
 
+        // Fetch all zones in one query instead of N round-trips
+        var features = await _aiDbContext.Stockoutfeatures
+            .AsNoTracking()
+            .Where(s => zoneIds.Contains(s.ZoneId!.Value)
+                     && s.Hour == hour
+                     && s.DayOfWeek == dayOfWeek)
+            .ToListAsync(ct);
+
         var results = new List<StockOutInput>();
 
         foreach (var zoneId in zoneIds)
         {
-            var feature = await _aiDbContext.Stockoutfeatures
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.ZoneId == zoneId 
-                                       && s.Hour == hour 
-                                       && s.DayOfWeek == dayOfWeek, ct);
+            var feature = features.FirstOrDefault(s => s.ZoneId == zoneId);
 
             if (feature is null)
-            {
                 throw new NotFoundException($"Stockout historical feature vector not found in AI database for Zone {zoneId} at Hour {hour}.");
-            }
 
             results.Add(new StockOutInput(
                 feature.ZoneId ?? zoneId,

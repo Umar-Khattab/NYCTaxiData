@@ -9,6 +9,7 @@ namespace NYCTaxiData.Application.Features.AI.Queries.GetEtaPrediction;
 /// Query to predict ETA for a list of zone pairs (routes).
 /// Accepts minimal input parameters from frontend.
 /// </summary>
-public record GetEtaPredictionQuery(
-    List<RouteRequest> Routes
-) : IRequest<Result<List<ETAResult>>>;
+public record GetEtaPredictionQuery : IRequest<Result<List<ETAResult>>>
+{
+    public List<RouteRequest> Routes { get; init; } = [];
+}

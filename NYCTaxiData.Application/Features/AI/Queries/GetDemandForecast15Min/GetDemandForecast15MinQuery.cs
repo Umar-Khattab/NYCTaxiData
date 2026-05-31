@@ -10,8 +10,9 @@ namespace NYCTaxiData.Application.Features.AI.Queries.GetDemandForecast15Min;
 /// Query to predict 15-minute demand for a list of zones.
 /// Accepts minimal input parameters from frontend.
 /// </summary>
-public record GetDemandForecast15MinQuery(
-    List<int> ZoneIds,
-    DateTime TargetTime,
-    bool RoundToInt = true
-) : IRequest<Result<List<Demand15MinResult>>>;
+public record GetDemandForecast15MinQuery : IRequest<Result<List<Demand15MinResult>>>
+{
+    public List<int> ZoneIds { get; init; } = [];
+    public DateTime TargetTime { get; init; }
+    public bool RoundToInt { get; init; } = true;
+}

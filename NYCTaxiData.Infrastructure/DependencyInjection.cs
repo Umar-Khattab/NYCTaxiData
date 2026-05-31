@@ -45,7 +45,7 @@ namespace NYCTaxiData.Infrastructure
         .AddHttpClient<IAiPredictionService, AiPredictionService>((sp, client) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
-            var baseUrl = config["MlService:BaseUrl"] ?? "http://127.0.0.1:8000/";
+            var baseUrl = config["MlService:BaseUrl"] ?? "https://ai-driven-ride-optimization.onrender.com/";
             client.BaseAddress = new Uri(baseUrl.EndsWith("/") ? baseUrl : baseUrl + "/");
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.AcceptEncoding.Add(new System.Net.Http.Headers.StringWithQualityHeaderValue("gzip"));

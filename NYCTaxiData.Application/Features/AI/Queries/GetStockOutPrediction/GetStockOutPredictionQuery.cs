@@ -10,7 +10,8 @@ namespace NYCTaxiData.Application.Features.AI.Queries.GetStockOutPrediction;
 /// Query to predict stock-out probability for a list of zones.
 /// Accepts minimal input parameters from frontend.
 /// </summary>
-public record GetStockOutPredictionQuery(
-    List<int> ZoneIds,
-    DateTime TargetTime
-) : IRequest<Result<List<StockOutResult>>>;
+public record GetStockOutPredictionQuery : IRequest<Result<List<StockOutResult>>>
+{
+    public List<int> ZoneIds { get; init; } = [];
+    public DateTime TargetTime { get; init; }
+}

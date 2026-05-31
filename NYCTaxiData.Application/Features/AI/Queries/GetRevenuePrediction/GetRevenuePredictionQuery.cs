@@ -10,7 +10,8 @@ namespace NYCTaxiData.Application.Features.AI.Queries.GetRevenuePrediction;
 /// Query to predict revenue for a list of zones.
 /// Accepts minimal input parameters from frontend.
 /// </summary>
-public record GetRevenuePredictionQuery(
-    List<int> ZoneIds,
-    DateTime TargetTime
-) : IRequest<Result<List<RevenueResult>>>;
+public record GetRevenuePredictionQuery : IRequest<Result<List<RevenueResult>>>
+{
+    public List<int> ZoneIds { get; init; } = [];
+    public DateTime TargetTime { get; init; }
+}
