@@ -27,18 +27,24 @@ public class GetStockOutPredictionQueryHandler : IRequestHandler<GetStockOutPred
     /// <inheritdoc />
     public async Task<Result<List<StockOutResult>>> Handle(GetStockOutPredictionQuery request, CancellationToken cancellationToken)
     {
-        // 1. جلب البيانات
         var features = await _aiFeatureProvider.GetStockOutFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
-
-        // 2. التحقق من وجود بيانات قبل إرسال الطلب (هذا هو الحل الجذري!)
-        if (features == null || !features.Any())
+        var result = await _aiPredictionService.PredictStockOutAsync(features, cancellationToken);
+        
+        var predictionDict = result.ToDictionary(r => r.ZoneId);
+        var mergedResults = new List<StockOutResult>();
+        foreach (var zoneId in request.ZoneIds)
         {
-            _logger.LogWarning("(Features) data is not available for forecasting at the required time.");
-            return Result<List<StockOutResult>>.Success(new List<StockOutResult>(), "There is currently no data available for forecasting these areas..");
+            if (predictionDict.TryGetValue(zoneId, out var pred))
+            {
+                mergedResults.Add(pred);
+            }
+            else
+            {
+                mergedResults.Add(new StockOutResult(zoneId, 0.0));
+            }
         }
 
-        // 3. الإرسال فقط إذا كانت هناك بيانات
-        var result = await _aiPredictionService.PredictStockOutAsync(features, cancellationToken);
-        return Result<List<StockOutResult>>.Success(result, "The prediction was successfully generated.");
+        var sortedResults = mergedResults.OrderBy(r => r.ZoneId).ToList();
+        return Result<List<StockOutResult>>.Success(sortedResults, "The prediction was successfully generated.");
     }
 }

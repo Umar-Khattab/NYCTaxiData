@@ -54,7 +54,10 @@ public class AiFeatureProvider : IAiFeatureProvider
             var feature = features.FirstOrDefault(d => d.PuLocationId == zoneId);
 
             if (feature is null)
-                throw new NotFoundException($"Demand15Min historical feature vector not found in AI database for PU Zone {zoneId} at Rounded Time {hour:D2}:{roundedMinute:D2}.");
+            {
+                _logger.LogWarning("Demand15Min historical feature vector not found in AI database for PU Zone {ZoneId} at Rounded Time {Hour:D2}:{Minute:D2}. Skipping zone.", zoneId, hour, roundedMinute);
+                continue;
+            }
 
             results.Add(new Demand15MinInput(
                 feature.PuLocationId ?? zoneId,
@@ -100,7 +103,10 @@ public class AiFeatureProvider : IAiFeatureProvider
             var feature = features.FirstOrDefault(d => d.PuLocationId == zoneId);
 
             if (feature is null)
-                throw new NotFoundException($"Demand6h historical feature vector not found in AI database for Zone {zoneId} at Hour {hour}.");
+            {
+                _logger.LogWarning("Demand6h historical feature vector not found in AI database for Zone {ZoneId} at Hour {Hour}. Skipping zone.", zoneId, hour);
+                continue;
+            }
 
             results.Add(new Demand6hInput(
                 feature.PuLocationId ?? zoneId,
@@ -145,7 +151,8 @@ public class AiFeatureProvider : IAiFeatureProvider
 
             if (feature is null)
             {
-                throw new NotFoundException($"ETA historical feature vector not found in AI database for pickup Zone {route.PickupZoneId} to dropoff Zone {route.DropoffZoneId} at Rounded Time {pickupHour:D2}:{pickupMinute:D2}.");
+                _logger.LogWarning("ETA historical feature vector not found in AI database for pickup Zone {PickupZoneId} to dropoff Zone {DropoffZoneId} at Rounded Time {Hour:D2}:{Minute:D2}. Skipping route.", route.PickupZoneId, route.DropoffZoneId, pickupHour, pickupMinute);
+                continue;
             }
 
             results.Add(new ETAInput(
@@ -194,7 +201,10 @@ public class AiFeatureProvider : IAiFeatureProvider
             var feature = features.FirstOrDefault(r => r.PuLocationId == zoneId);
 
             if (feature is null)
-                throw new NotFoundException($"Revenue historical feature vector not found in AI database for Zone {zoneId} at Hour {hour}.");
+            {
+                _logger.LogWarning("Revenue historical feature vector not found in AI database for Zone {ZoneId} at Hour {Hour}. Skipping zone.", zoneId, hour);
+                continue;
+            }
 
             results.Add(new RevenueInput(
                 feature.PuLocationId ?? zoneId,
@@ -243,7 +253,10 @@ public class AiFeatureProvider : IAiFeatureProvider
             var feature = features.FirstOrDefault(s => s.ZoneId == zoneId);
 
             if (feature is null)
-                throw new NotFoundException($"Stockout historical feature vector not found in AI database for Zone {zoneId} at Hour {hour}.");
+            {
+                _logger.LogWarning("Stockout historical feature vector not found in AI database for Zone {ZoneId} at Hour {Hour}. Skipping zone.", zoneId, hour);
+                continue;
+            }
 
             results.Add(new StockOutInput(
                 feature.ZoneId ?? zoneId,

@@ -28,16 +28,23 @@ public class GetRevenuePredictionQueryHandler : IRequestHandler<GetRevenuePredic
     public async Task<Result<List<RevenueResult>>> Handle(GetRevenuePredictionQuery request, CancellationToken cancellationToken)
     {
         var features = await _aiFeatureProvider.GetRevenueFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
-
-        // الحل هنا: إذا كانت القائمة فارغة، لا تطلب من الـ ML Service أي شيء
-        if (features == null || !features.Any())
+        var result = await _aiPredictionService.PredictRevenueAsync(features, cancellationToken);
+        
+        var predictionDict = result.ToDictionary(r => r.ZoneId);
+        var mergedResults = new List<RevenueResult>();
+        foreach (var zoneId in request.ZoneIds)
         {
-            _logger.LogWarning("There are no data (features) available for forecasting these areas and times.");
-            // يمكنك إرجاع قائمة فارغة أو رسالة خطأ منطقية
-            return Result<List<RevenueResult>>.Success(new List<RevenueResult>(), "There is not enough data to make a prediction.");
+            if (predictionDict.TryGetValue(zoneId, out var pred))
+            {
+                mergedResults.Add(pred);
+            }
+            else
+            {
+                mergedResults.Add(new RevenueResult(zoneId, 0.0, 0.0));
+            }
         }
 
-        var result = await _aiPredictionService.PredictRevenueAsync(features, cancellationToken);
-        return Result<List<RevenueResult>>.Success(result, "Revenue prediction generated successfully");
+        var sortedResults = mergedResults.OrderBy(r => r.ZoneId).ToList();
+        return Result<List<RevenueResult>>.Success(sortedResults, "Revenue prediction generated successfully");
     }
 }

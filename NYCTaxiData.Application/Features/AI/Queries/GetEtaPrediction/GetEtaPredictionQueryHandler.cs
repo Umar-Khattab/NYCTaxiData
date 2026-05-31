@@ -30,7 +30,25 @@ public class GetEtaPredictionQueryHandler : IRequestHandler<GetEtaPredictionQuer
         {
             var features = await _aiFeatureProvider.GetEtaFeaturesAsync(request.Routes, cancellationToken);
             var result = await _aiPredictionService.PredictETAAsync(features, cancellationToken);
-            return Result<List<ETAResult>>.Success(result, "ETA prediction generated successfully");
+            
+            var predictionMap = result.GroupBy(r => (r.PickupZoneId, r.DropoffZoneId))
+                                      .ToDictionary(g => g.Key, g => g.First());
+            var mergedResults = new List<ETAResult>();
+            foreach (var route in request.Routes)
+            {
+                var key = (route.PickupZoneId, route.DropoffZoneId);
+                if (predictionMap.TryGetValue(key, out var pred))
+                {
+                    mergedResults.Add(pred);
+                }
+                else
+                {
+                    mergedResults.Add(new ETAResult(route.PickupZoneId, route.DropoffZoneId, 180.0, 300.0));
+                }
+            }
+
+            var sortedResults = mergedResults.OrderBy(r => r.PickupZoneId).ThenBy(r => r.DropoffZoneId).ToList();
+            return Result<List<ETAResult>>.Success(sortedResults, "ETA prediction generated successfully");
         }
         catch (Exception ex)
         { 

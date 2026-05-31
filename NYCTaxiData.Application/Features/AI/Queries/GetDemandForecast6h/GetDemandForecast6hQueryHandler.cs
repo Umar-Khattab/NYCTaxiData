@@ -30,7 +30,23 @@ public class GetDemandForecast6hQueryHandler : IRequestHandler<GetDemandForecast
         {
             var features = await _aiFeatureProvider.GetDemand6hFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
             var result = await _aiPredictionService.PredictDemand6hAsync(features, cancellationToken);
-            return Result<List<Demand6hResult>>.Success(result, "Demand forecast (6h) generated successfully");
+            
+            var predictionDict = result.ToDictionary(r => r.ZoneId);
+            var mergedResults = new List<Demand6hResult>();
+            foreach (var zoneId in request.ZoneIds)
+            {
+                if (predictionDict.TryGetValue(zoneId, out var pred))
+                {
+                    mergedResults.Add(pred);
+                }
+                else
+                {
+                    mergedResults.Add(new Demand6hResult(zoneId, 0.0, null, null));
+                }
+            }
+
+            var sortedResults = mergedResults.OrderBy(r => r.ZoneId).ToList();
+            return Result<List<Demand6hResult>>.Success(sortedResults, "Demand forecast (6h) generated successfully");
         }
         catch (HttpRequestException ex)
         {

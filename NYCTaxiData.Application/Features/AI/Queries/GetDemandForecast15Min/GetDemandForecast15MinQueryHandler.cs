@@ -36,9 +36,25 @@ public class GetDemandForecast15MinQueryHandler : IRequestHandler<GetDemandForec
              
             var result = await _aiPredictionService.PredictDemand15MinAsync(features, request.RoundToInt, cancellationToken);
              
-            await _mediator.Publish(new PredictionGeneratedEvent("Demand15Min", Demand15MinResults: result), cancellationToken);
+            var predictionDict = result.ToDictionary(r => r.ZoneId);
+            var mergedResults = new List<Demand15MinResult>();
+            foreach (var zoneId in request.ZoneIds)
+            {
+                if (predictionDict.TryGetValue(zoneId, out var pred))
+                {
+                    mergedResults.Add(pred);
+                }
+                else
+                {
+                    mergedResults.Add(new Demand15MinResult(zoneId, 0.0, null, null));
+                }
+            }
 
-            return Result<List<Demand15MinResult>>.Success(result, "Demand forecast (15min) generated successfully");
+            var sortedResults = mergedResults.OrderBy(r => r.ZoneId).ToList();
+
+            await _mediator.Publish(new PredictionGeneratedEvent("Demand15Min", Demand15MinResults: sortedResults), cancellationToken);
+
+            return Result<List<Demand15MinResult>>.Success(sortedResults, "Demand forecast (15min) generated successfully");
         }
         catch (HttpRequestException ex)
         {
