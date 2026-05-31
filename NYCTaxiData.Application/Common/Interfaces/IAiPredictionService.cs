@@ -61,4 +61,10 @@ public interface IAiPredictionService
     /// </summary>
     Task<RepositioningPlan> OptimizeRepositioningAsync(
         DateTime timeWindow, List<ZoneSupplyState> zoneStates, OptimizationConstraints? constraints, CancellationToken ct = default);
+
+    /// <summary>
+    /// Optimizes vehicle repositioning to maximize profit in the next 6 hours.
+    /// </summary>
+    Task<ProfitMaximizationResult> MaximizeProfitAsync(
+        List<ProfitMaximizationInput> zones, CancellationToken ct = default);
 }

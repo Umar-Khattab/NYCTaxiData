@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using NYCTaxiData.API.Controllers.Base;
+using NYCTaxiData.Application.Features.AI.Commands.OptimizeProfitMaximization;
 using NYCTaxiData.Application.Features.AI.Commands.OptimizeRepositioning;
 using NYCTaxiData.Application.Features.AI.Queries.GetDemandForecast15Min;
 using NYCTaxiData.Application.Features.AI.Queries.GetDemandForecast6h;
@@ -63,5 +64,13 @@ public class AiController : BaseController
     [HttpPost("optimize/repositioning")]
     public async Task<IActionResult> OptimizeRepositioning(
         [FromBody] OptimizeRepositioningCommand command, CancellationToken ct)
+        => HandleResult(await Mediator.Send(command, ct));
+
+    /// <summary>
+    /// Optimizes vehicle distribution across zones to maximize profit.
+    /// </summary>
+    [HttpPost("optimize/profit-maximization")]
+    public async Task<IActionResult> OptimizeProfitMaximization(
+        [FromBody] OptimizeProfitMaximizationCommand command, CancellationToken ct)
         => HandleResult(await Mediator.Send(command, ct));
 }

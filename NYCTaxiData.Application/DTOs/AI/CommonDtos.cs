@@ -1,4 +1,5 @@
 using NYCTaxiData.Domain.Enums;
+using System.Text.Json.Serialization;
 
 namespace NYCTaxiData.Application.DTOs.AI;
 
@@ -29,16 +30,16 @@ public record PredictionMetadata(
 /// A complete repositioning plan with assignments and zone summaries.
 /// </summary>
 public record RepositioningPlan(
-    string PlanId,
-    DateTime CreatedAt,
-    DateTime ValidUntil,
-    int TotalMoves,
-    int VehiclesMoved,
-    double EstimatedRelocationCost,
-    double EstimatedRevenueGain,
-    double NetProfitImpact,
-    List<RepositionAssignment> Assignments,
-    List<ZonePlanSummary> ZoneSummaries
+    [property: JsonPropertyName("plan_id")] string PlanId,
+    [property: JsonPropertyName("created_at")] DateTime CreatedAt,
+    [property: JsonPropertyName("valid_until")] DateTime ValidUntil,
+    [property: JsonPropertyName("total_moves")] int TotalMoves,
+    [property: JsonPropertyName("vehicles_moved")] int VehiclesMoved,
+    [property: JsonPropertyName("estimated_relocation_cost")] double EstimatedRelocationCost,
+    [property: JsonPropertyName("estimated_revenue_gain")] double EstimatedRevenueGain,
+    [property: JsonPropertyName("net_profit_impact")] double NetProfitImpact,
+    [property: JsonPropertyName("assignments")] List<RepositionAssignment> Assignments,
+    [property: JsonPropertyName("zone_summaries")] List<ZonePlanSummary> ZoneSummaries
 );
 
 /// <summary>

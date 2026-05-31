@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using NYCTaxiData.Application.Common.Interfaces.Simulation;
+using NYCTaxiData.Application.DTOs.AI;
 using NYCTaxiData.Application.DTOs.Simulation;
 
 namespace NYCTaxiData.API.Hups.Simulation;
@@ -18,4 +19,7 @@ public sealed class SimulationEventStreamer : ISimulationEventStreamer
 
     public Task BroadcastStatusAsync(SimulationStatusResponse status, CancellationToken ct = default)
         => _hubContext.Clients.All.SendAsync("SimulationStatus", status, ct);
+
+    public Task BroadcastProfitPlanAsync(ProfitMaximizationResult plan, CancellationToken ct = default)
+        => _hubContext.Clients.All.SendAsync("ProfitPlanUpdated", plan, ct);
 }

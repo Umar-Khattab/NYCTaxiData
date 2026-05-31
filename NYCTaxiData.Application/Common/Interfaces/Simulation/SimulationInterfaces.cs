@@ -1,6 +1,8 @@
 using NYCTaxiData.Application.Simulation.Models;
 using NYCTaxiData.Application.DTOs.Simulation;
 
+using NYCTaxiData.Application.DTOs.AI;
+
 namespace NYCTaxiData.Application.Common.Interfaces.Simulation;
 
 public interface ISimulationOrchestrator
@@ -52,6 +54,7 @@ public interface ISimulationEventStreamer
 {
     Task BroadcastTickAsync(SimulationTick tick, CancellationToken ct = default);
     Task BroadcastStatusAsync(SimulationStatusResponse status, CancellationToken ct = default);
+    Task BroadcastProfitPlanAsync(ProfitMaximizationResult plan, CancellationToken ct = default);
 }
 
 public record DriverRelocation(int DriverId, int FromZoneId, int ToZoneId);

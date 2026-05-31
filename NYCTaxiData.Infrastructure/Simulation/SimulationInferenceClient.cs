@@ -47,7 +47,7 @@ public sealed class SimulationInferenceClient
             var demandResults = demandTask.Result;
             foreach (var result in demandResults)
             {
-                predictions.DemandByZone[result.ZoneId] = result.P50;
+                predictions.DemandByZone[result.ZoneId] = result.PredictedDemand;
             }
         }
         else
@@ -66,7 +66,8 @@ public sealed class SimulationInferenceClient
             var revenueResults = revenueTask.Result;
             foreach (var result in revenueResults)
             {
-                predictions.RevenueByZone[result.ZoneId] = result.ExpectedTotalRevenue;
+                double predictedRevenue = (result.P90 - result.P50) * 0.5;
+                predictions.RevenueByZone[result.ZoneId] = predictedRevenue;
             }
         }
         else

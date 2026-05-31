@@ -18,13 +18,12 @@ public sealed class AIMappingProfile : Profile
 {
     public AIMappingProfile()
     {
-        //ConfigureDemand15MinMappings();
-        //ConfigureDemand6hMappings();
-        //ConfigureETAMappings();
-        //ConfigureRevenueMappings();
-        //ConfigureStockOutMappings();
-        //ConfigureZoneMappings();
-        //ConfigureSimulationMappings();
+        ConfigureDemand15MinMappings();
+        ConfigureDemand6hMappings();
+        ConfigureETAMappings();
+        ConfigureRevenueMappings();
+        ConfigureStockOutMappings();
+        ConfigureZoneMappings();
     }
 
     // =========================================================
@@ -196,65 +195,4 @@ public sealed class AIMappingProfile : Profile
             .ForCtorParam("ExpectedRevenue",
                 opt => opt.MapFrom(src => (double?)null));
     }
-
-    // =========================================================
-    // 7. Simulation
-    // =========================================================
-    //private void ConfigureSimulationMappings()
-    //{
-    //    // Simulationrequest → SimulationJobResponse
-    //    CreateMap<Simulationrequest, SimulationJobResponse>()
-    //        .ForCtorParam("SimulationId",
-    //            opt => opt.MapFrom(src => src.SimulationId.ToString()))
-    //        .ForCtorParam("Status",
-    //            opt => opt.MapFrom(src =>
-    //                src.Status == "completed" ? SimulationStatus.Completed :
-    //                src.Status == "running" ? SimulationStatus.Running :
-    //                src.Status == "failed" ? SimulationStatus.Failed :
-    //                SimulationStatus.Pending))
-    //        .ForCtorParam("CreatedAt",
-    //            opt => opt.MapFrom(src => src.CreatedAt ?? DateTime.UtcNow))
-    //        .ForCtorParam("ResultUrl",
-    //            opt => opt.MapFrom(src => (string?)null));
-
-    //    // Simulationresult → SimulationMetrics (Baseline)
-    //    CreateMap<Simulationresult, SimulationMetrics>()
-    //        .ForCtorParam("DemandCoverage",
-    //            opt => opt.MapFrom(src =>
-    //                src.TargetPickupP50.HasValue && src.DemandForecastP50.HasValue
-    //                    ? (double)(src.TargetPickupP50.Value /
-    //                      (src.DemandForecastP50.Value == 0 ? 1 : src.DemandForecastP50.Value))
-    //                    : 0.0))
-    //        .ForCtorParam("AvgWaitTimeMinutes",
-    //            opt => opt.MapFrom(src =>
-    //                src.EtaP50Sec.HasValue
-    //                    ? (double)src.EtaP50Sec.Value / 60.0
-    //                    : 0.0))
-    //        .ForCtorParam("StockOutRate",
-    //            opt => opt.MapFrom(src =>
-    //                (double)(src.StockoutProbability ?? 0)))
-    //        .ForCtorParam("TotalRevenue",
-    //            opt => opt.MapFrom(src =>
-    //                (double)(src.ExpectedRevenueP50 ?? 0)))
-    //        .ForCtorParam("TotalOperationalCost",
-    //            opt => opt.MapFrom(src => 0.0))
-    //        .ForCtorParam("NetProfit",
-    //            opt => opt.MapFrom(src =>
-    //                (double)(src.ExpectedRevenueP50 ?? 0)))
-    //        .ForCtorParam("TotalVehicles",
-    //            opt => opt.MapFrom(src => 0));
-
-        // Simulationresult → FinancialImpact
-        //CreateMap<Simulationresult, FinancialImpact>()
-        //    .ForCtorParam("RevenueIncrease",
-        //        opt => opt.MapFrom(src =>
-        //            (double)((src.ExpectedRevenueP90 ?? 0) -
-        //                     (src.ExpectedRevenueP50 ?? 0))))
-        //    .ForCtorParam("AdditionalOperationalCost",
-        //        opt => opt.MapFrom(src => 0.0))
-        //    .ForCtorParam("NetProfitImpact",
-        //        opt => opt.MapFrom(src =>
-        //            (double)(src.ExpectedRevenueP50 ?? 0)))
-        //    .ForCtorParam("PaybackPeriodMonths",
-        //        opt => opt.MapFrom(src => (double?)null));
-    }
+}

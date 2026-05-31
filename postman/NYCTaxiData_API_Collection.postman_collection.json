@@ -1235,6 +1235,27 @@
             "description": "Optimizes vehicle repositioning across zones based on supply/demand state.\nThis is a transactional command — result may be persisted.\n\nCommand: OptimizeRepositioningCommand(TimeWindow, ZoneStates: ZoneSupplyState[], Constraints?)\nReturns: ApiResponse<RepositioningPlan> { planId, createdAt, validUntil, totalMoves, vehiclesMoved, estimatedRelocationCost, estimatedRevenueGain, netProfitImpact, assignments[], zoneSummaries[] }"
           },
           "response": []
+        },
+        {
+          "name": "Optimize Profit Maximization",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/optimize/profit-maximization",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ai", "optimize", "profit-maximization"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zoneStates\": [\n    {\n      \"zone_id\": 1,\n      \"current_drivers\": 12,\n      \"allow_as_source\": true,\n      \"allow_as_target\": true,\n      \"is_event_zone\": false,\n      \"is_airport_zone\": false,\n      \"hour\": 23,\n      \"day_of_week\": 6,\n      \"is_weekend\": 1,\n      \"temp_c\": 18.5,\n      \"rain_mm\": 0.0,\n      \"is_rain\": 0,\n      \"weather_code\": 1,\n      \"is_holiday\": 0,\n      \"lag_1_6h\": 45.0,\n      \"lag_2_6h\": 40.0,\n      \"lag_4_6h\": 35.0,\n      \"rolling_mean_24h\": 42.0,\n      \"rev_lag_1_6h\": 120.0,\n      \"rev_lag_1_week\": 115.0,\n      \"rev_rolling_mean_7d\": 118.0,\n      \"rev_rolling_mean_30d\": 112.0,\n      \"avg_fare\": 15.5,\n      \"tip_rate\": 0.18,\n      \"pickup_count\": 45,\n      \"dropoff_count\": 38,\n      \"net_flow\": 7.0,\n      \"activity_ratio\": 0.85,\n      \"lag_1_pickup\": 42.0,\n      \"lag_1_dropoff\": 36.0,\n      \"lag_1_net_flow\": 6.0\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Optimizes driver distribution across zones to maximize profit in the next 6 hours.\n\nCommand: OptimizeProfitMaximizationCommand(ZoneStates: ProfitMaximizationInput[])\nReturns: ApiResponse<ProfitMaximizationResult>"
+          },
+          "response": []
         }
       ]
     },

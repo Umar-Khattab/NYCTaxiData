@@ -31,11 +31,10 @@ public record Demand15MinInput(
 /// Result of a 15-minute demand prediction for a single zone.
 /// </summary>
 public record Demand15MinResult(
-    int ZoneId,
-    double P50,
-    double P90,
-    double LowerBound,
-    double UpperBound
+    [property: JsonPropertyName("zone_id")] int ZoneId,
+    [property: JsonPropertyName("predicted_demand")] double PredictedDemand,
+    [property: JsonPropertyName("lower_bound")] double LowerBound,
+    [property: JsonPropertyName("upper_bound")] double UpperBound
 );
 
 /// <summary>
@@ -62,11 +61,10 @@ public record Demand6hInput(
 /// Result of a 6-hour demand prediction for a single zone.
 /// </summary>
 public record Demand6hResult(
-    int ZoneId,
-    double P50,
-    double P90,
-    double ConfidenceIntervalLower,
-    double ConfidenceIntervalUpper
+    [property: JsonPropertyName("zone_id")] int ZoneId,
+    [property: JsonPropertyName("predicted_demand")] double PredictedDemand,
+    [property: JsonPropertyName("confidence_interval_lower")] double ConfidenceIntervalLower,
+    [property: JsonPropertyName("confidence_interval_upper")] double ConfidenceIntervalUpper
 );
 
 /// <summary>
@@ -141,10 +139,9 @@ public record RevenueInput(
 /// Result of a revenue prediction for a single zone.
 /// </summary>
 public record RevenueResult(
-    int ZoneId,
-    double P50,
-    double P90,
-    double ExpectedTotalRevenue
+    [property: JsonPropertyName("zone_id")] int ZoneId,
+    [property: JsonPropertyName("p50")] double P50,
+    [property: JsonPropertyName("p90")] double P90
 );
 
 /// <summary>
@@ -174,8 +171,8 @@ public record StockOutInput(
 /// Result of a stock-out prediction for a single zone.
 /// </summary>
 public record StockOutResult(
-    int ZoneId,
-    double Probability
+    [property: JsonPropertyName("zone_id")] int ZoneId,
+    [property: JsonPropertyName("probability")] double Probability
 )
 {
     /// <summary>
@@ -267,24 +264,24 @@ public record OptimizationConstraints(
 /// A single vehicle repositioning assignment from one zone to another.
 /// </summary>
 public record RepositionAssignment(
-    string AssignmentId,
-    int FromZoneId,
-    int ToZoneId,
-    int VehicleCount,
-    double ETAMinutes,
-    double EstimatedCost,
-    double ExpectedProfit
+    [property: JsonPropertyName("assignment_id")] string AssignmentId,
+    [property: JsonPropertyName("from_zone_id")] int FromZoneId,
+    [property: JsonPropertyName("to_zone_id")] int ToZoneId,
+    [property: JsonPropertyName("vehicle_count")] int VehicleCount,
+    [property: JsonPropertyName("eta_minutes")] double ETAMinutes,
+    [property: JsonPropertyName("estimated_cost")] double EstimatedCost,
+    [property: JsonPropertyName("expected_profit")] double ExpectedProfit
 );
 
 /// <summary>
 /// Summary of supply and demand for a zone after optimization.
 /// </summary>
 public record ZonePlanSummary(
-    int ZoneId,
-    int SupplyBefore,
-    int SupplyAfter,
-    double DemandForecast,
-    double CoverageRatioAfter
+    [property: JsonPropertyName("zone_id")] int ZoneId,
+    [property: JsonPropertyName("supply_before")] int SupplyBefore,
+    [property: JsonPropertyName("supply_after")] int SupplyAfter,
+    [property: JsonPropertyName("demand_forecast")] double DemandForecast,
+    [property: JsonPropertyName("coverage_ratio_after")] double CoverageRatioAfter
 );
 
 /// <summary>
