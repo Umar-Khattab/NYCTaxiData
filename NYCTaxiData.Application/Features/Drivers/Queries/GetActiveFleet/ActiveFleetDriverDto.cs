@@ -5,4 +5,8 @@ public sealed record ActiveFleetDriverDto(
     string FullName,
     string PlateNumber,
     decimal? Rating,
-    string Status);
+    string Status)
+{
+    // 🚀 الحركة دي بتسمح للـ AutoMapper ينشئ الكائن بـ default values
+    public ActiveFleetDriverDto() : this(default, string.Empty, string.Empty, default, string.Empty) { }
+}

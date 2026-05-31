@@ -18,7 +18,15 @@ public sealed class DriversMappingProfile : Profile
             .ForMember(d => d.PlateNumber, opt => opt.MapFrom(s => s.PlateNumber))
             .ForMember(d => d.LicenseNumber, opt => opt.MapFrom(s => s.LicenseNumber))
             .ForMember(d => d.Rating, opt => opt.MapFrom(s => s.Rating))
-            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString()));
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status.ToString())); 
+
+        CreateMap<Driver, NYCTaxiData.Application.Features.Drivers.Queries.GetDriverList.DriverDto>()
+            .ForMember(dest => dest.DriverId, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName ?? string.Empty))
+            .ForMember(dest => dest.PlateNumber, opt => opt.MapFrom(src => src.PlateNumber))
+            .ForMember(dest => dest.LicenseNumber, opt => opt.MapFrom(src => src.LicenseNumber))
+            .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => src.Rating))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
         CreateMap<Driver, ActiveFleetDriverDto>()
             .ForMember(d => d.DriverId, opt => opt.MapFrom(s => s.UserId))
@@ -52,5 +60,13 @@ public sealed class DriversMappingProfile : Profile
                  src.User != null ? src.User.LastName : "Unknown"))  // ✅
          .ForMember(dest => dest.Status,
              opt => opt.MapFrom(src => src.Status.ToString()));
+        // في DriversMappingProfile.cs
+        CreateMap<Driver, ActiveFleetDriverDto>()
+            .ForMember(dest => dest.DriverId, opt => opt.MapFrom(src => src.UserId))
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src =>
+                src.User != null ? (src.User.FirstName + " " + src.User.LastName) : "Unknown")) // 👈 التعديل هنا
+            .ForMember(dest => dest.PlateNumber, opt => opt.MapFrom(src => src.PlateNumber))
+            .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => src.Rating))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
     }
     }

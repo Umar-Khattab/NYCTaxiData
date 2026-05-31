@@ -1,16 +1,20 @@
-﻿using NYCTaxiData.API.Extensions;
+﻿using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NYCTaxiData.API.Extensions;
 using NYCTaxiData.API.Hubs;
 using NYCTaxiData.API.Hups.Dispatch; 
 using NYCTaxiData.API.Hups.Simulation;
 using NYCTaxiData.API.MiddleWares;
 using NYCTaxiData.Application;
 using NYCTaxiData.Application.Common.Interfaces;  
-using NYCTaxiData.Application.Common.Interfaces.Simulation;
 using NYCTaxiData.Application.Common.Interfaces.Services;
+using NYCTaxiData.Application.Common.Interfaces.Simulation;
 using NYCTaxiData.Application.Common.Mappings;
 using NYCTaxiData.Infrastructure;
+using NYCTaxiData.Infrastructure.Data.Contexts;
 using NYCTaxiData.Infrastructure.Services;
 using NYCTaxiData.Infrastructure.Services.Twilio;
+using System.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,15 +45,19 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<IDispatchNotificationService, DispatchNotification>();
 builder.Services.AddSingleton<ISimulationEventStreamer, SimulationEventStreamer>();
 builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<AIMappingProfile>();
     cfg.AddProfile<MappingProfile>();
 });
+builder.Services.AddScoped<IDbConnection>(sp =>
+    new NpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -66,6 +74,7 @@ app.MapControllers();
 app.MapHub<TaxiHub>("/hubs/taxi");
 app.MapHub<LiveTrackingHub>("/hubs/tracking");
 app.MapHub<DispatchHub>("/hubs/dispatch");
-app.MapHub<SimulationHub>("/hubs/simulation");
+app.MapHub<SimulationHub>("/hubs/simulation"); 
 
+app.MapControllers();
 app.Run();

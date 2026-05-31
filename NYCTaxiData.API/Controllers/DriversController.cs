@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using NYCTaxiData.Application.Features.Drivers.Commands.SyncOfflineData;
 using NYCTaxiData.Application.Features.Drivers.Commands.UpdateDriverStatus;
 using NYCTaxiData.Application.Features.Drivers.Queries.GetActiveFleet;
+using NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics;
+using NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings;
 using NYCTaxiData.Application.Features.Drivers.Queries.GetDriverList;
 using NYCTaxiData.Application.Features.Drivers.Queries.GetDriverProfile;
 using NYCTaxiData.Application.Features.Drivers.Queries.GetShiftStatistics;
@@ -90,6 +92,31 @@ public class DriversController(ISender _sender) : ControllerBase
     public async Task<IActionResult> SyncOffline([FromBody] SyncOfflineDataCommand command)
     {
         var result = await _sender.Send(command);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
+    }
+    [HttpGet("analytics")]
+    public async Task<IActionResult> GetAnalytics(
+[FromQuery] Guid driverId,
+[FromQuery] DateTime startRange,
+[FromQuery] DateTime endRange,
+CancellationToken cancellationToken)
+    {
+        var query = new GetDriverAnalyticsQuery(driverId, startRange, endRange);
+        var result = await _sender.Send(query, cancellationToken);
+        return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
+    }
+
+    [HttpGet("earnings")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetEarnings(
+        [FromQuery] Guid driverId,
+        [FromQuery] string period = "week",
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _sender.Send(
+            new GetDriverEarningsQuery(driverId, period), cancellationToken);
+
         return result.IsSuccess ? Ok(result.Data) : BadRequest(result.Message);
     }
     public sealed record UpdateDriverStatusRequest(string Status, double CurrentLat, double CurrentLng);

@@ -16,7 +16,8 @@ public class GetStockOutPredictionQueryHandler : IRequestHandler<GetStockOutPred
     private readonly IAiFeatureProvider _aiFeatureProvider;
     private readonly ILogger<GetStockOutPredictionQueryHandler> _logger;
 
-    public GetStockOutPredictionQueryHandler(IAiPredictionService aiPredictionService, IAiFeatureProvider aiFeatureProvider, ILogger<GetStockOutPredictionQueryHandler> logger)
+    public GetStockOutPredictionQueryHandler(IAiPredictionService aiPredictionService,
+        IAiFeatureProvider aiFeatureProvider, ILogger<GetStockOutPredictionQueryHandler> logger)
     {
         _aiPredictionService = aiPredictionService;
         _aiFeatureProvider = aiFeatureProvider;
@@ -26,16 +27,18 @@ public class GetStockOutPredictionQueryHandler : IRequestHandler<GetStockOutPred
     /// <inheritdoc />
     public async Task<Result<List<StockOutResult>>> Handle(GetStockOutPredictionQuery request, CancellationToken cancellationToken)
     {
-        try
+        // 1. جلب البيانات
+        var features = await _aiFeatureProvider.GetStockOutFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
+
+        // 2. التحقق من وجود بيانات قبل إرسال الطلب (هذا هو الحل الجذري!)
+        if (features == null || !features.Any())
         {
-            var features = await _aiFeatureProvider.GetStockOutFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
-            var result = await _aiPredictionService.PredictStockOutAsync(features, cancellationToken);
-            return Result<List<StockOutResult>>.Success(result, "Stock-out prediction generated successfully");
+            _logger.LogWarning("(Features) data is not available for forecasting at the required time.");
+            return Result<List<StockOutResult>>.Success(new List<StockOutResult>(), "There is currently no data available for forecasting these areas..");
         }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Failed to connect to ML service for stock-out prediction");
-            throw new ConflictException("ML prediction service is currently unavailable. Please try again later.");
-        }
+
+        // 3. الإرسال فقط إذا كانت هناك بيانات
+        var result = await _aiPredictionService.PredictStockOutAsync(features, cancellationToken);
+        return Result<List<StockOutResult>>.Success(result, "The prediction was successfully generated.");
     }
 }

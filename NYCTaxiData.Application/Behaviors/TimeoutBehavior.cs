@@ -51,13 +51,13 @@ namespace NYCTaxiData.Application.Behaviors
             try
             {
                 // Create an async timeout policy
+                // TimeoutBehavior.cs
                 var timeoutPolicy = Policy.TimeoutAsync<TResponse>(
                     TimeSpan.FromSeconds(timeoutSeconds),
                     TimeoutStrategy.Optimistic);
 
-                // Execute the request with the timeout policy
                 var response = await timeoutPolicy.ExecuteAsync(
-                    async ct => await next(),
+                    async ct => await next(), // ensure next/handlers forward ct into their I/O calls
                     cancellationToken);
 
                 return response;

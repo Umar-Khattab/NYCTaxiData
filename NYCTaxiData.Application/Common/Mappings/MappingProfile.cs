@@ -84,7 +84,13 @@ namespace NYCTaxiData.Application.Common.Mappings
             // 👈 التوجيه الصريح للأسماء عشان AutoMapper ميتلخبطش
             .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.User.FirstName))
             .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.User.LastName));
-
+            CreateMap<Driver, DriverListDto>()
+    .ForMember(dest => dest.DriverId, opt => opt.MapFrom(src => src.UserId.ToString()))
+    .ForMember(dest => dest.FirstName,
+        opt => opt.MapFrom(src => src.User != null ? src.User.FirstName : "Unknown")) // 🚀 Fallback آمن
+    .ForMember(dest => dest.LastName,
+        opt => opt.MapFrom(src => src.User != null ? src.User.LastName : "Unknown"))  // 🚀 Fallback آمن
+    .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
         }
         }
     }

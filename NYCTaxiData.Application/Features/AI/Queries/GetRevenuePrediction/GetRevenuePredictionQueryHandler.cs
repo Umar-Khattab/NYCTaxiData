@@ -16,7 +16,8 @@ public class GetRevenuePredictionQueryHandler : IRequestHandler<GetRevenuePredic
     private readonly IAiFeatureProvider _aiFeatureProvider;
     private readonly ILogger<GetRevenuePredictionQueryHandler> _logger;
 
-    public GetRevenuePredictionQueryHandler(IAiPredictionService aiPredictionService, IAiFeatureProvider _aiFeatureProvider, ILogger<GetRevenuePredictionQueryHandler> logger)
+    public GetRevenuePredictionQueryHandler(IAiPredictionService aiPredictionService, 
+        IAiFeatureProvider _aiFeatureProvider, ILogger<GetRevenuePredictionQueryHandler> logger)
     {
         _aiPredictionService = aiPredictionService;
         this._aiFeatureProvider = _aiFeatureProvider;
@@ -26,16 +27,17 @@ public class GetRevenuePredictionQueryHandler : IRequestHandler<GetRevenuePredic
     /// <inheritdoc />
     public async Task<Result<List<RevenueResult>>> Handle(GetRevenuePredictionQuery request, CancellationToken cancellationToken)
     {
-        try
+        var features = await _aiFeatureProvider.GetRevenueFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
+
+        // الحل هنا: إذا كانت القائمة فارغة، لا تطلب من الـ ML Service أي شيء
+        if (features == null || !features.Any())
         {
-            var features = await _aiFeatureProvider.GetRevenueFeaturesAsync(request.ZoneIds, request.TargetTime, cancellationToken);
-            var result = await _aiPredictionService.PredictRevenueAsync(features, cancellationToken);
-            return Result<List<RevenueResult>>.Success(result, "Revenue prediction generated successfully");
+            _logger.LogWarning("There are no data (features) available for forecasting these areas and times.");
+            // يمكنك إرجاع قائمة فارغة أو رسالة خطأ منطقية
+            return Result<List<RevenueResult>>.Success(new List<RevenueResult>(), "There is not enough data to make a prediction.");
         }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Failed to connect to ML service for revenue prediction");
-            throw new ConflictException("ML prediction service is currently unavailable. Please try again later.");
-        }
+
+        var result = await _aiPredictionService.PredictRevenueAsync(features, cancellationToken);
+        return Result<List<RevenueResult>>.Success(result, "Revenue prediction generated successfully");
     }
 }

@@ -17,43 +17,56 @@ public sealed class SyncOfflineDataCommandHandler : IRequestHandler<SyncOfflineD
 
     public async Task<Result<SyncSummaryDto>> Handle(SyncOfflineDataCommand request, CancellationToken cancellationToken)
     {
-
         var driverExists = await _unitOfWork.Drivers.AnyAsync(d => d.UserId == request.DriverId);
         if (!driverExists)
-        {
             return Result<SyncSummaryDto>.Failure($"Driver with id '{request.DriverId}' was not found.");
-        }
 
-        if (request.Trips.Count == 0)
+        var syncedCount = 0;
+        var failedCount = 0; 
+        var failedIds = new List<string>();
+
+        foreach (var t in request.Trips)
         {
-            return Result<SyncSummaryDto>.Success(new SyncSummaryDto
+            try
             {
-                ReceivedCount = 0,
-                SyncedCount = 0,
-                FailedCount = 0,
-                FailedLocalTripIds = []
-            }, "No trips to sync.");
+                // 1. تشييك ذكي: هل الـ Location ده موجود أصلاً؟
+                bool pickupValid = await _unitOfWork.Locations.AnyAsync(l => l.LocationId == t.PickupLocationId);
+                bool dropoffValid = await _unitOfWork.Locations.AnyAsync(l => l.LocationId == t.DropoffLocationId);
+
+                // 2. لو أي واحد مش موجود، خلي الـ ID بتاعه null (لو الـ DB بتسمح) 
+                // أو اعتبر الرحلة دي فاشلة وسجلها في الـ FailedList
+                if (!pickupValid || !dropoffValid)
+                {
+                    throw new Exception("Invalid LocationId (Foreign Key Violation)");
+                }
+
+                var trip = new Trip
+                {
+                    DriverId = request.DriverId,
+                    PickupLocationId = t.PickupLocationId,
+                    DropoffLocationId = t.DropoffLocationId,
+                    StartedAt = t.StartedAt,
+                    EndedAt = t.EndedAt,
+                    TotalAmount = t.ActualFare
+                };
+
+                await _unitOfWork.Trips.AddAsync(trip);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                syncedCount++;
+            }
+            catch (Exception)
+            {
+                failedCount++; 
+                failedIds.Add(t.LocalTripId.ToString());
+            }
         }
-        var tripsToPersist = request.Trips.Select(t => new Trip
-        {
-            DriverId = request.DriverId,
-            PickupLocationId = t.PickupLocationId,
-            DropoffLocationId = t.DropoffLocationId,
-            StartedAt = t.StartedAt,
-            EndedAt = t.EndedAt,
-
-            TotalAmount = t.ActualFare
-        }).ToList();
-
-        await _unitOfWork.Trips.AddRangeAsync(tripsToPersist);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);  
 
         return Result<SyncSummaryDto>.Success(new SyncSummaryDto
         {
             ReceivedCount = request.Trips.Count,
-            SyncedCount = request.Trips.Count,
-            FailedCount = 0,
-            FailedLocalTripIds = []
-        }, "Trips synced successfully.");
+            SyncedCount = syncedCount,
+            FailedCount = failedCount, 
+            FailedLocalTripIds = failedIds.Select(id => id.ToString()).ToList()
+        }, "Sync process completed.");
     }
 }

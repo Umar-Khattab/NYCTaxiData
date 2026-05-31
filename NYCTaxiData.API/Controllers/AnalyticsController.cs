@@ -21,6 +21,7 @@ namespace NYCTaxiData.API.Controllers
         /// يجلب المؤشرات الرئيسية للداشبورد (عدد السائقين، الإيرادات، وقت الانتظار)
         /// </summary>
         [HttpGet("kpis")]
+        [Authorize(Roles = "Admin,Dispatcher,Manager")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetTopLevelKpis()

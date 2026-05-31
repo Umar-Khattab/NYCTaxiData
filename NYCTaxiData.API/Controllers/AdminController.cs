@@ -22,11 +22,9 @@ public class AdminController(
         _logger.LogInformation("[AdminController] Manual today's aggregation triggered at {Time}", DateTime.UtcNow);
 
         try
-        {
-            // تنفيذ العملية
+        { 
             await _aggregationService.AggregateAsync(DateTime.UtcNow, cancellationToken);
-
-            // لو الكود وصل هنا، يبقى العملية نجحت
+             
             return Ok(new
             {
                 Success = true,
@@ -35,27 +33,24 @@ public class AdminController(
             });
         }
         catch (OperationCanceledException)
-        {
-            // في حالة لو اليوزر كنسل الـ Request وهو شغال
+        { 
             _logger.LogWarning("[AdminController] Aggregation was cancelled by the user.");
             return StatusCode(499, new { Message = "Request was cancelled." });
         }
         catch (DbUpdateException dbEx)
-        {
-            // مشكلة في الداتابيز (Supabase Connection أو Constraints)
+        { 
             _logger.LogError(dbEx, "[AdminController] Database error during aggregation.");
             return StatusCode(503, new { Message = "Database is currently unavailable. Please try again later." });
         }
         catch (Exception ex)
-        {
-            // أي مصيبة تانية غير متوقعة
+        { 
             _logger.LogError(ex, "[AdminController] Unexpected error during today's aggregation.");
 
             return StatusCode(500, new
             {
                 Success = false,
                 Message = "An internal error occurred while calculating statistics.",
-                Details = _env.IsDevelopment() ? ex.Message : null // بنظهر التفاصيل بس في الـ Development
+                Details = _env.IsDevelopment() ? ex.Message : null  
             });
         }
     }
@@ -67,25 +62,20 @@ public class AdminController(
     CancellationToken cancellationToken)
     {
         try
-        {
-            // 1. تحديد القيم الافتراضية بذكاء ونضمن إنها UTC 🛑
-            // بنستخدم SpecifyKind عشان PostgreSQL ميعملش Exception
+        { 
             var fromDate = DateTime.SpecifyKind(from?.Date ?? DateTime.UtcNow.Date.AddDays(-30), DateTimeKind.Utc);
             var toDate = DateTime.SpecifyKind(to?.Date ?? DateTime.UtcNow.Date, DateTimeKind.Utc);
-
-            // 2. Validation: منطقية التواريخ
+             
             if (fromDate > toDate)
             {
                 return BadRequest(new { Message = "The 'from' date cannot be later than the 'to' date." });
             }
-
-            // 3. تحديد حد أقصى للنطاق (سنة واحدة)
+             
             if ((toDate - fromDate).TotalDays > 365)
             {
                 return BadRequest(new { Message = "Date range cannot exceed one year for performance reasons." });
             }
-
-            // 4. الاستعلام من الداتابيز
+             
             var fromDateOnly = DateOnly.FromDateTime(fromDate);
             var toDateOnly = DateOnly.FromDateTime(toDate);
              

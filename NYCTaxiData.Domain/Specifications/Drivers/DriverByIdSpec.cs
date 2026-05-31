@@ -11,6 +11,8 @@ namespace NYCTaxiData.Domain.Specifications.Drivers
         public DriverByIdSpec(Guid driverId)
             : base(d => d.UserId == driverId)
         {
+            AddOrderBy(d => d.FullName!); 
+            AddInclude(d => d.User!);
         }
     }
 }

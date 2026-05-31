@@ -101,11 +101,27 @@ public sealed class SimulationOrchestrator : ISimulationOrchestrator
     }
 
     public Task<SimulationStatusResponse> SetSpeedAsync(double speedFactor, CancellationToken ct = default)
-    {
-        var state = GetStateOrThrow();
-        state.SpeedFactor = Math.Clamp(speedFactor, 1, 200);
-        var status = BuildStatus(state);
-        return BroadcastStatusAsync(status, ct);
+    { 
+        if (_state == null)
+        {
+            _logger.LogWarning("SetSpeedAsync called while _state is null."); 
+            throw new InvalidOperationException("Simulation is not running. Please start the simulation first.");
+        }
+
+        lock (_sync)
+        {
+            if (_state == null)
+            {
+                throw new InvalidOperationException(
+                    "Simulation is not running.");
+            }
+
+            _state.SpeedFactor = Math.Clamp(speedFactor, 1, 200);
+
+            var status = BuildStatus(_state);
+
+            return BroadcastStatusAsync(status, ct);
+        }
     }
 
     public SimulationStatusResponse GetStatus()
@@ -186,13 +202,12 @@ public sealed class SimulationOrchestrator : ISimulationOrchestrator
 
     private SimulationState GetStateOrThrow()
     {
-        var state = _state;
-        if (state is null)
+        if (_state == null)
         {
-            throw new InvalidOperationException("Simulation has not been started.");
+            _logger.LogWarning("Attempted to access simulation state, but it is null.");
+            throw new InvalidOperationException("Simulation is not initialized. Start the simulation first.");
         }
-
-        return state;
+        return _state;
     }
 
     private SimulationStartRequest NormalizeRequest(SimulationStartRequest request)

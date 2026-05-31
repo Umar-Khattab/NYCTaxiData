@@ -25,15 +25,48 @@ namespace NYCTaxiData.Infrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            // 1. قراءة الـ Connection Strings
+            var defaultConn = configuration.GetConnectionString("DefaultConnection");
+            var aiConn = configuration.GetConnectionString("AiConnection");
 
-            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.AddScoped<AuditableEntityInterceptor>();
-            services.AddScoped<AuditLogInterceptor>();
+            if (string.IsNullOrEmpty(defaultConn) || string.IsNullOrEmpty(aiConn))
+            {
+                throw new InvalidOperationException("Connection strings are missing in appsettings.json!");
+            }
+
+            // 2. تسجيل الـ DbContexts
+            services.AddDbContext<AiDbContext>(options =>
+                options.UseNpgsql(aiConn, npgsql => {
+                    npgsql.CommandTimeout(120);
+                    npgsql.EnableRetryOnFailure(3);
+                }));
+
+            services.AddDbContext<TaxiDbContext>((sp, options) =>
+            {
+                var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
+                var auditLogInterceptor = sp.GetRequiredService<AuditLogInterceptor>();
+                options.UseNpgsql(defaultConn, npgsql => npgsql.EnableRetryOnFailure(5))
+                       .AddInterceptors(auditableInterceptor, auditLogInterceptor);
+            });
+
+            // 3. تسجيل الخدمات الأساسية (التي كانت تسبب الأخطاء)
+            services.AddMemoryCache();
+            services.AddDistributedMemoryCache();
+            services.AddScoped<ICacheService, CacheService>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<IIdempotencyService, IdempotencyService>();
+
+            // 4. خدمات الـ AI والـ Simulation
             services.AddScoped<IAiPredictionService, AiPredictionService>();
             services.AddScoped<IDailyAggregationService, DailyAggregationService>();
+            services.AddScoped<AiFeatureProvider>();
+            services.AddScoped<IAiFeatureProvider>(sp =>
+                new CachingAiFeatureProvider(
+                    sp.GetRequiredService<AiFeatureProvider>(),
+                    sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>()));
+
             services.Configure<SimulationOptions>(configuration.GetSection("Simulation"));
             services.AddSingleton<ISimulationFeatureLoader, SimulationFeatureLoader>();
             services.AddSingleton<ISimulationStateManager, SimulationStateManager>();
@@ -45,7 +78,7 @@ namespace NYCTaxiData.Infrastructure
         .AddHttpClient<IAiPredictionService, AiPredictionService>((sp, client) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
-            var baseUrl = config["MlService:BaseUrl"] ?? "https://ai-driven-ride-optimization.onrender.com/";
+            var baseUrl = config["MlService:BaseUrl"] ?? "http://127.0.0.1:8000/";
             client.BaseAddress = new Uri(baseUrl.EndsWith("/") ? baseUrl : baseUrl + "/");
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.AcceptEncoding.Add(new System.Net.Http.Headers.StringWithQualityHeaderValue("gzip"));
@@ -67,30 +100,10 @@ namespace NYCTaxiData.Infrastructure
             services.AddMemoryCache();
             services.AddDistributedMemoryCache();
 
-            services.AddScoped<AiFeatureProvider>();
-            services.AddScoped<IAiFeatureProvider>(sp => 
-                new CachingAiFeatureProvider(
-                    sp.GetRequiredService<AiFeatureProvider>(), 
-                    sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>()));
-            services.AddDbContext<AiDbContext>();
-
-            services.AddDbContext<TaxiDbContext>((sp, options) =>
-            {
-                var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
-                var auditLogInterceptor = sp.GetRequiredService<AuditLogInterceptor>();
-
-                options.UseNpgsql(connectionString, npgsqlOptions =>
-                {
-                    npgsqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
-                        errorCodesToAdd: null);
-                })
-                .AddInterceptors(auditableInterceptor, auditLogInterceptor);
-            });
-            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddScoped<AuditableEntityInterceptor>();
+            services.AddScoped<AuditLogInterceptor>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
+
             return services;
         }
 

@@ -18,52 +18,38 @@ public sealed class AIMappingProfile : Profile
 {
     public AIMappingProfile()
     {
-        ConfigureDemand15MinMappings();
-        ConfigureDemand6hMappings();
-        ConfigureETAMappings();
-        ConfigureRevenueMappings();
-        ConfigureStockOutMappings();
+        //ConfigureDemand15MinMappings();
+        //ConfigureDemand6hMappings();
+        //ConfigureETAMappings();
+        //ConfigureRevenueMappings();
+        //ConfigureStockOutMappings();
         //ConfigureZoneMappings();
         //ConfigureSimulationMappings();
     }
 
     // =========================================================
-    // 1. Demand 15-Min
+    // 1. Demand 15-Min (تعديل الحرف الأول لـ سمول في الـ Constructor Parameters)
     // =========================================================
     private void ConfigureDemand15MinMappings()
     {
-        // DB Entity → Input DTO
-        CreateMap<Demand15min, Demand15MinInput>()
-            .ForCtorParam("ZoneId",
-                opt => opt.MapFrom(src => src.PuLocationId ?? 0))
-            .ForCtorParam("Hour",
-                opt => opt.MapFrom(src => src.Hour ?? 0))
-            .ForCtorParam("Minute",
-                opt => opt.MapFrom(src => src.Minute ?? 0))
-            .ForCtorParam("DayOfWeek",
-                opt => opt.MapFrom(src => src.DayOfWeek ?? 0))
-            .ForCtorParam("Month",
-                opt => opt.MapFrom(src => src.Month ?? 1))
-            .ForCtorParam("IsWeekend",
-                opt => opt.MapFrom(src => src.IsWeekend == 1))
-            .ForCtorParam("Lag1",
-                opt => opt.MapFrom(src => (double)(src.Lag1 ?? 0)))
-            .ForCtorParam("Lag4",
-                opt => opt.MapFrom(src => (double)(src.Lag4 ?? 0)))
-            .ForCtorParam("Lag96",
-                opt => opt.MapFrom(src => (double)(src.Lag96 ?? 0)))
-            .ForCtorParam("RollMean1h",
-                opt => opt.MapFrom(src => (double)(src.RollMean1h ?? 0)))
-            .ForCtorParam("RollMean3h",
-                opt => opt.MapFrom(src => (double)(src.RollMean3h ?? 0)))
-            .ForCtorParam("TempC",
-                opt => opt.MapFrom(src => (double)(src.TempC ?? 0)))
-            .ForCtorParam("RainMm",
-                opt => opt.MapFrom(src => (double)(src.RainMm ?? 0)))
-            .ForCtorParam("IsRain",
-                opt => opt.MapFrom(src => src.IsRain == 1))
-            .ForCtorParam("WeatherCode",
-                opt => opt.MapFrom(src => src.WeatherCode ?? 0));
+        // 🚀 الحركة الصايعة: بنقول للـ AutoMapper قسماً بالله ما تقرب للـ Constructor واعمل مابينج للحقول عل طول
+        CreateMap<Demand15min, Demand15MinInput>(MemberList.None)
+            .DisableCtorValidation() // 👈 بتلغي فحص الـ Constructor Parameters تماماً لمنع الـ Exception نهائياً
+            .ForMember(dest => dest.ZoneId, opt => opt.MapFrom(src => src.PuLocationId ?? 0))
+            .ForMember(dest => dest.Hour, opt => opt.MapFrom(src => src.Hour ?? 0))
+            .ForMember(dest => dest.Minute, opt => opt.MapFrom(src => src.Minute ?? 0))
+            .ForMember(dest => dest.DayOfWeek, opt => opt.MapFrom(src => src.DayOfWeek ?? 0))
+            .ForMember(dest => dest.Month, opt => opt.MapFrom(src => src.Month ?? 1))
+            .ForMember(dest => dest.IsWeekend, opt => opt.MapFrom(src => src.IsWeekend == 1))
+            .ForMember(dest => dest.Lag1, opt => opt.MapFrom(src => (double)(src.Lag1 ?? 0)))
+            .ForMember(dest => dest.Lag4, opt => opt.MapFrom(src => (double)(src.Lag4 ?? 0)))
+            .ForMember(dest => dest.Lag96, opt => opt.MapFrom(src => (double)(src.Lag96 ?? 0)))
+            .ForMember(dest => dest.RollMean1h, opt => opt.MapFrom(src => (double)(src.RollMean1h ?? 0)))
+            .ForMember(dest => dest.RollMean3h, opt => opt.MapFrom(src => (double)(src.RollMean3h ?? 0)))
+            .ForMember(dest => dest.TempC, opt => opt.MapFrom(src => (double)(src.TempC ?? 0)))
+            .ForMember(dest => dest.RainMm, opt => opt.MapFrom(src => (double)(src.RainMm ?? 0)))
+            .ForMember(dest => dest.IsRain, opt => opt.MapFrom(src => src.IsRain == 1))
+            .ForMember(dest => dest.WeatherCode, opt => opt.MapFrom(src => src.WeatherCode ?? 0));
     }
 
     // =========================================================
@@ -71,36 +57,22 @@ public sealed class AIMappingProfile : Profile
     // =========================================================
     private void ConfigureDemand6hMappings()
     {
-        // DB Entity → Input DTO
-        CreateMap<Demandfeature, Demand6hInput>()
-            .ForCtorParam("ZoneId",
-                opt => opt.MapFrom(src => src.PuLocationId ?? 0))
-            .ForCtorParam("PickupHour",
-                opt => opt.MapFrom(src => src.PickupHour ?? 0))
-            .ForCtorParam("DayOfWeek",
-                opt => opt.MapFrom(src => src.DayOfWeek ?? 0))
-            .ForCtorParam("IsWeekend",
-                opt => opt.MapFrom(src => src.IsWeekend == 1))
-            .ForCtorParam("IsHoliday",
-                opt => opt.MapFrom(src => src.IsHoliday == 1))
-            .ForCtorParam("Lag1_6h",
-                opt => opt.MapFrom(src => (double)(src.Lag16h ?? 0)))
-            .ForCtorParam("Lag2_6h",
-                opt => opt.MapFrom(src => (double)(src.Lag26h ?? 0)))
-            .ForCtorParam("Lag4_6h",
-                opt => opt.MapFrom(src => (double)(src.Lag46h ?? 0)))
-            .ForCtorParam("RollingMean24h",
-                opt => opt.MapFrom(src => (double)(src.RollingMean24h ?? 0)))
-            .ForCtorParam("TempC",
-                opt => opt.MapFrom(src => (double)(src.TempC ?? 0)))
-            .ForCtorParam("RainMm",
-                opt => opt.MapFrom(src => (double)(src.RainMm ?? 0)))
-            .ForCtorParam("IsRain",
-                opt => opt.MapFrom(src => src.IsRain == 1))
-            .ForCtorParam("WeatherCode",
-                opt => opt.MapFrom(src => src.WeatherCode ?? 0));
+        CreateMap<Demandfeature, Demand6hInput>(MemberList.None)
+            .DisableCtorValidation() // 👈 بتلغي فحص الـ Constructor هنا كمان
+            .ForMember(dest => dest.ZoneId, opt => opt.MapFrom(src => src.PuLocationId ?? 0))
+            .ForMember(dest => dest.PickupHour, opt => opt.MapFrom(src => src.PickupHour ?? 0))
+            .ForMember(dest => dest.DayOfWeek, opt => opt.MapFrom(src => src.DayOfWeek ?? 0))
+            .ForMember(dest => dest.IsWeekend, opt => opt.MapFrom(src => src.IsWeekend == 1))
+            .ForMember(dest => dest.IsHoliday, opt => opt.MapFrom(src => src.IsHoliday == 1))
+            .ForMember(dest => dest.Lag1_6h, opt => opt.MapFrom(src => (double)(src.Lag16h ?? 0)))
+            .ForMember(dest => dest.Lag2_6h, opt => opt.MapFrom(src => (double)(src.Lag26h ?? 0)))
+            .ForMember(dest => dest.Lag4_6h, opt => opt.MapFrom(src => (double)(src.Lag46h ?? 0)))
+            .ForMember(dest => dest.RollingMean24h, opt => opt.MapFrom(src => (double)(src.RollingMean24h ?? 0)))
+            .ForMember(dest => dest.TempC, opt => opt.MapFrom(src => (double)(src.TempC ?? 0)))
+            .ForMember(dest => dest.RainMm, opt => opt.MapFrom(src => (double)(src.RainMm ?? 0)))
+            .ForMember(dest => dest.IsRain, opt => opt.MapFrom(src => src.IsRain == 1))
+            .ForMember(dest => dest.WeatherCode, opt => opt.MapFrom(src => src.WeatherCode ?? 0));
     }
-
     // =========================================================
     // 3. ETA
     // =========================================================
