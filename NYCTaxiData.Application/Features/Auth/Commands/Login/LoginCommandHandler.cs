@@ -29,7 +29,7 @@ namespace NYCTaxiData.Application.Features.Auth.Commands.Login
                      : "User";
 
             var fullName = $"{user.FirstName} {user.LastName}";
-            var token = _jwt.GenerateToken(user.PhoneNumber, role, fullName);
+            var token = _jwt.GenerateToken(user.Id, user.PhoneNumber, role, fullName);
 
             var resultDto = _mapper.Map<UserResultDto>(user);
             resultDto.Token = token;

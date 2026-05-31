@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using NYCTaxiData.Application.Common.Interfaces.Services;
 using System.IdentityModel.Tokens.Jwt;
@@ -9,7 +9,7 @@ namespace NYCTaxiData.Infrastructure.Services;
 
 public class JwtTokenService(IConfiguration _config) : IJwtTokenService
 {
-    public string GenerateToken(string phoneNumber, string role, string fullName)
+    public string GenerateToken(Guid userId, string phoneNumber, string role, string fullName)
     {
         var securityKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_config["Jwt:Secret"] ?? "default-secret-key-min32chars-longer"));
@@ -17,9 +17,10 @@ public class JwtTokenService(IConfiguration _config) : IJwtTokenService
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, phoneNumber),
+            new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim(ClaimTypes.Role, role),
-            new Claim("FullName", fullName)
+            new Claim("FullName", fullName),
+            new Claim(ClaimTypes.MobilePhone, phoneNumber)
         };
 
         var token = new JwtSecurityToken(

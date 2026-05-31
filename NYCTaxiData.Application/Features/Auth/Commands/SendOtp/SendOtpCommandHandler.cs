@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using NYCTaxiData.Application.Common.Interfaces.Services; 
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
@@ -26,7 +26,7 @@ namespace NYCTaxiData.Application.Features.Auth.Commands.SendOtp
             }
 
             var otp = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
-            var cacheKey = $"otp:{request.PhoneNumber}";
+            var cacheKey = $"otp:{cleanPhone}";
              
             await _cache.SetAsync(cacheKey, otp, TimeSpan.FromMinutes(5));
              

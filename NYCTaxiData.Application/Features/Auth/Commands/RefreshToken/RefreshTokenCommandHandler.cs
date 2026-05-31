@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -43,13 +43,12 @@ namespace NYCTaxiData.Application.Auth.Commands.RefreshToken
                 return new UserResultDto { IsSuccess = false, Message = "Invalid token format or signature" };
             }
              
-            var phoneNumber = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdString = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (string.IsNullOrEmpty(phoneNumber))
+            if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var userId))
                 return new UserResultDto { IsSuccess = false, Message = "Invalid token claims" };
              
-            var spec = new UserForLoginSpec(phoneNumber);
-            var user = await _uow.Users.GetBySpecAsync(spec);
+            var user = await _uow.Users.GetByIdAsync(userId);
 
             if (user == null)
                 return new UserResultDto { IsSuccess = false, Message = "User associated with this token no longer exists" };
@@ -59,7 +58,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RefreshToken
                      : "User";
 
             var fullName = $"{user.FirstName} {user.LastName}"; 
-            var newToken = _jwtService.GenerateToken(phoneNumber, role, fullName);
+            var newToken = _jwtService.GenerateToken(user.Id, user.PhoneNumber, role, fullName);
              
             var result = _mapper.Map<UserResultDto>(user); 
             result.IsSuccess = true;

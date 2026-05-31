@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using NYCTaxiData.Application.Common.Interfaces.Services;  
 using System.Net.Http.Json;
 
@@ -15,6 +15,13 @@ public class WhatsAppSmsService : ISmsService
 
     public async Task<bool> SendSmsAsync(string phoneNumber, string message)
     {
+        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        if (env == "Development")
+        {
+            Console.WriteLine($"[DEVELOPMENT OTP BYPASS] Sent SMS to {phoneNumber}: {message}");
+            return true;
+        }
+
         try
         {
             using var client = new HttpClient();

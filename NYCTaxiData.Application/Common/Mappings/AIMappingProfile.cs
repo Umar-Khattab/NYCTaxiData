@@ -82,16 +82,38 @@ public sealed class AIMappingProfile : Profile
                 opt => opt.MapFrom(src => src.PuLocationId ?? 0))
             .ForCtorParam("DropoffZoneId",
                 opt => opt.MapFrom(src => src.DoLocationId ?? 0))
-            .ForCtorParam("PickupDateTime",
-                opt => opt.MapFrom(src => src.Pickup15minBucket ?? DateTime.UtcNow))
-            .ForCtorParam("TripDistance",
-                opt => opt.MapFrom(src => (double)(src.DistanceProxy ?? 0)))
             .ForCtorParam("TempC",
-                opt => opt.MapFrom(src => (double?)src.TempC))
+                opt => opt.MapFrom(src => src.TempC))
             .ForCtorParam("RainMm",
-                opt => opt.MapFrom(src => (double?)src.RainMm))
+                opt => opt.MapFrom(src => src.RainMm))
             .ForCtorParam("WeatherCode",
-                opt => opt.MapFrom(src => src.WeatherCode));
+                opt => opt.MapFrom(src => src.WeatherCode))
+            .ForCtorParam("DistanceProxy",
+                opt => opt.MapFrom(src => src.DistanceProxy ?? 0m))
+            .ForCtorParam("PUHour",
+                opt => opt.MapFrom(src => src.PickupHour ?? 0))
+            .ForCtorParam("PUDow",
+                opt => opt.MapFrom(src => src.PickupDow ?? 0))
+            .ForCtorParam("PUMonth",
+                opt => opt.MapFrom(src => src.PickupMonth ?? 0))
+            .ForCtorParam("PUMinute",
+                opt => opt.MapFrom(src => src.PickupMinute ?? 0))
+            .ForCtorParam("IsWeekend",
+                opt => opt.MapFrom(src => src.IsWeekend ?? 0))
+            .ForCtorParam("IsRushHour",
+                opt => opt.MapFrom(src => src.IsRushHour ?? 0))
+            .ForCtorParam("PU15MinBucket",
+                opt => opt.MapFrom(src => src.Pickup15minBucket ?? DateTime.UtcNow))
+            .ForCtorParam("DistanceBucketLabel",
+                opt => opt.MapFrom(src => src.DistanceBucketLabel ?? ""))
+            .ForCtorParam("DurationSec",
+                opt => opt.MapFrom(src => src.DurationSec ?? 0m))
+            .ForCtorParam("OdHourMedianDuration",
+                opt => opt.MapFrom(src => src.OdHourMedianDuration ?? 0m))
+            .ForCtorParam("PUHourSlowdownIndex",
+                opt => opt.MapFrom(src => src.PuHourSlowdownIndex ?? 0m))
+            .ForCtorParam("DistMedianDuration",
+                opt => opt.MapFrom(src => src.DistMedianDuration ?? 0));
     }
 
     // =========================================================
@@ -108,8 +130,12 @@ public sealed class AIMappingProfile : Profile
                 opt => opt.MapFrom(src => src.DayOfWeek ?? 0))
             .ForCtorParam("IsWeekend",
                 opt => opt.MapFrom(src => src.IsWeekend == 1))
-            .ForCtorParam("ForecastedDemand6h",
-                opt => opt.MapFrom(src => (double)(src.Lag16h ?? 0)))
+            .ForCtorParam("lag1_6h",
+                opt => opt.MapFrom(src => src.Lag16h ?? 0))
+            .ForCtorParam("lag2_6h",
+                opt => opt.MapFrom(src => src.Lag26h ?? 0))
+            .ForCtorParam("lag4_6h",
+                opt => opt.MapFrom(src => src.Lag46h ?? 0))
             .ForCtorParam("RevLag1_6h",
                 opt => opt.MapFrom(src => (double)(src.RevLag16h ?? 0)))
             .ForCtorParam("RevLag1Week",
@@ -118,6 +144,8 @@ public sealed class AIMappingProfile : Profile
                 opt => opt.MapFrom(src => (double)(src.RevRollingMean7d ?? 0)))
             .ForCtorParam("RevRollingMean30d",
                 opt => opt.MapFrom(src => (double)(src.RevRollingMean30d ?? 0)))
+            .ForCtorParam("RollingMean24h",
+                opt => opt.MapFrom(src => src.RollingMean24h))
             .ForCtorParam("AvgFare",
                 opt => opt.MapFrom(src => (double)(src.AvgFare ?? 0)))
             .ForCtorParam("TipRate",
@@ -142,38 +170,38 @@ public sealed class AIMappingProfile : Profile
         CreateMap<Stockoutfeature, StockOutInput>()
             .ForCtorParam("ZoneId",
                 opt => opt.MapFrom(src => src.ZoneId ?? 0))
-            .ForCtorParam("Hour",
-                opt => opt.MapFrom(src => src.Hour ?? 0))
-            .ForCtorParam("DayOfWeek",
-                opt => opt.MapFrom(src => src.DayOfWeek ?? 0))
-            .ForCtorParam("IsWeekend",
-                opt => opt.MapFrom(src => src.IsWeekend == 1))
+            .ForCtorParam("TimeBucket6h",
+                opt => opt.MapFrom(src => src.TimeBucket6h ?? DateTime.UtcNow))
             .ForCtorParam("PickupCount",
                 opt => opt.MapFrom(src => (double)(src.PickupCount ?? 0)))
             .ForCtorParam("DropoffCount",
                 opt => opt.MapFrom(src => (double)(src.DropoffCount ?? 0)))
             .ForCtorParam("NetFlow",
                 opt => opt.MapFrom(src => (double)(src.NetFlow ?? 0)))
+            .ForCtorParam("Hour",
+                opt => opt.MapFrom(src => src.Hour ?? 0))
+            .ForCtorParam("DayOfWeek",
+                opt => opt.MapFrom(src => src.DayOfWeek ?? 0))
+            .ForCtorParam("IsWeekend",
+                opt => opt.MapFrom(src => src.IsWeekend == 1))
+            .ForCtorParam("IsHoliday",
+                opt => opt.MapFrom(src => src.IsHoliday == 1))
             .ForCtorParam("ActivityRatio",
                 opt => opt.MapFrom(src => (double)(src.ActivityRatio ?? 0)))
-            .ForCtorParam("Lag1Pickup",
-                opt => opt.MapFrom(src => (double)(src.Lag1Pickup ?? 0)))
-            .ForCtorParam("Lag1Dropoff",
-                opt => opt.MapFrom(src => (double)(src.Lag1Dropoff ?? 0)))
-            .ForCtorParam("Lag1NetFlow",
-                opt => opt.MapFrom(src => (double)(src.Lag1NetFlow ?? 0)))
-            .ForCtorParam("ForecastedDemand6h",
-                opt => opt.MapFrom(src => 0.0))
             .ForCtorParam("TempC",
                 opt => opt.MapFrom(src => (double)(src.TempC ?? 0)))
             .ForCtorParam("RainMm",
                 opt => opt.MapFrom(src => (double)(src.RainMm ?? 0)))
             .ForCtorParam("IsRain",
                 opt => opt.MapFrom(src => src.IsRain == 1))
+            .ForCtorParam("Lag1Pickup",
+                opt => opt.MapFrom(src => (double)(src.Lag1Pickup ?? 0)))
+            .ForCtorParam("Lag1Dropoff",
+                opt => opt.MapFrom(src => (double)(src.Lag1Dropoff ?? 0)))
+            .ForCtorParam("Lag1NetFlow",
+                opt => opt.MapFrom(src => (double)(src.Lag1NetFlow ?? 0)))
             .ForCtorParam("WeatherCode",
-                opt => opt.MapFrom(src => src.WeatherCode ?? 0))
-            .ForCtorParam("IsHoliday",
-                opt => opt.MapFrom(src => src.IsHoliday == 1));
+                opt => opt.MapFrom(src => src.WeatherCode ?? 0));
     }
 
     // =========================================================

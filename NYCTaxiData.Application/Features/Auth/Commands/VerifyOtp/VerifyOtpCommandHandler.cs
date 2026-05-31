@@ -58,7 +58,7 @@ public class VerifyOtpCommandHandler(
         // 6. تحديد الـ Role والاسم
         var role = user.Driver != null ? "Driver" : user.Manager != null ? "Manager" : "User";
         var fullName = $"{user.FirstName} {user.LastName}";
-        var token = _jwt.GenerateToken(user.PhoneNumber, role, fullName);
+        var token = _jwt.GenerateToken(user.Id, user.PhoneNumber, role, fullName);
 
         // 7. ✅ الحل النهائي: إنشاء الـ DTO يدوياً (بدل الماپر اللي بيضرب)
         return new VerifyOtpResultDto

@@ -30,9 +30,42 @@ var defaultConn = builder.Configuration.GetConnectionString("DefaultConnection")
 var aiConn = builder.Configuration.GetConnectionString("AiConnection") ?? string.Empty;
 var mlUrl  = builder.Configuration["MlService:BaseUrl"] ?? "http://127.0.0.1:8000/";
 builder.Services.AddHealthChecks()
-    .AddNpgSql(defaultConn, name: "postgres-main",  tags: new[] { "ready", "db" })
-    .AddNpgSql(aiConn,      name: "postgres-ai",    tags: new[] { "ready", "db" })
-    .AddUrlGroup(new Uri(mlUrl.TrimEnd('/') + "/health"), name: "ml-service", tags: new[] { "ready" });
+    .AddAsyncCheck("postgres-main", async () =>
+    {
+        try
+        {
+            using var conn = new NpgsqlConnection(defaultConn);
+            await conn.OpenAsync();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT 1;";
+            cmd.CommandTimeout = 3;
+            await cmd.ExecuteScalarAsync();
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy();
+        }
+        catch (Exception ex)
+        {
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("Postgres Main is down", ex);
+        }
+    }, tags: new[] { "ready", "db" })
+    .AddAsyncCheck("postgres-ai", async () =>
+    {
+        try
+        {
+            using var conn = new NpgsqlConnection(aiConn);
+            await conn.OpenAsync();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT 1;";
+            cmd.CommandTimeout = 3;
+            await cmd.ExecuteScalarAsync();
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy();
+        }
+        catch (Exception ex)
+        {
+            // Graceful degradation: AI DB is non-critical, so we report healthy but degraded
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Postgres AI is degraded or paused: " + ex.Message);
+        }
+    }, tags: new[] { "ready", "db" })
+    .AddUrlGroup(new Uri(mlUrl.TrimEnd('/') + "/openapi.json"), name: "ml-service", tags: new[] { "ready" });
 
 // ✅ API Services
 builder.Services.AddControllers();

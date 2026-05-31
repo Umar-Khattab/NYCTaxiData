@@ -30,7 +30,7 @@ namespace NYCTaxiData.Application.Auth.Queries.GetProfile
                      : "User";
              
             var result = _mapper.Map<UserResultDto>(user);
-            var token = _jwt.GenerateToken(user.PhoneNumber, role, $"{user.FirstName} {user.LastName}");
+            var token = _jwt.GenerateToken(user.Id, user.PhoneNumber, role, $"{user.FirstName} {user.LastName}");
             result.IsSuccess = true;
             result.Role = role;
             result.FullName = $"{user.FirstName} {user.LastName}";

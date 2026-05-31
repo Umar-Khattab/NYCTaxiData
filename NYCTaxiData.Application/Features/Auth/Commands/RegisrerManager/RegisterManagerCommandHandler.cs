@@ -1,4 +1,4 @@
-using AutoMapper;
+ï»¿using AutoMapper;
 using MediatR;
 using NYCTaxiData.Application.Common.Interfaces.Services;
 using NYCTaxiData.Application.Common.Plumbing;
@@ -13,7 +13,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
     {
         public async Task<Result<UserResultDto>> Handle(RegisterManagerCommand request, CancellationToken ct)
         {
-            // 1. ÇáÊÃßÏ ãä ÚÏã ÇáÊßÑÇÑ (ÎÇÑÌ ÇáÜ Transaction)
+            // 1. Ø§Ù„ØªØ£ÙƒØ¯ Ù…Ù† Ø¹Ø¯Ù… Ø§Ù„ØªÙƒØ±Ø§Ø± (Ø®Ø§Ø±Ø¬ Ø§Ù„Ù€ Transaction)
             if (await _uow.Users.AnyAsync(u => u.PhoneNumber == request.PhoneNumber))
                 return Result.Failure<UserResultDto>("Phone number already exists", "Conflict");
 
@@ -24,7 +24,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
             {
                 var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-                // 2. ÅäÔÇÁ ÇáíæÒÑ "ÈÏæä" æÖÚ ID íÏæíÇð
+                // 2. Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„ÙŠÙˆØ²Ø± "Ø¨Ø¯ÙˆÙ†" ÙˆØ¶Ø¹ ID ÙŠØ¯ÙˆÙŠØ§Ù‹
                 var user = new User1
                 {
                     FirstName = request.FirstName,
@@ -44,7 +44,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
                 await _uow.SaveChangesAsync(transactionToken);
                  
                 var fullName = $"{user.FirstName} {user.LastName}";
-                var token = _jwt.GenerateToken(user.PhoneNumber, "Manager", fullName);
+                var token = _jwt.GenerateToken(user.Id, user.PhoneNumber, "Manager", fullName);
 
                 return Result.Success(new UserResultDto
                 {
