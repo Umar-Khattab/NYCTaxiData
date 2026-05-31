@@ -32,7 +32,11 @@ public class OptimizeProfitMaximizationCommandHandler : IRequestHandler<Optimize
     {
         try
         {
-            var result = await _aiPredictionService.MaximizeProfitAsync(request.ZoneStates, cancellationToken);
+            var result = await _aiPredictionService.MaximizeProfitAsync(
+                request.TargetDateTime,
+                request.CurrentZone,
+                request.ZoneStates,
+                cancellationToken);
             return Result<ProfitMaximizationResult>.Success(result, "Profit maximization plan optimized successfully");
         }
         catch (System.Net.Http.HttpRequestException ex)

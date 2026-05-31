@@ -66,5 +66,5 @@ public interface IAiPredictionService
     /// Optimizes vehicle repositioning to maximize profit in the next 6 hours.
     /// </summary>
     Task<ProfitMaximizationResult> MaximizeProfitAsync(
-        List<ProfitMaximizationInput> zones, CancellationToken ct = default);
+        string targetDateTime, int currentZone, List<ProfitMaximizationInput> zones, CancellationToken ct = default);
 }

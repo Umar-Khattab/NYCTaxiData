@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -118,11 +119,9 @@ public class AiPredictionService : IAiPredictionService
     public async Task<List<RevenueResult>> PredictRevenueAsync(
         List<RevenueInput> zones, CancellationToken ct = default)
     {
-        var stopwatch = Stopwatch.StartNew();
-        var response = await _httpClient.PostAsJsonAsync("/predict/revenue", new { zones }, ct);
+        var response = await _httpClient.PostAsJsonAsync("/predict/revenue", new { rows = zones }, ct);
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<List<RevenueResult>>(_jsonOptions, ct);
-        stopwatch.Stop();
         return result ?? new List<RevenueResult>();
     }
 
@@ -130,11 +129,9 @@ public class AiPredictionService : IAiPredictionService
     public async Task<List<StockOutResult>> PredictStockOutAsync(
         List<StockOutInput> zones, CancellationToken ct = default)
     {
-        var stopwatch = Stopwatch.StartNew();
-        var response = await _httpClient.PostAsJsonAsync("/predict/stockout", new { zones }, ct);
+        var response = await _httpClient.PostAsJsonAsync("/predict/stockout", new { rows = zones }, ct);
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<List<StockOutResult>>(_jsonOptions, ct);
-        stopwatch.Stop();
         return result ?? new List<StockOutResult>();
     }
 
@@ -162,9 +159,14 @@ public class AiPredictionService : IAiPredictionService
 
     /// <inheritdoc />
     public async Task<ProfitMaximizationResult> MaximizeProfitAsync(
-        List<ProfitMaximizationInput> zones, CancellationToken ct = default)
+        string targetDateTime, int currentZone, List<ProfitMaximizationInput> zones, CancellationToken ct = default)
     {
-        var response = await _httpClient.PostAsJsonAsync("/optimize/profit_maximization", new { zones }, ct);
+        var response = await _httpClient.PostAsJsonAsync("/decision/profit_plan_6h", new
+        {
+            target_datetime = targetDateTime,
+            current_zone = currentZone,
+            zones
+        }, ct);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -177,3 +179,5 @@ public class AiPredictionService : IAiPredictionService
         return result ?? throw new InvalidOperationException("ML service returned no profit maximization plan.");
     }
 }
+
+

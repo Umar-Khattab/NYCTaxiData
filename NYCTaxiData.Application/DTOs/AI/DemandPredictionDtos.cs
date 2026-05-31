@@ -31,10 +31,10 @@ public record Demand15MinInput(
 /// Result of a 15-minute demand prediction for a single zone.
 /// </summary>
 public record Demand15MinResult(
-    [property: JsonPropertyName("zone_id")] int ZoneId,
-    [property: JsonPropertyName("predicted_demand")] double PredictedDemand,
-    [property: JsonPropertyName("lower_bound")] double LowerBound,
-    [property: JsonPropertyName("upper_bound")] double UpperBound
+    [property: JsonPropertyName("PULocationID")] int ZoneId,
+    [property: JsonPropertyName("Predicted_Demand_15min")] double PredictedDemand,
+    [property: JsonPropertyName("lower_bound")] double? LowerBound = null,
+    [property: JsonPropertyName("upper_bound")] double? UpperBound = null
 );
 
 /// <summary>
@@ -61,10 +61,10 @@ public record Demand6hInput(
 /// Result of a 6-hour demand prediction for a single zone.
 /// </summary>
 public record Demand6hResult(
-    [property: JsonPropertyName("zone_id")] int ZoneId,
-    [property: JsonPropertyName("predicted_demand")] double PredictedDemand,
-    [property: JsonPropertyName("confidence_interval_lower")] double ConfidenceIntervalLower,
-    [property: JsonPropertyName("confidence_interval_upper")] double ConfidenceIntervalUpper
+    [property: JsonPropertyName("PULocationID")] int ZoneId,
+    [property: JsonPropertyName("Predicted_Demand_6h")] double PredictedDemand,
+    [property: JsonPropertyName("confidence_interval_lower")] double? ConfidenceIntervalLower = null,
+    [property: JsonPropertyName("confidence_interval_upper")] double? ConfidenceIntervalUpper = null
 );
 
 /// <summary>
@@ -139,9 +139,9 @@ public record RevenueInput(
 /// Result of a revenue prediction for a single zone.
 /// </summary>
 public record RevenueResult(
-    [property: JsonPropertyName("zone_id")] int ZoneId,
-    [property: JsonPropertyName("p50")] double P50,
-    [property: JsonPropertyName("p90")] double P90
+    [property: JsonPropertyName("PULocationID")] int ZoneId,
+    [property: JsonPropertyName("Predicted_Revenue_P50")] double P50,
+    [property: JsonPropertyName("Predicted_Revenue_P90")] double P90
 );
 
 /// <summary>
@@ -172,7 +172,7 @@ public record StockOutInput(
 /// </summary>
 public record StockOutResult(
     [property: JsonPropertyName("zone_id")] int ZoneId,
-    [property: JsonPropertyName("probability")] double Probability
+    [property: JsonPropertyName("Probability_of_StockOut")] double Probability
 )
 {
     /// <summary>
