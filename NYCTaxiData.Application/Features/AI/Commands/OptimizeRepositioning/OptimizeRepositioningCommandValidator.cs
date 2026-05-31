@@ -23,7 +23,7 @@ public class OptimizeRepositioningCommandValidator : AbstractValidator<OptimizeR
         });
 
         RuleFor(x => x.TimeWindow)
-            .GreaterThan(DateTime.Now.AddMinutes(-1))
-            .WithMessage("Time window must be in the future");
+    .GreaterThan(DateTime.UtcNow) // ده اللي بيسبب الخطأ لو التاريخ قديم
+    .WithMessage("Time window must be in the future");
     }
 }

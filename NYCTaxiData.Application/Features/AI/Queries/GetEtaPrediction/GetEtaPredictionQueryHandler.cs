@@ -32,10 +32,16 @@ public class GetEtaPredictionQueryHandler : IRequestHandler<GetEtaPredictionQuer
             var result = await _aiPredictionService.PredictETAAsync(features, cancellationToken);
             return Result<List<ETAResult>>.Success(result, "ETA prediction generated successfully");
         }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Failed to connect to ML service for ETA prediction");
-            throw new ConflictException("ML prediction service is currently unavailable. Please try again later.");
+        catch (Exception ex)
+        { 
+            if (ex is HttpRequestException httpEx && httpEx.StatusCode == System.Net.HttpStatusCode.UnprocessableEntity)
+            {
+                _logger.LogError("ML Service returned 422. Details: {Message}", httpEx.Message);
+                throw new Exception($"ML Error 422: {httpEx.Message}");
+            }
+             
+            _logger.LogError(ex, "An error occurred during ETA prediction");
+            throw;
         }
     }
 }

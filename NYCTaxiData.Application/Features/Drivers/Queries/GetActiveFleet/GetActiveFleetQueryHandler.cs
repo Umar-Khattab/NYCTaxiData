@@ -21,10 +21,11 @@ public sealed class GetActiveFleetQueryHandler
     public async Task<Result<PaginatedList<ActiveFleetDriverDto>>> Handle(GetActiveFleetQuery request, CancellationToken cancellationToken)
     {
         var (items, totalCount) = await _unitOfWork.Drivers.GetPagedAsync(
-            pageNumber: request.PageNumber,
-            pageSize: request.PageSize,
-            predicate: d => d.Status != CurrentStatus.Offline,
-            orderBy: query => query.OrderBy(d => d.FullName));
+    pageNumber: request.PageNumber,
+    pageSize: request.PageSize,
+    predicate: d => d.Status != CurrentStatus.Offline,
+    orderBy: query => query.OrderBy(d => d.FullName),
+    d => d.User);
 
         var mappedItems = _mapper.Map<IReadOnlyList<ActiveFleetDriverDto>>(items.ToList());
 

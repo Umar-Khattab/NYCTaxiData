@@ -1,16 +1,21 @@
 using AutoMapper;
 using MediatR;
 using NYCTaxiData.Application.Common;
+using NYCTaxiData.Application.DTOs.Identity; // 🚀 للتوافق مع الـ DriverListDto
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
 using NYCTaxiData.Infrastructure;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverList;
 
 public sealed class GetDriverListQueryHandler
-    : IRequestHandler<GetDriverListQuery, Result<PaginatedList<DriverDto>>>
+    : IRequestHandler<GetDriverListQuery, Result<PaginatedList<DriverListDto>>> // 👈 حدثنا الـ Interface هنا
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -21,17 +26,15 @@ public sealed class GetDriverListQueryHandler
         _mapper = mapper;
     }
 
-    public async Task<Result<PaginatedList<DriverDto>>> Handle(GetDriverListQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedList<DriverListDto>>> Handle(GetDriverListQuery request, CancellationToken cancellationToken) // 👈 حدثنا الـ Return هنا
     {
         CurrentStatus? parsedStatus = null;
-
         if (!string.IsNullOrWhiteSpace(request.Status))
         {
             if (!Enum.TryParse<CurrentStatus>(request.Status, true, out var status))
             {
-                return Result<PaginatedList<DriverDto>>.Failure("Invalid status filter.");
+                return Result<PaginatedList<DriverListDto>>.Failure("Invalid status filter.");
             }
-
             parsedStatus = status;
         }
 
@@ -42,20 +45,23 @@ public sealed class GetDriverListQueryHandler
                     (t.PickupLocation != null && t.PickupLocation.ZoneId == request.ZoneId.Value)
                     || (t.DropoffLocation != null && t.DropoffLocation.ZoneId == request.ZoneId.Value)));
 
+        // في الـ Handler:
         var (items, totalCount) = await _unitOfWork.Drivers.GetPagedAsync(
             pageNumber: request.PageNumber,
             pageSize: request.PageSize,
             predicate: predicate,
-            orderBy: query => query.OrderBy(d => d.FullName));
+            orderBy: query => query.OrderBy(d => d.FullName),
+            d => d.User); // 👈 الـ Include اللي هيحل مشكلة الـ Unknown
 
-        var mappedItems = _mapper.Map<IReadOnlyList<DriverDto>>(items.ToList());
+        // 🚀 التعديل الذهبي بتاعك شغال الحين 100% وهيقرأ الـ Profile المتقفل صخر
+        var mappedItems = _mapper.Map<IReadOnlyList<DriverListDto>>(items.ToList());
 
-        var result = new PaginatedList<DriverDto>(
+        var result = new PaginatedList<DriverListDto>(
             mappedItems,
             totalCount,
             request.PageNumber,
             request.PageSize);
 
-        return Result<PaginatedList<DriverDto>>.Success(result, "Driver list retrieved successfully");
+        return Result<PaginatedList<DriverListDto>>.Success(result, "Driver list retrieved successfully");
     }
 }

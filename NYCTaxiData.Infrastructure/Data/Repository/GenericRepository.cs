@@ -172,7 +172,37 @@ namespace NYCTaxiData.Infrastructure.Data.Repository
             query = includes.Aggregate(query, (current, include) => current.Include(include));
             return await query.ToListAsync();
         }
+        // داخل IGenericRepository.cs
+        public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+    int pageNumber = 1,
+    int pageSize = 10,
+    Expression<Func<T, bool>>? predicate = null,
+    Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+    params Expression<Func<T, object>>[] includes) // إضافة البارامتر الخامس
+        {
+            IQueryable<T> query = _dbSet.AsNoTracking();
 
+            // دمج الـ Includes في الـ Query
+            if (includes != null)
+            {
+                query = includes.Aggregate(query, (current, include) => current.Include(include));
+            }
+
+            if (predicate != null)
+                query = query.Where(predicate);
+
+            var totalCount = await query.CountAsync();
+
+            if (orderBy != null)
+                query = orderBy(query);
+
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
         private IQueryable<T> ApplySpecification(ISpecification<T> spec)
         { 
             return SpecificationEvaluator<T>.GetQuery(_dbSet.AsQueryable(), spec);

@@ -8,6 +8,12 @@ namespace NYCTaxiData.Application.Common.Mappings
     {
         public TripProfile()
         {
+            // 🚀 التعديل العبقري: تأمين الـ TripStartResultDto عشان لو الـ Entity فيها Null والـ Handler ماليها، الـ AutoMapper ميعملش Overwrite بـ Null
+            CreateMap<Trip, TripStartResultDto>()
+                .ForMember(dest => dest.PickupLocationId, opt => opt.MapFrom(src => src.PickupLocationId))
+                .ForMember(dest => dest.DropoffLocationId, opt => opt.MapFrom(src => src.DropoffLocationId))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => "Ongoing"));
+
             CreateMap<Trip, TripDto>()
                 .ForMember(dest => dest.PickupZoneName, opt => opt.MapFrom(src =>
                     src.PickupLocation != null && src.PickupLocation.Zone != null

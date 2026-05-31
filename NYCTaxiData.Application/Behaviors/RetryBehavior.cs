@@ -1,174 +1,87 @@
-﻿using MediatR;
+﻿using System;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using MediatR;
 using Microsoft.Extensions.Logging;
+using Npgsql;  
 using NYCTaxiData.Application.Common.Exceptions;
 using Polly;
 using Polly.Retry;
 
 namespace NYCTaxiData.Application.Behaviors
 {
-    /// <summary>
-    /// MediatR pipeline behavior for implementing retry logic on transient failures.
-    /// Uses Polly library to automatically retry failed requests with exponential backoff.
-    /// </summary>
-    /// <typeparam name="TRequest">The type of the request.</typeparam>
-    /// <typeparam name="TResponse">The type of the response.</typeparam>
     internal class RetryBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
         private readonly ILogger<RetryBehavior<TRequest, TResponse>> _logger;
-
-        /// <summary>
-        /// Default number of retry attempts (3 retries = 4 total attempts).
-        /// </summary>
         private const int DefaultRetryCount = 3;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="RetryBehavior{TRequest, TResponse}"/> class.
-        /// </summary>
-        /// <param name="logger">The logger instance.</param>
         public RetryBehavior(ILogger<RetryBehavior<TRequest, TResponse>> logger)
         {
             _logger = logger;
         }
 
-        /// <summary>
-        /// Handles the request with retry policy for transient failures.
-        /// </summary>
-        /// <param name="request">The request.</param>
-        /// <param name="next">The next request handler.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The response.</returns>
         public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
         {
             var requestName = typeof(TRequest).Name;
             var retryCount = GetRetryCountForRequest(requestName);
 
-            // Create retry policy with exponential backoff
             var retryPolicy = Policy
                 .Handle<Exception>(IsTransientError)
-                .OrResult<TResponse>(r => false)  // Don't retry on successful result
-                .WaitAndRetryAsync<TResponse>(
+                .WaitAndRetryAsync(
                     retryCount: retryCount,
-                    sleepDurationProvider: retryAttempt =>
-                    {
-                        // Exponential backoff: 1s, 2s, 4s, 8s, etc.
-                        var delay = TimeSpan.FromSeconds(Math.Pow(2, retryAttempt - 1));
-                        return delay;
-                    },
+                    sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt - 1)),
                     onRetry: (outcome, timespan, retryNumber, context) =>
                     {
-                        _logger.LogWarning(
-                            "Request {RequestName} failed with exception {ExceptionType}: {Message}. Retrying in {RetryDelay}ms (Attempt {RetryNumber}/{RetryCount})",
-                            requestName,
-                            outcome.Exception?.GetType().Name,
-                            outcome.Exception?.Message,
-                            (long)timespan.TotalMilliseconds,
-                            retryNumber,
-                            retryCount);
+                        _logger.LogWarning("Retrying {RequestName}... Attempt {RetryNumber}/{RetryCount}. Error: {Message}",
+                            requestName, retryNumber, retryCount, outcome.Message);
                     });
 
-            _logger.LogDebug(
-                "Request {RequestName} will be executed with retry policy (max {RetryCount} retries)",
-                requestName,
-                retryCount);
-
-            try
-            {
-                var response = await retryPolicy.ExecuteAsync(async ct => await next(), cancellationToken);
-                return response;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Request {RequestName} failed after {RetryCount} retries. Final error: {ErrorMessage}",
-                    requestName,
-                    retryCount,
-                    ex.Message);
-
-                throw;
-            }
+            return await retryPolicy.ExecuteAsync(async (ct) => await next(), cancellationToken);
         }
 
-        /// <summary>
-        /// Determines if an exception is transient and should trigger a retry.
-        /// Transient errors include database connection issues, network timeouts, etc.
-        /// </summary>
-        /// <param name="exception">The exception to check.</param>
-        /// <returns>True if the exception is transient; otherwise, false.</returns>
         private bool IsTransientError(Exception exception)
         {
-            // Don't retry on validation or authorization errors
-            if (exception is ValidationException || exception is UnauthorizedException)
-                return false;
+            // 1. أخطاء الـ HTTP (التي تهمنا في الـ ML Service)
+            if (exception is HttpRequestException httpEx)
+            {
+                // لو الرد 422 أو أي 4xx، مستحيل نعيد المحاولة لأن المشكلة في الـ Request نفسه
+                if (httpEx.StatusCode.HasValue &&
+                    (int)httpEx.StatusCode >= 400 &&
+                    (int)httpEx.StatusCode < 500)
+                {
+                    return false;
+                }
 
-            // Don't retry on operation cancelled
-            if (exception is OperationCanceledException)
-                return false;
+                // أعد المحاولة فقط لو الخطأ 5xx (Server Error) أو مشكلة اتصال
+                return true;
+            }
 
-            // Retry on database connection errors
-            if (exception.Message.Contains("connection", StringComparison.OrdinalIgnoreCase) ||
-                exception.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
-                exception.Message.Contains("temporarily unavailable", StringComparison.OrdinalIgnoreCase))
+            // 2. أخطاء الاتصال وقاعدة البيانات (Npgsql)
+            if (exception is NpgsqlException ||
+                exception is IOException ||
+                exception is TimeoutException)
             {
                 return true;
             }
 
-            // Retry on SQL-specific errors
-            if (exception.InnerException?.GetType().Name.Contains("SqlException") == true ||
-                exception.InnerException?.GetType().Name.Contains("NpgsqlException") == true)
-            {
-                return true;
-            }
-
-            // Retry on HTTP request exceptions (network issues)
-            if (exception.GetType().Name.Contains("HttpRequestException"))
-                return true;
-
-            // Retry on IO exceptions
-            if (exception is IOException or TimeoutException)
-                return true;
-
-            // Don't retry on other exceptions (business logic errors)
+            // 3. أي استثناء آخر (بما فيه الـ TaskCanceledException) لا تعيد المحاولة فيه
             return false;
         }
 
-        /// <summary>
-        /// Gets the retry count for a specific request type.
-        /// Can be overridden to provide custom retry logic for specific requests.
-        /// </summary>
-        /// <param name="requestName">The name of the request.</param>
-        /// <returns>The number of retry attempts.</returns>
         private int GetRetryCountForRequest(string requestName)
         {
-            // Define custom retry counts for specific requests
             return requestName switch
             {
-                // Queries - can retry safely (idempotent)
                 "GetProfileQuery" => 3,
                 "GetActiveFleetQuery" => 3,
                 "GetAllZonesQuery" => 3,
-                "GetTopLevelKpisQuery" => 2,
                 "GetDemandForecastQuery" => 2,
-                "GetLiveDispatchFeedQuery" => 3,
-
-                // Database operations - retry on transient failures
                 "LoginCommand" => 2,
-                "RegisterCommand" => 2,
-                "UpdateSystemThresholdsCommand" => 2,
-                "UpdateDriverStatusCommand" => 2,
-                "SyncOfflineTripsCommand" => 3,
-
-                // External integrations - higher retry count
-                "SendOtpCommand" => 3,
-                "ProcessVoiceAssistantQuery" => 2,
-
-                // Long-running operations - lower retry count (already take time)
                 "RunOperationalSimulationCommand" => 1,
-                "RunStrategicSimulationCommand" => 1,
-                "TriggerModelRetrainingCommand" => 1,
-
-                // Default
                 _ => DefaultRetryCount
             };
         }

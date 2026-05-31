@@ -151,24 +151,25 @@ public sealed class SimulationFeatureLoader : ISimulationFeatureLoader
             record.WeatherCode);
 
         var etaInput = new ETAInput(
-            record.ZoneId,
-            record.ZoneId,
-            (decimal?)record.TempC,
-            (decimal?)record.RainMm,
-            record.WeatherCode,
-            2 + record.ZoneId % 4,
-            hour,
-            record.DayOfWeek,
-            month,
-            0,
-            record.IsWeekend,
-            hour is >= 7 and <= 10 || hour is >= 16 and <= 19,
-            new DateTime(simulatedTime.Year, simulatedTime.Month, simulatedTime.Day, hour, 0, 0, DateTimeKind.Utc),
-            "short",
-            600,
-            600,
-            1.1m,
-            600);
+        record.ZoneId,
+        record.ZoneId,
+        (decimal?)record.TempC,
+        (decimal?)record.RainMm,
+        record.WeatherCode,
+        2 + record.ZoneId % 4,
+        hour,
+        record.DayOfWeek,
+        month,
+        0,
+        record.IsWeekend ? 1 : 0, // تم التحويل إلى int
+        (hour is >= 7 and <= 10 || hour is >= 16 and <= 19) ? 1 : 0, // تم التحويل إلى int
+        new DateTime(simulatedTime.Year, simulatedTime.Month, simulatedTime.Day, hour, 0, 0, DateTimeKind.Utc),
+        "short",
+        600,
+        600,
+        1.1m,
+        600
+    );
 
         return new SimulationZoneFeatures
         {

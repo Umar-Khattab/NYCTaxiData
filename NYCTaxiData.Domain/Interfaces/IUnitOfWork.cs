@@ -21,8 +21,7 @@ namespace NYCTaxiData.Domain.Interfaces
         IGenericRepository<Zone> Zones { get; }
 
         IGenericRepository<Location> Locations { get; } 
-        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
-
+        Task<int> SaveChangesAsync(CancellationToken cancellationToken = default); 
         Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken cancellationToken = default);
     }
 }

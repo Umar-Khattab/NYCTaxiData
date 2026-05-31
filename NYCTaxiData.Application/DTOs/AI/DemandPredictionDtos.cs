@@ -2,6 +2,7 @@ using NYCTaxiData.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace NYCTaxiData.Application.DTOs.AI;
 
@@ -9,24 +10,23 @@ namespace NYCTaxiData.Application.DTOs.AI;
 /// Input features for 15-minute demand prediction per zone.
 /// </summary>
 public record Demand15MinInput(
-    [Range(1, 265)] int ZoneId,
-    [Range(0, 23)] int Hour,
-    [Range(0, 59)] int Minute,
-    [Range(0, 6)] int DayOfWeek,
-    [Range(1, 12)] int Month,
-    bool IsWeekend,
-    double Lag1,
-    double Lag4,
-    double Lag96,
-    double RollMean1h,
-    double RollMean3h,
-    double TempC,
-    [Range(0, double.MaxValue)] double RainMm,
-    bool IsRain,
-    int WeatherCode,
-    [Range(0, int.MaxValue)] int PickupCount
+    [property: JsonPropertyName("PULocationID")] int ZoneId,
+    [property: JsonPropertyName("hour")] int Hour,
+    [property: JsonPropertyName("minute")] int Minute,
+    [property: JsonPropertyName("day_of_week")] int DayOfWeek,
+    [property: JsonPropertyName("month")] int Month,
+    [property: JsonPropertyName("is_weekend")] bool IsWeekend,
+    [property: JsonPropertyName("lag_1")] double Lag1,
+    [property: JsonPropertyName("lag_4")] double Lag4,
+    [property: JsonPropertyName("lag_96")] double Lag96,
+    [property: JsonPropertyName("roll_mean_1h")] double RollMean1h,
+    [property: JsonPropertyName("roll_mean_3h")] double RollMean3h,
+    [property: JsonPropertyName("temp_c")] double TempC,
+    [property: JsonPropertyName("rain_mm")] double RainMm,
+    [property: JsonPropertyName("is_rain")] bool IsRain,
+    [property: JsonPropertyName("weather_code")] int WeatherCode,
+    [property: JsonPropertyName("pickup_cnt")] int PickupCount
 );
-
 /// <summary>
 /// Result of a 15-minute demand prediction for a single zone.
 /// </summary>
@@ -42,20 +42,20 @@ public record Demand15MinResult(
 /// Input features for 6-hour demand prediction per zone.
 /// </summary>
 public record Demand6hInput(
-    [Range(1, 265)] int ZoneId,
-    [Range(0, 23)] int PickupHour,
-    [Range(0, 6)] int DayOfWeek,
-    bool IsWeekend,
-    bool IsHoliday,
-    double Lag1_6h,
-    double Lag2_6h,
-    double Lag4_6h,
-    double RollingMean24h,
-    double TempC,
-    [Range(0, double.MaxValue)] double RainMm,
-    bool IsRain,
-    int WeatherCode,
-    [Range(0, int.MaxValue)] int PickupCount
+    [property: JsonPropertyName("PULocationID")] int ZoneId,
+    [property: JsonPropertyName("pickup_hour")] int PickupHour,
+    [property: JsonPropertyName("day_of_week")] int DayOfWeek,
+    [property: JsonPropertyName("is_weekend")] bool IsWeekend,
+    [property: JsonPropertyName("is_holiday")] bool IsHoliday,
+    [property: JsonPropertyName("lag_1_6h")] double Lag1_6h,
+    [property: JsonPropertyName("lag_2_6h")] double Lag2_6h,
+    [property: JsonPropertyName("lag_4_6h")] double Lag4_6h,
+    [property: JsonPropertyName("rolling_mean_24h")] double RollingMean24h,
+    [property: JsonPropertyName("temp_c")] double TempC,
+    [property: JsonPropertyName("rain_mm")] double RainMm,
+    [property: JsonPropertyName("is_rain")] bool IsRain,
+    [property: JsonPropertyName("weather_code")] int WeatherCode,
+    [property: JsonPropertyName("pickup_count")] int PickupCount
 );
 
 /// <summary>
@@ -73,70 +73,68 @@ public record Demand6hResult(
 /// Input features for ETA prediction between two zones.
 /// </summary>
 public record ETAInput(
-    [Range(1, 265)] int PickupZoneId,
-    [Range(1, 265)] int DropoffZoneId,
-    decimal? TempC,
-    decimal? RainMm,
-    int? WeatherCode,
-    decimal DistanceProxy,
-    int PUHour,
-    int PUDow,
-    int PUMonth,
-    int PUMinute,
-    bool IsWeekend,
-    bool IsRushHour,
-    DateTime PU15MinBucket,
-    string DistanceBucketLabel,
-    decimal DurationSec,
-    decimal OdHourMedianDuration,
-    decimal PUHourSlowdownIndex,
-    int DistMedianDuration
+    [property: JsonPropertyName("PULocationID")] int PickupZoneId,
+    [property: JsonPropertyName("DOLocationID")] int DropoffZoneId,
+    [property: JsonPropertyName("temp_c")] decimal? TempC,
+    [property: JsonPropertyName("rain_mm")] decimal? RainMm,
+    [property: JsonPropertyName("weather_code")] int? WeatherCode,
+    [property: JsonPropertyName("trip_distance")] decimal DistanceProxy, // تم التغيير من distance_proxy لـ trip_distance
+    [property: JsonPropertyName("pickup_hour")] int PUHour,
+    [property: JsonPropertyName("pickup_dow")] int PUDow,
+    [property: JsonPropertyName("pickup_month")] int PUMonth,
+    [property: JsonPropertyName("pickup_minute")] int PUMinute,
+    [property: JsonPropertyName("is_weekend")] int IsWeekend,
+    [property: JsonPropertyName("is_rush_hour")] int IsRushHour,
+    [property: JsonPropertyName("pickup_datetime")] DateTime PU15MinBucket, // تم التغيير من pickup_15min_bucket لـ pickup_datetime
+    [property: JsonPropertyName("distance_bucket_label")] string DistanceBucketLabel,
+    [property: JsonPropertyName("duration_sec")] decimal DurationSec,
+    [property: JsonPropertyName("od_hour_median_duration")] decimal OdHourMedianDuration,
+    [property: JsonPropertyName("pu_hour_slowdown_index")] decimal PUHourSlowdownIndex,
+    [property: JsonPropertyName("dist_median_duration")] int DistMedianDuration
 );
 
 /// <summary>
 /// Result of an ETA prediction for a zone pair.
 /// </summary>
+/// public record PredictionResponse(
+
 public record ETAResult(
-    int PickupZoneId,
-    int DropoffZoneId,
-    double P50Seconds,
-    double P90Seconds
+    [property: JsonPropertyName("pu_location_id")] int PickupZoneId,
+    [property: JsonPropertyName("do_location_id")] int DropoffZoneId,
+    [property: JsonPropertyName("p50_seconds")] double P50Seconds,
+    [property: JsonPropertyName("p90_seconds")] double P90Seconds
 )
 {
-    /// <summary>
-    /// Median ETA in minutes.
-    /// </summary>
-    public double P50Minutes => P50Seconds / 60;
 
-    /// <summary>
-    /// 90th percentile ETA in minutes.
-    /// </summary>
-    public double P90Minutes => P90Seconds / 60;
+    [JsonIgnore]
+    public double P50Minutes => P50Seconds / 60.0;
+
+    [JsonIgnore]
+    public double P90Minutes => P90Seconds / 60.0;
 }
-
 /// <summary>
 /// Input features for revenue prediction per zone.
-/// </summary>
+/// </summary> 
 public record RevenueInput(
-    [Range(1, 265)] int ZoneId,
-    [Range(0, 23)] int PickupHour,
-    [Range(0, 6)] int DayOfWeek,
-    bool IsWeekend,
-    int lag1_6h,
-    int lag2_6h,
-    int lag4_6h,
-    double RevLag1_6h,
-    double RevLag1Week,
-    double RevRollingMean7d,
-    double RevRollingMean30d,
-    decimal? RollingMean24h,
-    [Range(0, double.MaxValue)] double AvgFare,
-    [Range(0, 1)] double TipRate,
-    double? TempC,
-    [Range(0, double.MaxValue)] double? RainMm,
-    bool? IsRain,
-    int? WeatherCode,
-    bool? IsHoliday
+    [property: JsonPropertyName("PULocationID")] int ZoneId,
+    [property: JsonPropertyName("pickup_hour")] int PickupHour,
+    [property: JsonPropertyName("day_of_week")] int DayOfWeek,
+    [property: JsonPropertyName("is_weekend")] bool IsWeekend,
+    [property: JsonPropertyName("lag_1_6h")] int lag1_6h, // غير الحرف الأول لصغير
+    [property: JsonPropertyName("lag_2_6h")] int lag2_6h,
+    [property: JsonPropertyName("lag_4_6h")] int lag4_6h,
+    [property: JsonPropertyName("rev_lag_1_6h")] double RevLag1_6h,
+    [property: JsonPropertyName("rev_lag_1_week")] double RevLag1Week,
+    [property: JsonPropertyName("rev_rolling_mean_7d")] double RevRollingMean7d,
+    [property: JsonPropertyName("rev_rolling_mean_30d")] double RevRollingMean30d,
+    [property: JsonPropertyName("rolling_mean_24h")] decimal? RollingMean24h,
+    [property: JsonPropertyName("avg_fare")] double AvgFare,
+    [property: JsonPropertyName("tip_rate")] double TipRate,
+    [property: JsonPropertyName("temp_c")] double? TempC,
+    [property: JsonPropertyName("rain_mm")] double? RainMm,
+    [property: JsonPropertyName("is_rain")] bool? IsRain,
+    [property: JsonPropertyName("weather_code")] int? WeatherCode,
+    [property: JsonPropertyName("is_holiday")] bool? IsHoliday
 );
 
 /// <summary>
@@ -340,4 +338,14 @@ public record SimulationRecommendation(
     RecommendationType Type,
     string Summary,
     string DetailedReason
+);
+// أضف هذا الكلاس
+public record PredictionResponse(
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("predictions")] PredictionData Predictions
+);
+
+public record PredictionData(
+    [property: JsonPropertyName("median_eta_seconds")] double P50Seconds,
+    [property: JsonPropertyName("upper_bound_eta_seconds")] double P90Seconds
 );
