@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Npgsql;
 using NYCTaxiData.Application.Common.Exceptions;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.DTOs.AI;
@@ -17,17 +16,17 @@ namespace NYCTaxiData.Infrastructure.Services;
 /// <summary>
 /// Infrastructure service that queries <see cref="AiDbContext"/> to load engineered features.
 /// Uses No-Tracking queries for optimized, read-only database performance.
+/// Each method fetches all requested zones in a single DB round-trip.
 /// </summary>
 public class AiFeatureProvider : IAiFeatureProvider
 {
     private readonly AiDbContext _aiDbContext;
     private readonly ILogger<AiFeatureProvider> _logger;
 
-    // أضف ILogger<AiFeatureProvider> إلى معاملات الـ Constructor
     public AiFeatureProvider(AiDbContext aiDbContext, ILogger<AiFeatureProvider> logger)
     {
         _aiDbContext = aiDbContext;
-        _logger = logger; // الآن الـ _logger سيأخذ القيمة القادمة من الـ Constructor
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -38,22 +37,24 @@ public class AiFeatureProvider : IAiFeatureProvider
         var month = targetTime.Month;
         var hour = targetTime.Hour;
 
+        // Fetch all zones in one query instead of N round-trips
+        var features = await _aiDbContext.Demand15mins
+            .AsNoTracking()
+            .Where(d => zoneIds.Contains(d.PuLocationId!.Value)
+                     && d.Hour == hour
+                     && d.Minute == roundedMinute
+                     && d.DayOfWeek == dayOfWeek
+                     && d.Month == month)
+            .ToListAsync(ct);
+
         var results = new List<Demand15MinInput>();
 
         foreach (var zoneId in zoneIds)
         {
-            var feature = await _aiDbContext.Demand15mins
-                .AsNoTracking()
-                .FirstOrDefaultAsync(d => d.PuLocationId == zoneId 
-                                       && d.Hour == hour 
-                                       && d.Minute == roundedMinute 
-                                       && d.DayOfWeek == dayOfWeek 
-                                       && d.Month == month, ct);
+            var feature = features.FirstOrDefault(d => d.PuLocationId == zoneId);
 
             if (feature is null)
-            {
                 throw new NotFoundException($"Demand15Min historical feature vector not found in AI database for PU Zone {zoneId} at Rounded Time {hour:D2}:{roundedMinute:D2}.");
-            }
 
             results.Add(new Demand15MinInput(
                 feature.PuLocationId ?? zoneId,
@@ -72,38 +73,34 @@ public class AiFeatureProvider : IAiFeatureProvider
                 feature.IsRain == 1,
                 feature.WeatherCode ?? 0,
                 feature.PickupCnt ?? 0
-            )).ToList();
+            ));
         }
-        catch (Exception ex) when (ex is NpgsqlException || ex is DbUpdateException || ex is InvalidOperationException)
-        {
-            // تسجيل الخطأ (يفضل استخدام ILogger)
-            Console.WriteLine($"[Database Error] Could not fetch AI features: {ex.Message}");
 
-            // إرجاع قائمة فارغة لتجنب الـ Crash
-            return new List<Demand15MinInput>();
-        }
+        return results;
     }
 
     /// <inheritdoc />
     public async Task<List<Demand6hInput>> GetDemand6hFeaturesAsync(List<int> zoneIds, DateTime targetTime, CancellationToken ct = default)
-    { 
+    {
         var dayOfWeek = (int)targetTime.DayOfWeek;
         var hour = targetTime.Hour;
+
+        // Fetch all zones in one query instead of N round-trips
+        var features = await _aiDbContext.Demandfeatures
+            .AsNoTracking()
+            .Where(d => zoneIds.Contains(d.PuLocationId!.Value)
+                     && d.PickupHour == hour
+                     && d.DayOfWeek == dayOfWeek)
+            .ToListAsync(ct);
 
         var results = new List<Demand6hInput>();
 
         foreach (var zoneId in zoneIds)
         {
-            var feature = await _aiDbContext.Demandfeatures
-                .AsNoTracking()
-                .FirstOrDefaultAsync(d => d.PuLocationId == zoneId 
-                                       && d.PickupHour == hour 
-                                       && d.DayOfWeek == dayOfWeek, ct);
+            var feature = features.FirstOrDefault(d => d.PuLocationId == zoneId);
 
             if (feature is null)
-            {
                 throw new NotFoundException($"Demand6h historical feature vector not found in AI database for Zone {zoneId} at Hour {hour}.");
-            }
 
             results.Add(new Demand6hInput(
                 feature.PuLocationId ?? zoneId,
@@ -125,7 +122,6 @@ public class AiFeatureProvider : IAiFeatureProvider
 
         return results;
     }
-
 
     /// <inheritdoc />
     public async Task<List<ETAInput>> GetEtaFeaturesAsync(List<RouteRequest> routes, CancellationToken ct = default)
@@ -149,41 +145,32 @@ public class AiFeatureProvider : IAiFeatureProvider
 
             if (feature is null)
             {
-                results.Add(new ETAInput(
-                    route.PickupZoneId,
-                    route.DropoffZoneId,
-                    20, 0, 0, 10, pickupHour, pickupDow, pickupMonth, pickupMinute,
-                    0, 0, // بدلاً من false، ضع 0 لأن الـ Constructor يتوقع int
-                    route.TargetTime, "default", 300, 300, 1, 300
-                ));
+                throw new NotFoundException($"ETA historical feature vector not found in AI database for pickup Zone {route.PickupZoneId} to dropoff Zone {route.DropoffZoneId} at Rounded Time {pickupHour:D2}:{pickupMinute:D2}.");
             }
-            else
-            {
-                // في جزء الـ else:
-                results.Add(new ETAInput(
-                    feature.PuLocationId ?? 0,
-                    feature.DoLocationId ?? 0,
-                    feature.TempC ?? 0m,
-                    feature.RainMm ?? 0m,
-                    feature.WeatherCode ?? 0,
-                    (decimal)(feature.DistanceProxy ?? 0),
-                    feature.PickupHour ?? 0,
-                    feature.PickupDow ?? 0,
-                    feature.PickupMonth ?? 0,
-                    feature.PickupMinute ?? 0,
-                    (feature.IsWeekend == 1 ? 1 : 0), // تحويل من bool إلى int
-                    (feature.IsRushHour == 1 ? 1 : 0), // تحويل من bool إلى int
-                    route.TargetTime,
-                    feature.DistanceBucketLabel ?? "unknown",
-                    feature.DurationSec ?? 0m,
-                    feature.OdHourMedianDuration ?? 0m,
-                    feature.PuHourSlowdownIndex ?? 0m,
-                    feature.DistMedianDuration ?? 0 
-                ));
-            }
+
+            results.Add(new ETAInput(
+                feature.PuLocationId ?? route.PickupZoneId,
+                feature.DoLocationId ?? route.DropoffZoneId,
+                feature.TempC,
+                feature.RainMm,
+                feature.WeatherCode,
+                feature.DistanceProxy ?? 0m,
+                feature.PickupHour ?? pickupHour,
+                feature.PickupDow ?? pickupDow,
+                feature.PickupMonth ?? pickupMonth,
+                feature.PickupMinute ?? pickupMinute,
+                feature.IsWeekend ?? 0,
+                feature.IsRushHour ?? 0,
+                feature.Pickup15minBucket ?? route.TargetTime,
+                feature.DistanceBucketLabel ?? "short",
+                feature.DurationSec ?? 0m,
+                feature.OdHourMedianDuration ?? 0m,
+                feature.PuHourSlowdownIndex ?? 0m,
+                feature.DistMedianDuration ?? 0
+            ));
         }
 
-        return results;  
+        return results;
     }
 
     /// <inheritdoc />
@@ -192,63 +179,71 @@ public class AiFeatureProvider : IAiFeatureProvider
         var dayOfWeek = (int)targetTime.DayOfWeek;
         var hour = targetTime.Hour;
 
+        // Fetch all zones in one query instead of N round-trips
+        var features = await _aiDbContext.Revenuefeatures
+            .AsNoTracking()
+            .Where(r => zoneIds.Contains(r.PuLocationId!.Value)
+                     && r.PickupHour == hour
+                     && r.DayOfWeek == dayOfWeek)
+            .ToListAsync(ct);
+
         var results = new List<RevenueInput>();
 
-        // 2. معالجة المناطق الموجودة فقط
         foreach (var zoneId in zoneIds)
         {
             var feature = features.FirstOrDefault(r => r.PuLocationId == zoneId);
 
             if (feature is null)
-            {
                 throw new NotFoundException($"Revenue historical feature vector not found in AI database for Zone {zoneId} at Hour {hour}.");
-            }
 
             results.Add(new RevenueInput(
-    ZoneId: feature.PuLocationId ?? zoneId,
-    PickupHour: feature.PickupHour ?? hour,
-    DayOfWeek: feature.DayOfWeek ?? dayOfWeek,
-    IsWeekend: feature.IsWeekend == 1,
-    lag1_6h: (int)(feature.Lag16h ?? 0),
-    lag2_6h: (int)(feature.Lag26h ?? 0),
-    lag4_6h: (int)(feature.Lag46h ?? 0),
-    RevLag1_6h: (double)(feature.RevLag16h ?? 0),
-    RevLag1Week: (double)(feature.RevLag1Week ?? 0),
-    RevRollingMean7d: (double)(feature.RevRollingMean7d ?? 0),
-    RevRollingMean30d: (double)(feature.RevRollingMean30d ?? 0),
-    RollingMean24h: (decimal?)feature.RollingMean24h,
-    AvgFare: (double)(feature.AvgFare ?? 0),
-    TipRate: (double)(feature.TipRate ?? 0),
-    TempC: (double?)feature.TempC,
-    RainMm: (double?)feature.RainMm,
-    IsRain: (feature.IsRain == 1),
-    WeatherCode: feature.WeatherCode,
-    IsHoliday: (feature.IsHoliday == 1)
-));
+                feature.PuLocationId ?? zoneId,
+                feature.PickupHour ?? hour,
+                feature.DayOfWeek ?? dayOfWeek,
+                feature.IsWeekend == 1,
+                (int)(feature.Lag16h ?? 0),
+                (int)(feature.Lag26h ?? 0),
+                (int)(feature.Lag46h ?? 0),
+                (double)(feature.RevLag16h ?? 0),
+                (double)(feature.RevLag1Week ?? 0),
+                (double)(feature.RevRollingMean7d ?? 0),
+                (double)(feature.RevRollingMean30d ?? 0),
+                feature.RollingMean24h,
+                (double)(feature.AvgFare ?? 0),
+                (double)(feature.TipRate ?? 0),
+                (double?)feature.TempC,
+                (double?)feature.RainMm,
+                feature.IsRain == 1,
+                feature.WeatherCode,
+                feature.IsHoliday == 1
+            ));
         }
 
         return results;
     }
+
     /// <inheritdoc />
     public async Task<List<StockOutInput>> GetStockOutFeaturesAsync(List<int> zoneIds, DateTime targetTime, CancellationToken ct = default)
     {
         var dayOfWeek = (int)targetTime.DayOfWeek;
         var hour = targetTime.Hour;
 
+        // Fetch all zones in one query instead of N round-trips
+        var features = await _aiDbContext.Stockoutfeatures
+            .AsNoTracking()
+            .Where(s => zoneIds.Contains(s.ZoneId!.Value)
+                     && s.Hour == hour
+                     && s.DayOfWeek == dayOfWeek)
+            .ToListAsync(ct);
+
         var results = new List<StockOutInput>();
 
         foreach (var zoneId in zoneIds)
         {
-            var feature = await _aiDbContext.Stockoutfeatures
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.ZoneId == zoneId 
-                                       && s.Hour == hour 
-                                       && s.DayOfWeek == dayOfWeek, ct);
+            var feature = features.FirstOrDefault(s => s.ZoneId == zoneId);
 
             if (feature is null)
-            {
                 throw new NotFoundException($"Stockout historical feature vector not found in AI database for Zone {zoneId} at Hour {hour}.");
-            }
 
             results.Add(new StockOutInput(
                 feature.ZoneId ?? zoneId,
@@ -270,6 +265,7 @@ public class AiFeatureProvider : IAiFeatureProvider
                 feature.WeatherCode ?? 0
             ));
         }
+
         return results;
     }
 }
