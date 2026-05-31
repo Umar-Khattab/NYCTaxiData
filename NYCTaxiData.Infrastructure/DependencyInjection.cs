@@ -59,6 +59,7 @@ namespace NYCTaxiData.Infrastructure
             services.AddScoped<IIdempotencyService, IdempotencyService>();
 
             // 4. خدمات الـ AI والـ Simulation
+            services.AddTransient<HostFailoverDelegatingHandler>();
             services.AddScoped<IAiPredictionService, AiPredictionService>();
             services.AddScoped<IDailyAggregationService, DailyAggregationService>();
             services.AddScoped<AiFeatureProvider>();
@@ -83,6 +84,7 @@ namespace NYCTaxiData.Infrastructure
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.AcceptEncoding.Add(new System.Net.Http.Headers.StringWithQualityHeaderValue("gzip"));
         })
+        .AddHttpMessageHandler<HostFailoverDelegatingHandler>()
         .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
         {
             AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
