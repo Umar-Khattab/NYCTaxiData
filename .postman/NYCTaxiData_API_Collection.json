@@ -828,7 +828,7 @@
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "v1", "trips", "statistics", "zones"]
                 },
-                "description": "Returns per-zone trip statistics aggregated across all zones.\n\nQuery: GetZoneStatisticsQuery()"
+                "description": "Returns per-zone trip statistics aggregated across all zones with separate calculated and predicted fields.\n\nQuery: GetZoneStatisticsQuery()\nReturns: Result<List<ZoneStatisticsDto>> { zoneId, zoneName, borough, calculated: { totalPickupTrips, totalDropoffTrips, totalRevenue, avgFare, avgTip, busiestHourOfDay, busiestDayOfWeek }, predicted: { expectedDemand15Min, expectedDemand6H, expectedRevenue6H, stockoutProbability, busiestHourForecast } }"
               },
               "response": []
             },
@@ -847,7 +847,7 @@
                   "host": ["{{baseUrl}}"],
                   "path": ["api", "v1", "trips", "statistics", "peak-hours"]
                 },
-                "description": "Returns peak hour analysis for trip demand.\n\nQuery: GetPeakHoursQuery()"
+                "description": "Returns peak hour analysis for trip demand with separate calculated and predicted curves.\n\nQuery: GetPeakHoursQuery()\nReturns: Result<List<TripPeakHoursDto>> { hour, calculatedTripCount, calculatedTotalRevenue, predictedTripCount, predictedTotalRevenue, tripCount, totalRevenue }"
               },
               "response": []
             },
@@ -1159,7 +1159,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "zones", "statistics"]
             },
-            "description": "Returns overall statistics aggregated across all zones.\n\nQuery: GetZoneStatisticsQuery(null)"
+            "description": "Returns overall statistics aggregated across all zones.\n\nQuery: GetZoneStatisticsQuery(null)\nReturns: Result<ZoneStatisticsDto> { zoneId, zoneName, borough, calculated: { totalPickupTrips, totalDropoffTrips, totalRevenue, avgFare, avgTip, busiestHourOfDay, busiestDayOfWeek }, predicted: { expectedDemand15Min, expectedDemand6H, expectedRevenue6H, stockoutProbability, busiestHourForecast } }"
           },
           "response": []
         },
@@ -1211,7 +1211,7 @@
                 }
               ]
             },
-            "description": "Returns statistics for a specific zone.\n\nQuery: GetZoneStatisticsQuery(id)"
+            "description": "Returns statistics for a specific zone.\n\nQuery: GetZoneStatisticsQuery(id)\nReturns: Result<ZoneStatisticsDto> { zoneId, zoneName, borough, calculated: { totalPickupTrips, totalDropoffTrips, totalRevenue, avgFare, avgTip, busiestHourOfDay, busiestDayOfWeek }, predicted: { expectedDemand15Min, expectedDemand6H, expectedRevenue6H, stockoutProbability, busiestHourForecast } }"
           },
           "response": []
         },
@@ -1256,7 +1256,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "zones", "heatmap"]
             },
-            "description": "Returns geographic heatmap data for trip pickup/dropoff density across all zones.\n\nQuery: GetHeatmapDataQuery()"
+            "description": "Returns geographic heatmap data for trip pickup/dropoff density across all zones.\n\nQuery: GetHeatmapDataQuery()\nReturns: Result<List<HeatmapDataPointDto>> { zoneId, zoneName, borough, latitude, longitude, calculatedTripCount, predictedTripCount, predictedStockoutProbability, surgeMultiplier, demandLevel, tripCount }"
           },
           "response": []
         },
@@ -1290,7 +1290,7 @@
                 }
               ]
             },
-            "description": "Compares statistics across multiple zones. Send multiple zoneIds query parameters.\n\nQuery: CompareZonesQuery(zoneIds: List<int>)"
+            "description": "Compares statistics across multiple zones. Send multiple zoneIds query parameters.\n\nQuery: CompareZonesQuery(zoneIds: List<int>)\nReturns: Result<ZoneComparisonDto> { comparisonData: List<ZoneStatisticsDto>, highestRevenueZone, busiestZone }"
           },
           "response": []
         },
@@ -1316,7 +1316,7 @@
                 }
               ]
             },
-            "description": "Returns the top recommended zones for driver positioning based on demand.\n\nQuery: GetRecommendedZonesQuery(limit)"
+            "description": "Returns the top recommended zones for driver positioning based on demand.\n\nQuery: GetRecommendedZonesQuery(limit)\nReturns: Result<List<RecommendedZoneDto>> { zoneId, zoneName, borough, recommendationScore, demandSupplyRatio, predictedRevenueYield, reason, avgFare, avgTip }"
           },
           "response": []
         },
@@ -1409,7 +1409,7 @@
                 }
               ]
             },
-            "description": "Returns peak hours for a specific zone or all zones.\n\nQuery: GetPeakHoursQuery(zoneId)"
+            "description": "Returns peak hours for a specific zone or all zones.\n\nQuery: GetPeakHoursQuery(zoneId)\nReturns: Result<List<PeakHoursDto>> { hour, calculatedTripCount, calculatedTotalRevenue, calculatedAverageFare, predictedTripCount, predictedTotalRevenue, predictedAverageFare, tripCount, totalRevenue, averageFare }"
           },
           "response": []
         },
@@ -1454,7 +1454,7 @@
                 }
               ]
             },
-            "description": "Returns the top zones ranked by demand.\n\nQuery: GetTopDemandZonesQuery(limit)"
+            "description": "Returns the top zones ranked by demand.\n\nQuery: GetTopDemandZonesQuery(limit)\nReturns: Result<List<TopDemandZoneDto>> { zoneId, zoneName, borough, calculatedPickups, percentageOfTotalCalculated, predictedPickups, percentageOfTotalPredicted, pickupCount, percentageOfTotal }"
           },
           "response": []
         },
@@ -1480,7 +1480,7 @@
                 }
               ]
             },
-            "description": "Returns the top zones ranked by revenue generated.\n\nQuery: GetTopRevenueZonesQuery(limit)"
+            "description": "Returns the top zones ranked by revenue generated.\n\nQuery: GetTopRevenueZonesQuery(limit)\nReturns: Result<List<TopRevenueZoneDto>> { zoneId, zoneName, borough, calculatedRevenue, percentageOfTotalCalculated, predictedRevenue, percentageOfTotalPredicted, totalRevenue, percentageOfTotal }"
           },
           "response": []
         },
@@ -1506,7 +1506,7 @@
                 }
               ]
             },
-            "description": "Returns zones with the highest risk of driver stockout (supply shortage).\n\nQuery: GetHighStockoutZonesQuery(limit)"
+            "description": "Returns zones with the highest risk of driver stockout (supply shortage).\n\nQuery: GetHighStockoutZonesQuery(limit)\nReturns: Result<List<HighStockoutZoneDto>> { zoneId, zoneName, borough, calculatedPickupCount, calculatedAvailableDriversCount, calculatedDeficitCount, calculatedStockoutProbability, predictedPickupCount, predictedAvailableDriversCount, predictedDeficitCount, predictedStockoutProbability, pickupCount, availableDriversCount, deficitCount, stockoutProbability }"
           },
           "response": []
         }
