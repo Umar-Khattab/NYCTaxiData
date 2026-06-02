@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
@@ -12,11 +13,13 @@ namespace NYCTaxiData.Infrastructure.Services;
 /// Thread-safe Caching Decorator that wraps <see cref="IAiFeatureProvider"/>.
 /// Caches zone-specific historical features in-memory with a 6-hour sliding expiration,
 /// performing database fetches ONLY for missing cache records.
+/// Aligns incoming target times to the valid AI snapshot range using <see cref="IAiTemporalResolver"/>.
 /// </summary>
 public class CachingAiFeatureProvider : IAiFeatureProvider
 {
     private readonly IAiFeatureProvider _innerProvider;
     private readonly IMemoryCache _memoryCache;
+    private readonly IAiTemporalResolver _temporalResolver;
 
     /// <summary>Sliding expiration — resets on each access within the window.</summary>
     private static readonly TimeSpan SlidingExpiration = TimeSpan.FromHours(6);
@@ -28,17 +31,22 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
         .SetSlidingExpiration(SlidingExpiration)
         .SetAbsoluteExpiration(AbsoluteExpiration);
 
-    public CachingAiFeatureProvider(IAiFeatureProvider innerProvider, IMemoryCache memoryCache)
+    public CachingAiFeatureProvider(
+        IAiFeatureProvider innerProvider, 
+        IMemoryCache memoryCache,
+        IAiTemporalResolver temporalResolver)
     {
         _innerProvider = innerProvider;
         _memoryCache = memoryCache;
+        _temporalResolver = temporalResolver;
     }
 
     /// <inheritdoc />
     public async Task<List<Demand15MinInput>> GetDemand15MinFeaturesAsync(List<int> zoneIds, DateTime targetTime, CancellationToken ct = default)
     {
-        var roundedMinute = (targetTime.Minute / 15) * 15;
-        var timeKey = new DateTime(targetTime.Year, targetTime.Month, targetTime.Day, targetTime.Hour, roundedMinute, 0);
+        var alignedTime = _temporalResolver.ResolveTemporalContext(targetTime);
+        var roundedMinute = (alignedTime.Minute / 15) * 15;
+        var timeKey = new DateTime(alignedTime.Year, alignedTime.Month, alignedTime.Day, alignedTime.Hour, roundedMinute, 0);
 
         var results = new List<Demand15MinInput>();
         var missingZones = new List<int>();
@@ -58,7 +66,7 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
 
         if (missingZones.Count > 0)
         {
-            var loaded = await _innerProvider.GetDemand15MinFeaturesAsync(missingZones, targetTime, ct);
+            var loaded = await _innerProvider.GetDemand15MinFeaturesAsync(missingZones, alignedTime, ct);
             foreach (var item in loaded)
             {
                 var cacheKey = $"feat:demand15m:{item.ZoneId}:{timeKey:yyyyMMddHHmm}";
@@ -73,7 +81,8 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
     /// <inheritdoc />
     public async Task<List<Demand6hInput>> GetDemand6hFeaturesAsync(List<int> zoneIds, DateTime targetTime, CancellationToken ct = default)
     {
-        var timeKey = new DateTime(targetTime.Year, targetTime.Month, targetTime.Day, targetTime.Hour, 0, 0);
+        var alignedTime = _temporalResolver.ResolveTemporalContext(targetTime);
+        var timeKey = new DateTime(alignedTime.Year, alignedTime.Month, alignedTime.Day, alignedTime.Hour, 0, 0);
 
         var results = new List<Demand6hInput>();
         var missingZones = new List<int>();
@@ -93,7 +102,7 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
 
         if (missingZones.Count > 0)
         {
-            var loaded = await _innerProvider.GetDemand6hFeaturesAsync(missingZones, targetTime, ct);
+            var loaded = await _innerProvider.GetDemand6hFeaturesAsync(missingZones, alignedTime, ct);
             foreach (var item in loaded)
             {
                 var cacheKey = $"feat:demand6h:{item.ZoneId}:{timeKey:yyyyMMddHH}";
@@ -111,7 +120,15 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
         var results = new List<ETAInput>();
         var missingRoutes = new List<RouteRequest>();
 
+        // Align targetTime for all routes dynamically
+        var alignedRoutes = new List<RouteRequest>();
         foreach (var route in routes)
+        {
+            var alignedTime = _temporalResolver.ResolveTemporalContext(route.TargetTime);
+            alignedRoutes.Add(route with { TargetTime = alignedTime });
+        }
+
+        foreach (var route in alignedRoutes)
         {
             var roundedMinute = (route.TargetTime.Minute / 15) * 15;
             var timeKey = new DateTime(route.TargetTime.Year, route.TargetTime.Month, route.TargetTime.Day, route.TargetTime.Hour, roundedMinute, 0);
@@ -151,7 +168,8 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
     /// <inheritdoc />
     public async Task<List<RevenueInput>> GetRevenueFeaturesAsync(List<int> zoneIds, DateTime targetTime, CancellationToken ct = default)
     {
-        var timeKey = new DateTime(targetTime.Year, targetTime.Month, targetTime.Day, targetTime.Hour, 0, 0);
+        var alignedTime = _temporalResolver.ResolveTemporalContext(targetTime);
+        var timeKey = new DateTime(alignedTime.Year, alignedTime.Month, alignedTime.Day, alignedTime.Hour, 0, 0);
 
         var results = new List<RevenueInput>();
         var missingZones = new List<int>();
@@ -171,7 +189,7 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
 
         if (missingZones.Count > 0)
         {
-            var loaded = await _innerProvider.GetRevenueFeaturesAsync(missingZones, targetTime, ct);
+            var loaded = await _innerProvider.GetRevenueFeaturesAsync(missingZones, alignedTime, ct);
             foreach (var item in loaded)
             {
                 var cacheKey = $"feat:rev:{item.ZoneId}:{timeKey:yyyyMMddHH}";
@@ -186,7 +204,8 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
     /// <inheritdoc />
     public async Task<List<StockOutInput>> GetStockOutFeaturesAsync(List<int> zoneIds, DateTime targetTime, CancellationToken ct = default)
     {
-        var timeKey = new DateTime(targetTime.Year, targetTime.Month, targetTime.Day, targetTime.Hour, 0, 0);
+        var alignedTime = _temporalResolver.ResolveTemporalContext(targetTime);
+        var timeKey = new DateTime(alignedTime.Year, alignedTime.Month, alignedTime.Day, alignedTime.Hour, 0, 0);
 
         var results = new List<StockOutInput>();
         var missingZones = new List<int>();
@@ -206,7 +225,7 @@ public class CachingAiFeatureProvider : IAiFeatureProvider
 
         if (missingZones.Count > 0)
         {
-            var loaded = await _innerProvider.GetStockOutFeaturesAsync(missingZones, targetTime, ct);
+            var loaded = await _innerProvider.GetStockOutFeaturesAsync(missingZones, alignedTime, ct);
             foreach (var item in loaded)
             {
                 var cacheKey = $"feat:stock:{item.ZoneId}:{timeKey:yyyyMMddHH}";

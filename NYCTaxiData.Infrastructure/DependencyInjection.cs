@@ -60,13 +60,15 @@ namespace NYCTaxiData.Infrastructure
 
             // 4. خدمات الـ AI والـ Simulation
             services.AddTransient<HostFailoverDelegatingHandler>();
+            services.AddScoped<IAiTemporalResolver, AiTemporalResolver>();
             services.AddScoped<IAiPredictionService, AiPredictionService>();
             services.AddScoped<IDailyAggregationService, DailyAggregationService>();
             services.AddScoped<AiFeatureProvider>();
             services.AddScoped<IAiFeatureProvider>(sp =>
                 new CachingAiFeatureProvider(
                     sp.GetRequiredService<AiFeatureProvider>(),
-                    sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>()));
+                    sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>(),
+                    sp.GetRequiredService<IAiTemporalResolver>()));
 
             services.Configure<SimulationOptions>(configuration.GetSection("Simulation"));
             services.AddSingleton<ISimulationFeatureLoader, SimulationFeatureLoader>();
