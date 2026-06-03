@@ -77,10 +77,10 @@ graph TD
     Infrastructure[Infrastructure Layer: NYCTaxiData.Infrastructure] --> Application
     Application --> Domain[Core Domain Layer: NYCTaxiData.Domain]
 
-    style Domain fill:#f9f,stroke:#333,stroke-width:2px
-    style Application fill:#bbf,stroke:#333,stroke-width:2px
-    style Infrastructure fill:#dfd,stroke:#333,stroke-width:2px
-    style API fill:#ffd,stroke:#333,stroke-width:2px
+    style Domain fill:#f9f,stroke:#000000,stroke-width:2px
+    style Application fill:#bbf,stroke:#000000,stroke-width:2px
+    style Infrastructure fill:#dfd,stroke:#000000,stroke-width:2px
+    style API fill:#ffd,stroke:#000000,stroke-width:2px
 ```
 
 ### Layer Responsibilities
