@@ -1,7 +1,0 @@
-{
-  "$schema": "https://schema.railpack.com",
-  "provider": "dotnet",
-  "packages": {
-    "dotnet": "10"
-  }
-}
