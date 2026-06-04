@@ -56,13 +56,17 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
                     {
                         var zoneSnapshot = latestTick.Zones.FirstOrDefault(z => z.ZoneId == targetZoneId.Value);
                         var zoneName = "Simulated Zone " + targetZoneId.Value;
-                        var borough = "Manhattan";
+                        long? osmId = null;
+                        double? centerLat = null;
+                        double? centerLng = null;
 
                         var dbZone = await _unitOfWork.Zones.Query().AsNoTracking().FirstOrDefaultAsync(z => z.ZoneId == targetZoneId.Value, cancellationToken);
                         if (dbZone != null)
                         {
                             zoneName = dbZone.ZoneName;
-                            //borough = dbZone.Borough ?? "Unknown";
+                            osmId = dbZone.OsmId;
+                            centerLat = dbZone.CenterLat;
+                            centerLng = dbZone.CenterLong;
                         }
 
                         if (zoneSnapshot != null)
@@ -71,7 +75,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
                             {
                                 ZoneId = targetZoneId.Value,
                                 ZoneName = zoneName,
-                                Borough = borough,
+                                OsmId = osmId,
+                                CenterLatitude = centerLat,
+                                CenterLongitude = centerLng,
                                 Calculated = new ZoneCalculatedStats
                                 {
                                     TotalPickupTrips = (int)zoneSnapshot.Demand,
@@ -156,7 +162,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
             }
 
             string targetZoneName = "All Zones";
-            string targetBorough = "All Boroughs";
+            long? targetOsmId = null;
+            double? targetCenterLat = null;
+            double? targetCenterLng = null;
 
             if (targetZoneId.HasValue)
             {
@@ -165,7 +173,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
                     return Result<ZoneStatisticsDto>.Failure($"Zone with ID {targetZoneId.Value} not found", "NotFound");
 
                 targetZoneName = zone.ZoneName;
-              //  targetBorough = zone.Borough ?? "Unknown";
+                targetOsmId = zone.OsmId;
+                targetCenterLat = zone.CenterLat;
+                targetCenterLng = zone.CenterLong;
             }
 
             // 3. High-Speed Parallel Execution
@@ -218,7 +228,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
             {
                 ZoneId = targetZoneId ?? 0,
                 ZoneName = targetZoneName,
-                Borough = targetBorough,
+                OsmId = targetOsmId,
+                CenterLatitude = targetCenterLat,
+                CenterLongitude = targetCenterLng,
                 Calculated = new ZoneCalculatedStats
                 {
                     TotalPickupTrips = totalPickupTrips,

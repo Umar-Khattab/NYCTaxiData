@@ -49,8 +49,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetDriverDistribution
                 {
                     ZoneId = z.ZoneId,
                     ZoneName = z.ZoneName,
-                    CenterLat = z.CenterLat,
-                    CenterLong = z.CenterLong,
+                    CenterLatitude = z.CenterLat,
+                    CenterLongitude = z.CenterLong,
+                    OsmId = z.OsmId,
                     ActiveDriversCount = 0,
                     AvailableDriversCount = 0,
                     OnTripDriversCount = 0

@@ -64,12 +64,16 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopDemandZones
                     foreach (var zone in sortedSimZones)
                     {
                         var zoneName = "Simulated Zone " + zone.ZoneId;
-                        var borough = "Manhattan";
+                        long? osmId = null;
+                        double? centerLat = null;
+                        double? centerLong = null;
                         
                         if (simZoneDict.TryGetValue(zone.ZoneId, out var dbZone))
                         {
                             zoneName = dbZone.ZoneName;
-                            //borough = dbZone.Borough ?? "Unknown";
+                            osmId = dbZone.OsmId;
+                            centerLat = dbZone.CenterLat;
+                            centerLong = dbZone.CenterLong;
                         }
 
                         double calcPercentage = totalSimDemand > 0 ? (zone.Demand / totalSimDemand) * 100.0 : 0.0;
@@ -79,7 +83,10 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopDemandZones
                         {
                             ZoneId = zone.ZoneId,
                             ZoneName = zoneName,
-                            Borough = borough,
+                            Borough = "Obsolete",
+                            OsmId = osmId,
+                            CenterLatitude = centerLat,
+                            CenterLongitude = centerLong,
                             CalculatedPickups = (int)zone.Demand,
                             PercentageOfTotalCalculated = Math.Round(calcPercentage, 2),
                             PredictedPickups = Math.Round(predictedDemand, 2),
@@ -161,7 +168,10 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopDemandZones
                     {
                         ZoneId = zone.ZoneId,
                         ZoneName = zone.ZoneName,
-                        //Borough = zone.Borough ?? "Unknown",
+                        Borough = "Obsolete",
+                        OsmId = zone.OsmId,
+                        CenterLatitude = zone.CenterLat,
+                        CenterLongitude = zone.CenterLong,
                         CalculatedPickups = item.Count,
                         PercentageOfTotalCalculated = Math.Round(calcPercentage, 2),
                         PredictedPickups = Math.Round(predictedVal, 2),

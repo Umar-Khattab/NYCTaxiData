@@ -6,10 +6,16 @@ namespace NYCTaxiData.Application.DTOs.Zone
     {
         public int ZoneId { get; set; }
         public string ZoneName { get; set; } = string.Empty;
-        public double? CenterLat { get; set; }
-        public double? CenterLong { get; set; }
+        public double? CenterLatitude { get; set; }
+        public double? CenterLongitude { get; set; }
+        
+        [Obsolete("Latitude is obsolete; use CenterLatitude instead.")]
         public double Latitude { get; set; }
+
+        [Obsolete("Longitude is obsolete; use CenterLongitude instead.")]
         public double Longitude { get; set; }
+        
+        public long? OsmId { get; set; }
         
         // Calculated Density
         public int CalculatedTripCount { get; set; }

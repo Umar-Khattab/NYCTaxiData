@@ -59,13 +59,17 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                     foreach (var zone in sortedSimZones)
                     {
                         var zoneName = "Simulated Zone " + zone.ZoneId;
-                        var borough = "Manhattan";
+                        long? osmId = null;
+                        double? centerLat = null;
+                        double? centerLng = null;
 
                         var dbZone = await _unitOfWork.Zones.Query().AsNoTracking().FirstOrDefaultAsync(z => z.ZoneId == zone.ZoneId, cancellationToken);
                         if (dbZone != null)
                         {
-                            zoneName = dbZone.ZoneName;
-                            //borough = dbZone.Borough ?? "Unknown";
+                            zoneName = dbZone.ZoneName ?? zoneName;
+                            osmId = dbZone.OsmId;
+                            centerLat = dbZone.CenterLat;
+                            centerLng = dbZone.CenterLong;
                         }
 
                         double ratio = zone.DriverCount > 0 ? zone.Demand / zone.DriverCount : zone.Demand;
@@ -75,7 +79,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                         {
                             ZoneId = zone.ZoneId,
                             ZoneName = zoneName,
-                            Borough = borough,
+                            OsmId = osmId,
+                            CenterLatitude = centerLat,
+                            CenterLongitude = centerLng,
                             RecommendationScore = Math.Round((decimal)score, 2),
                             DemandSupplyRatio = Math.Round((decimal)ratio, 2),
                             PredictedRevenueYield = (decimal)Math.Round(zone.Revenue * 1.15, 2),
@@ -152,7 +158,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                         {
                             ZoneId = zone.ZoneId,
                             ZoneName = zone.ZoneName,
-                            //Borough = zone.Borough ?? "Unknown",
+                            OsmId = zone.OsmId,
+                            CenterLatitude = zone.CenterLat,
+                            CenterLongitude = zone.CenterLong,
                             RecommendationScore = Math.Round((decimal)score, 2),
                             DemandSupplyRatio = Math.Round((decimal)ratio, 2),
                             PredictedRevenueYield = Math.Round(revenueDict.GetValueOrDefault(zone.ZoneId, 0m) * 1.15m, 2),
@@ -189,7 +197,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                     {
                         ZoneId = z.ZoneId,
                         ZoneName = z.ZoneName,
-                     //   Borough = z.Borough ?? "Unknown",
+                        OsmId = z.OsmId,
+                        CenterLatitude = z.CenterLat,
+                        CenterLongitude = z.CenterLong,
                         RecommendationScore = finalScore,
                         DemandSupplyRatio = Math.Round((decimal)ratio, 2),
                         PredictedRevenueYield = Math.Round(revenue * 1.12m, 2),

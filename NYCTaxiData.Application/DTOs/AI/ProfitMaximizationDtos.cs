@@ -85,7 +85,13 @@ public record ProfitRepositionPlanItem(
     [property: JsonPropertyName("to_zone_id")] int ToZoneId,
     [property: JsonPropertyName("drivers_moved")] int DriversMoved,
     [property: JsonPropertyName("move_cost")] double MoveCost,
-    [property: JsonPropertyName("expected_profit")] double ExpectedProfit
+    [property: JsonPropertyName("expected_profit")] double ExpectedProfit,
+    long? FromOsmId = null,
+    double? FromCenterLatitude = null,
+    double? FromCenterLongitude = null,
+    long? ToOsmId = null,
+    double? ToCenterLatitude = null,
+    double? ToCenterLongitude = null
 );
 
 /// <summary>
@@ -96,7 +102,13 @@ public record ProfitRejectedMoveItem(
     [property: JsonPropertyName("to_zone_id")] int ToZoneId,
     [property: JsonPropertyName("expected_profit")] double ExpectedProfit,
     [property: JsonPropertyName("move_cost")] double MoveCost,
-    [property: JsonPropertyName("reason")] string Reason
+    [property: JsonPropertyName("reason")] string Reason,
+    long? FromOsmId = null,
+    double? FromCenterLatitude = null,
+    double? FromCenterLongitude = null,
+    long? ToOsmId = null,
+    double? ToCenterLatitude = null,
+    double? ToCenterLongitude = null
 );
 
 /// <summary>
@@ -123,5 +135,8 @@ public record ProfitZoneEvaluation(
     [property: JsonPropertyName("baseline_profit")] double BaselineProfit,
     [property: JsonPropertyName("source_candidate")] bool SourceCandidate,
     [property: JsonPropertyName("target_candidate")] bool TargetCandidate,
-    [property: JsonPropertyName("reason")] string Reason
+    [property: JsonPropertyName("reason")] string Reason,
+    long? OsmId = null,
+    double? CenterLatitude = null,
+    double? CenterLongitude = null
 );

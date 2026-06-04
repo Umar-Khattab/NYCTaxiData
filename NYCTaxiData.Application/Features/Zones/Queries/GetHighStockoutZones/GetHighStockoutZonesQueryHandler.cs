@@ -60,12 +60,16 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHighStockoutZones
                     foreach (var zone in sortedSimZones)
                     {
                         var zoneName = "Simulated Zone " + zone.ZoneId;
-                        var borough = "Manhattan";
+                        long? osmId = null;
+                        double? centerLat = null;
+                        double? centerLng = null;
 
                         if (zoneDict.TryGetValue(zone.ZoneId, out var dbZone))
                         {
-                            zoneName = dbZone.ZoneName;
-                            //borough = dbZone.Borough ?? "Unknown";
+                            zoneName = dbZone.ZoneName ?? zoneName;
+                            osmId = dbZone.OsmId;
+                            centerLat = dbZone.CenterLat;
+                            centerLng = dbZone.CenterLong;
                         }
 
                         int deficit = Math.Max(0, (int)zone.Demand - zone.DriverCount);
@@ -74,7 +78,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHighStockoutZones
                         {
                             ZoneId = zone.ZoneId,
                             ZoneName = zoneName,
-                            Borough = borough,
+                            OsmId = osmId,
+                            CenterLatitude = centerLat,
+                            CenterLongitude = centerLng,
                             CalculatedDeficit = deficit,
                             CalculatedStockoutProbability = Math.Round(zone.StockoutRisk, 4),
                             PredictedDeficit = deficit,
@@ -188,7 +194,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHighStockoutZones
                 {
                     ZoneId = zone.ZoneId,
                     ZoneName = zone.ZoneName,
-                    //Borough = zone.Borough ?? "Unknown",
+                    OsmId = zone.OsmId,
+                    CenterLatitude = zone.CenterLat,
+                    CenterLongitude = zone.CenterLong,
                     CalculatedDeficit = calcDeficit,
                     CalculatedStockoutProbability = Math.Round(calcProb, 4),
                     PredictedDeficit = predDeficit,

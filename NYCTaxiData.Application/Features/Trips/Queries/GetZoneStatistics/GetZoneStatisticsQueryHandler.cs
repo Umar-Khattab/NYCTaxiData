@@ -54,12 +54,16 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics
                     foreach (var zone in latestTick.Zones)
                     {
                         var zoneName = "Simulated Zone " + zone.ZoneId;
-                        var borough = "Manhattan";
+                        long? osmId = null;
+                        double? centerLat = null;
+                        double? centerLng = null;
 
                         if (zoneDict.TryGetValue(zone.ZoneId, out var dbz))
                         {
                             zoneName = dbz.ZoneName;
-                            borough = dbz.OsmId?.ToString() ?? "Unknown";
+                            osmId = dbz.OsmId;
+                            centerLat = dbz.CenterLat;
+                            centerLng = dbz.CenterLong;
                         }
 
                         double expectedDemand15 = zone.Demand / 4.0;
@@ -69,7 +73,9 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics
                         {
                             ZoneId = zone.ZoneId,
                             ZoneName = zoneName,
-                            Borough = borough,
+                            OsmId = osmId,
+                            CenterLatitude = centerLat,
+                            CenterLongitude = centerLng,
                             Calculated = new ZoneCalculatedStats
                             {
                                 TotalPickupTrips = (int)zone.Demand,
@@ -184,7 +190,9 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics
                 {
                     ZoneId = zone.ZoneId,
                     ZoneName = zone.ZoneName,
-                    Borough = zone.ZoneName ?? "Unknown",
+                    OsmId = zone.OsmId,
+                    CenterLatitude = zone.CenterLat,
+                    CenterLongitude = zone.CenterLong,
                     Calculated = new ZoneCalculatedStats
                     {
                         TotalPickupTrips = totalPickups,

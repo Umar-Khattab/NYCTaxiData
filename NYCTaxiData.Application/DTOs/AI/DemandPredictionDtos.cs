@@ -34,7 +34,10 @@ public record Demand15MinResult(
     [property: JsonPropertyName("PULocationID")] int ZoneId,
     [property: JsonPropertyName("Predicted_Demand_15min")] double PredictedDemand,
     [property: JsonPropertyName("lower_bound")] double? LowerBound = null,
-    [property: JsonPropertyName("upper_bound")] double? UpperBound = null
+    [property: JsonPropertyName("upper_bound")] double? UpperBound = null,
+    long? OsmId = null,
+    double? CenterLatitude = null,
+    double? CenterLongitude = null
 );
 
 /// <summary>
@@ -64,7 +67,10 @@ public record Demand6hResult(
     [property: JsonPropertyName("PULocationID")] int ZoneId,
     [property: JsonPropertyName("Predicted_Demand_6h")] double PredictedDemand,
     [property: JsonPropertyName("confidence_interval_lower")] double? ConfidenceIntervalLower = null,
-    [property: JsonPropertyName("confidence_interval_upper")] double? ConfidenceIntervalUpper = null
+    [property: JsonPropertyName("confidence_interval_upper")] double? ConfidenceIntervalUpper = null,
+    long? OsmId = null,
+    double? CenterLatitude = null,
+    double? CenterLongitude = null
 );
 
 /// <summary>
@@ -100,7 +106,13 @@ public record ETAResult(
     [property: JsonPropertyName("pu_location_id")] int PickupZoneId,
     [property: JsonPropertyName("do_location_id")] int DropoffZoneId,
     [property: JsonPropertyName("p50_seconds")] double P50Seconds,
-    [property: JsonPropertyName("p90_seconds")] double P90Seconds
+    [property: JsonPropertyName("p90_seconds")] double P90Seconds,
+    long? PickupOsmId = null,
+    double? PickupCenterLatitude = null,
+    double? PickupCenterLongitude = null,
+    long? DropoffOsmId = null,
+    double? DropoffCenterLatitude = null,
+    double? DropoffCenterLongitude = null
 )
 {
 
@@ -141,7 +153,10 @@ public record RevenueInput(
 public record RevenueResult(
     [property: JsonPropertyName("PULocationID")] int ZoneId,
     [property: JsonPropertyName("Predicted_Revenue_P50")] double P50,
-    [property: JsonPropertyName("Predicted_Revenue_P90")] double P90
+    [property: JsonPropertyName("Predicted_Revenue_P90")] double P90,
+    long? OsmId = null,
+    double? CenterLatitude = null,
+    double? CenterLongitude = null
 );
 
 /// <summary>
@@ -172,7 +187,10 @@ public record StockOutInput(
 /// </summary>
 public record StockOutResult(
     [property: JsonPropertyName("zone_id")] int ZoneId,
-    [property: JsonPropertyName("Probability_of_StockOut")] double Probability
+    [property: JsonPropertyName("Probability_of_StockOut")] double Probability,
+    long? OsmId = null,
+    double? CenterLatitude = null,
+    double? CenterLongitude = null
 )
 {
     /// <summary>
@@ -270,7 +288,13 @@ public record RepositionAssignment(
     [property: JsonPropertyName("vehicle_count")] int VehicleCount,
     [property: JsonPropertyName("eta_minutes")] double ETAMinutes,
     [property: JsonPropertyName("estimated_cost")] double EstimatedCost,
-    [property: JsonPropertyName("expected_profit")] double ExpectedProfit
+    [property: JsonPropertyName("expected_profit")] double ExpectedProfit,
+    long? FromOsmId = null,
+    double? FromCenterLatitude = null,
+    double? FromCenterLongitude = null,
+    long? ToOsmId = null,
+    double? ToCenterLatitude = null,
+    double? ToCenterLongitude = null
 );
 
 /// <summary>
@@ -281,7 +305,10 @@ public record ZonePlanSummary(
     [property: JsonPropertyName("supply_before")] int SupplyBefore,
     [property: JsonPropertyName("supply_after")] int SupplyAfter,
     [property: JsonPropertyName("demand_forecast")] double DemandForecast,
-    [property: JsonPropertyName("coverage_ratio_after")] double CoverageRatioAfter
+    [property: JsonPropertyName("coverage_ratio_after")] double CoverageRatioAfter,
+    long? OsmId = null,
+    double? CenterLatitude = null,
+    double? CenterLongitude = null
 );
 
 /// <summary>

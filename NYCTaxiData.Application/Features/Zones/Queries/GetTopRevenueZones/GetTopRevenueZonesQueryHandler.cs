@@ -64,12 +64,16 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopRevenueZones
                     foreach (var zone in sortedSimZones)
                     {
                         var zoneName = "Simulated Zone " + zone.ZoneId;
-                        var borough = "Manhattan";
+                        long? osmId = null;
+                        double? centerLat = null;
+                        double? centerLong = null;
 
                         if (simZoneDict.TryGetValue(zone.ZoneId, out var dbZone))
                         {
                             zoneName = dbZone.ZoneName;
-                           // borough = dbZone.Borough ?? "Unknown";
+                            osmId = dbZone.OsmId;
+                            centerLat = dbZone.CenterLat;
+                            centerLong = dbZone.CenterLong;
                         }
 
                         double calcPercentage = totalSimRevenue > 0 ? (zone.Revenue / totalSimRevenue) * 100.0 : 0.0;
@@ -79,7 +83,10 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopRevenueZones
                         {
                             ZoneId = zone.ZoneId,
                             ZoneName = zoneName,
-                            Borough = borough,
+                            Borough = "Obsolete",
+                            OsmId = osmId,
+                            CenterLatitude = centerLat,
+                            CenterLongitude = centerLong,
                             CalculatedRevenue = (decimal)zone.Revenue,
                             PercentageOfTotalCalculated = Math.Round(calcPercentage, 2),
                             PredictedRevenue = (decimal)Math.Round(predictedRev, 2),
@@ -163,7 +170,10 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopRevenueZones
                     {
                         ZoneId = zone.ZoneId,
                         ZoneName = zone.ZoneName,
-                        //Borough = zone.Borough ?? "Unknown",
+                        Borough = "Obsolete",
+                        OsmId = zone.OsmId,
+                        CenterLatitude = zone.CenterLat,
+                        CenterLongitude = zone.CenterLong,
                         CalculatedRevenue = Math.Round((decimal)item.Revenue, 2),
                         PercentageOfTotalCalculated = Math.Round(calcPercentage, 2),
                         PredictedRevenue = Math.Round(predictedVal, 2),

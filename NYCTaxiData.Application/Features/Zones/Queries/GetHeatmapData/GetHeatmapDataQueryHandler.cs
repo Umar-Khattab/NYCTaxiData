@@ -53,18 +53,14 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
                     foreach (var zone in latestTick.Zones)
                     {
                         var zoneName = "Simulated Zone " + zone.ZoneId;
-                        var borough = "Manhattan";
+
 
                         if (zoneDict.TryGetValue(zone.ZoneId, out var dbz))
                         {
                             zoneName = dbz.ZoneName;
-                            //borough = dbz.Borough ?? "Unknown";
                         }
 
-                        double baseLat = 40.7306;
-                        double baseLon = -73.9352;
-                        double latOffset = ((zone.ZoneId * 17) % 100) * 0.001 - 0.05;
-                        double lonOffset = ((zone.ZoneId * 23) % 100) * 0.001 - 0.05;
+
 
                         decimal surge = 1.0m;
                         string demandLevel = "LOW";
@@ -88,10 +84,11 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
                         {
                             ZoneId = zone.ZoneId,
                             ZoneName = zoneName,
-                            //Latitude = zone.CenterLat,  
-                            //Longitude = zone.CenterLong,
-                            Latitude = Math.Round(baseLat + latOffset, 4),
-                            Longitude = Math.Round(baseLon + lonOffset, 4),
+                            CenterLatitude = dbz?.CenterLat,
+                            CenterLongitude = dbz?.CenterLong,
+                            Latitude = dbz?.CenterLat ?? 0.0,
+                            Longitude = dbz?.CenterLong ?? 0.0,
+                            OsmId = dbz?.OsmId,
                             CalculatedTripCount = (int)zone.Demand,
                             PredictedTripCount = Math.Round(zone.Demand * 1.15, 2),
                             PredictedStockoutProbability = Math.Round(zone.StockoutRisk, 4),
@@ -149,10 +146,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
                 int calculatedTrips = dbTripDict.GetValueOrDefault(zone.ZoneId, 0);
                 double predTrips = predDict.GetValueOrDefault(zone.ZoneId, calculatedTrips / 4.0 * 1.1);
 
-                double baseLat = 40.7306;
-                double baseLon = -73.9352;
-                double latOffset = ((zone.ZoneId * 17) % 100) * 0.001 - 0.05;
-                double lonOffset = ((zone.ZoneId * 23) % 100) * 0.001 - 0.05;
+
 
                 // Dynamic ML-based Surge and Demand levels
                 decimal surgeMultiplier = 1.0m;
@@ -178,10 +172,11 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
                 {
                     ZoneId = zone.ZoneId,
                     ZoneName = zone.ZoneName,
-                    CenterLat = zone.CenterLat,
-                    CenterLong = zone.CenterLong,
-                    Latitude = Math.Round(baseLat + latOffset, 4),
-                    Longitude = Math.Round(baseLon + lonOffset, 4),
+                    CenterLatitude = zone.CenterLat,
+                    CenterLongitude = zone.CenterLong,
+                    Latitude = zone.CenterLat ?? 0.0,
+                    Longitude = zone.CenterLong ?? 0.0,
+                    OsmId = zone.OsmId,
                     CalculatedTripCount = calculatedTrips,
                     PredictedTripCount = Math.Round(predTrips, 2),
                     PredictedStockoutProbability = Math.Round(calculatedTrips > 50 ? 0.78 : 0.14, 4),
