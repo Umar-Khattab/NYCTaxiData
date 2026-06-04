@@ -208,7 +208,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHighStockoutZones
                 {
                     ZoneId = zone.ZoneId,
                     ZoneName = zone.ZoneName ?? "Unknown",
-                    Borough = "Obsolete",
                     OsmId = zone.OsmId,
                     CenterLatitude = zone.CenterLat,
                     CenterLongitude = zone.CenterLong,

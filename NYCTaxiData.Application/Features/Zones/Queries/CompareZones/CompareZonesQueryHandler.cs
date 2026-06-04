@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Interfaces.Simulation;
 using NYCTaxiData.Application.Common.Plumbing;
@@ -22,17 +23,23 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
         private readonly IMemoryCache _cache;
         private readonly ISimulationOrchestrator _orchestrator;
         private readonly IAiPredictionService _aiService;
+        private readonly IAiFeatureProvider _aiFeatureProvider;
+        private readonly ILogger<CompareZonesQueryHandler> _logger;
 
         public CompareZonesQueryHandler(
             IUnitOfWork unitOfWork,
             IMemoryCache cache,
             ISimulationOrchestrator orchestrator,
-            IAiPredictionService aiService)
+            IAiPredictionService aiService,
+            IAiFeatureProvider aiFeatureProvider,
+            ILogger<CompareZonesQueryHandler> logger)
         {
             _unitOfWork = unitOfWork;
             _cache = cache;
             _orchestrator = orchestrator;
             _aiService = aiService;
+            _aiFeatureProvider = aiFeatureProvider;
+            _logger = logger;
         }
 
         public async Task<Result<ZoneComparisonDto>> Handle(
@@ -57,9 +64,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
                     var zoneHistory = _orchestrator.GetZoneHistory(zId);
                     zoneDictSim.TryGetValue(zId, out var dbZone);
                     var zoneName = dbZone != null ? dbZone.ZoneName : "Simulated Zone " + zId;
-                    var borough = (dbZone != null && !string.IsNullOrEmpty(dbZone.ZoneName))
-              ? dbZone.ZoneName
-              : "Manhattan";
                     int tripCount = 0;
                     double revenue = 0.0;
                     double avgFare = 0.0;
@@ -78,7 +82,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
                     {
                         ZoneId = zId,
                         ZoneName = zoneName,
-                        Borough = borough,
                         Calculated = new ZoneCalculatedStats
                         {
                             TotalPickupTrips = tripCount,
@@ -134,8 +137,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
                 return Result<ZoneComparisonDto>.Success(cachedData, "Zone comparison retrieved from cache");
             }
 
-            // 3. Batch High-Speed Parallel Execution
-            // 3. Batch High-Speed Sequential Execution to ensure DbContext thread safety
+            // 3. Batch High-Speed Database Queries
             var pickups = await GetBatchPickupsNativelyAsync(uniqueZoneIds, cancellationToken);
             var dropoffs = await GetBatchDropoffsNativelyAsync(uniqueZoneIds, cancellationToken);
 
@@ -147,24 +149,42 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
 
             var comparisonStats = new List<ZoneStatisticsDto>();
 
-            // 4. FastAPI batch predictions
-            var batch15mInputs = pickups.Select(p => new Demand15MinInput(
-                p.ZoneId, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, (int)DateTime.UtcNow.DayOfWeek,
-                DateTime.UtcNow.Month, DateTime.UtcNow.DayOfWeek == DayOfWeek.Saturday || DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday,
-                0, 0, 0, 0, 0, 20.0, 0.0, false, 0, p.Count
-            )).ToList();
+            // 4. Retrieve Engineered Features and Query AI Service Predictions in Parallel
+            var targetTime = DateTime.UtcNow;
+            var features15m = await _aiFeatureProvider.GetDemand15MinFeaturesAsync(uniqueZoneIds, targetTime, cancellationToken);
+            var features6h = await _aiFeatureProvider.GetDemand6hFeaturesAsync(uniqueZoneIds, targetTime, cancellationToken);
+            var featuresRev = await _aiFeatureProvider.GetRevenueFeaturesAsync(uniqueZoneIds, targetTime, cancellationToken);
+            var featuresStock = await _aiFeatureProvider.GetStockOutFeaturesAsync(uniqueZoneIds, targetTime, cancellationToken);
 
-            List<Demand15MinResult> predictions15m = new();
+            var task15m = _aiService.PredictDemand15MinAsync(features15m, true, cancellationToken);
+            var task6h = _aiService.PredictDemand6hAsync(features6h, cancellationToken);
+            var taskRev = _aiService.PredictRevenueAsync(featuresRev, cancellationToken);
+            var taskStock = _aiService.PredictStockOutAsync(featuresStock, cancellationToken);
+
             try
             {
-                predictions15m = await _aiService.PredictDemand15MinAsync(batch15mInputs, true, cancellationToken);
+                await Task.WhenAll(task15m, task6h, taskRev, taskStock);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                predictions15m = pickups.Select(p => new Demand15MinResult(p.ZoneId, p.Count / 4.0 * 1.1)).ToList();
+                _logger.LogWarning(ex, "Failed to call external FastAPI model endpoints for CompareZones. Using default fallbacks.");
             }
 
-            var predDict = predictions15m.ToDictionary(p => p.ZoneId, p => p.PredictedDemand);
+            var pred15mDict = task15m.Status == TaskStatus.RanToCompletion && task15m.Result != null
+                ? task15m.Result.ToDictionary(p => p.ZoneId, p => p.PredictedDemand)
+                : new Dictionary<int, double>();
+
+            var pred6hDict = task6h.Status == TaskStatus.RanToCompletion && task6h.Result != null
+                ? task6h.Result.ToDictionary(p => p.ZoneId, p => p.PredictedDemand)
+                : new Dictionary<int, double>();
+
+            var predRevDict = taskRev.Status == TaskStatus.RanToCompletion && taskRev.Result != null
+                ? taskRev.Result.ToDictionary(r => r.ZoneId, r => r.P50)
+                : new Dictionary<int, double>();
+
+            var stockoutDict = taskStock.Status == TaskStatus.RanToCompletion && taskStock.Result != null
+                ? taskStock.Result.ToDictionary(s => s.ZoneId, s => s.Probability)
+                : new Dictionary<int, double>();
 
             foreach (var zoneId in uniqueZoneIds)
             {
@@ -180,19 +200,22 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
                 if (pickupDict.TryGetValue(zoneId, out var pInfo))
                 {
                     totalPickups = pInfo.Count; 
+                    totalRevenue = pInfo.TotalRevenue;
                     avgFare = pInfo.AvgFare; 
+                    avgTip = pInfo.AvgTip;
                 }
 
-                double pred15m = predDict.GetValueOrDefault(zoneId, totalPickups / 4.0 * 1.15);
-                double pred6h = totalPickups * 1.12;
-                decimal predRev6h = totalRevenue * 1.15m;
-                double stockoutProb = totalPickups > totalDropoffs ? 0.65 : 0.12;
+                double pred15m = pred15mDict.GetValueOrDefault(zoneId, totalPickups / 4.0 * 1.15);
+                double pred6h = pred6hDict.GetValueOrDefault(zoneId, totalPickups * 1.12);
+                decimal predRev6h = predRevDict.ContainsKey(zoneId) 
+                    ? (decimal)predRevDict[zoneId] 
+                    : totalRevenue * 1.15m;
+                double stockoutProb = stockoutDict.GetValueOrDefault(zoneId, totalPickups > totalDropoffs ? 0.65 : 0.12);
 
                 var stats = new ZoneStatisticsDto
                 {
                     ZoneId = zoneId,
                     ZoneName = zone.ZoneName,
-                    Borough = zone.ZoneName ?? "Unknown",
                     Calculated = new ZoneCalculatedStats
                     {
                         TotalPickupTrips = totalPickups,
@@ -248,12 +271,14 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
         {
             return await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t =>   t.PickupLocation != null && t.PickupLocation.ZoneId != null && zoneIds.Contains(t.PickupLocation.ZoneId.Value))
+                .Where(t => t.PickupLocation != null && t.PickupLocation.ZoneId != null && zoneIds.Contains(t.PickupLocation.ZoneId.Value))
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
                 .Select(g => new BatchPickupResult(
                     g.Key,
                     g.Count(), 
-                    g.Average(t => t.FareAmount ?? 0) 
+                    g.Sum(t => t.FareAmount ?? 0m),
+                    g.Average(t => t.FareAmount ?? 0m),
+                    g.Average(t => t.TipAmount ?? 0m) 
                 ))
                 .ToListAsync(ct);
         }
@@ -262,7 +287,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
         {
             var data = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t =>   t.DropoffLocation != null && t.DropoffLocation.ZoneId != null && zoneIds.Contains(t.DropoffLocation.ZoneId.Value))
+                .Where(t => t.DropoffLocation != null && t.DropoffLocation.ZoneId != null && zoneIds.Contains(t.DropoffLocation.ZoneId.Value))
                 .GroupBy(t => t.DropoffLocation!.ZoneId!.Value)
                 .Select(g => new { ZoneId = g.Key, Count = g.Count() })
                 .ToListAsync(ct);
@@ -270,6 +295,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
             return data.Select(x => (x.ZoneId, x.Count)).ToList();
         }
 
-        private record BatchPickupResult(int ZoneId, int Count,  decimal AvgFare );
+        private record BatchPickupResult(int ZoneId, int Count, decimal TotalRevenue, decimal AvgFare, decimal AvgTip);
     }
 }

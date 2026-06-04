@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Interfaces.Simulation;
 using NYCTaxiData.Application.Common.Plumbing;
@@ -22,17 +23,23 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
         private readonly IMemoryCache _cache;
         private readonly ISimulationOrchestrator _orchestrator;
         private readonly IAiPredictionService _aiService;
+        private readonly IAiFeatureProvider _aiFeatureProvider;
+        private readonly ILogger<GetRecommendedZonesQueryHandler> _logger;
 
         public GetRecommendedZonesQueryHandler(
             IUnitOfWork unitOfWork,
             IMemoryCache cache,
             ISimulationOrchestrator orchestrator,
-            IAiPredictionService aiService)
+            IAiPredictionService aiService,
+            IAiFeatureProvider aiFeatureProvider,
+            ILogger<GetRecommendedZonesQueryHandler> logger)
         {
             _unitOfWork = unitOfWork;
             _cache = cache;
             _orchestrator = orchestrator;
             _aiService = aiService;
+            _aiFeatureProvider = aiFeatureProvider;
+            _logger = logger;
         }
 
         public async Task<Result<List<RecommendedZoneDto>>> Handle(
@@ -56,6 +63,14 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
 
                     var simResult = new List<RecommendedZoneDto>();
 
+                    // Fix N+1 query: fetch all required zones at once
+                    var simZoneIds = sortedSimZones.Select(z => z.ZoneId).ToList();
+                    var dbZones = await _unitOfWork.Zones.Query()
+                        .AsNoTracking()
+                        .Where(z => simZoneIds.Contains(z.ZoneId))
+                        .ToListAsync(cancellationToken);
+                    var dbZoneDict = dbZones.ToDictionary(z => z.ZoneId, z => z);
+
                     foreach (var zone in sortedSimZones)
                     {
                         var zoneName = "Simulated Zone " + zone.ZoneId;
@@ -63,8 +78,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                         double? centerLat = null;
                         double? centerLng = null;
 
-                        var dbZone = await _unitOfWork.Zones.Query().AsNoTracking().FirstOrDefaultAsync(z => z.ZoneId == zone.ZoneId, cancellationToken);
-                        if (dbZone != null)
+                        if (dbZoneDict.TryGetValue(zone.ZoneId, out var dbZone))
                         {
                             zoneName = dbZone.ZoneName ?? zoneName;
                             osmId = dbZone.OsmId;
@@ -104,7 +118,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                 return Result<List<RecommendedZoneDto>>.Success(cachedData, "Recommended zones retrieved from cache");
             }
 
-            // 3. Fetch Operational Active States via Concurrent Native Queries
             // 3. Fetch Operational Active States via Sequential Queries to ensure DbContext thread safety
             var demandList = await GetDemandPerZoneNativelyAsync(cancellationToken);
             var supplyList = await GetDriverSupplyPerZoneNativelyAsync(cancellationToken);
@@ -116,43 +129,105 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
             var revenueDict = revenueList.ToDictionary(r => r.ZoneId, r => r.Revenue);
             var activeTripsDict = activeTripsList.ToDictionary(a => a.ZoneId, a => a.ActiveCount);
 
-            var zones = await _unitOfWork.Zones.Query().AsNoTracking().ToListAsync(cancellationToken);
+            var zones = await _unitOfWork.Zones.Query()
+                .AsNoTracking()
+                .Where(z => z.ZoneId >= 1 && z.ZoneId <= 265)
+                .ToListAsync(cancellationToken);
             var zoneDict = zones.ToDictionary(z => z.ZoneId, z => z);
 
             var recommendations = new List<RecommendedZoneDto>();
 
-            // 4. FastAPI Repositioning Plan Optimizer (The Sole Source of Truth)
-            var zoneStates = zones.Select(z => new ZoneSupplyState(
-                z.ZoneId,
-                driverSupplyDict.GetValueOrDefault(z.ZoneId, 0),
-                activeTripsDict.GetValueOrDefault(z.ZoneId, 0),
-                (double)demandDict.GetValueOrDefault(z.ZoneId, 0),
-                0.12, // stockoutRisk resolved by model
-                (double)revenueDict.GetValueOrDefault(z.ZoneId, 0m)
-            )).ToList();
+            // 4. FastAPI AI profit maximization decision engine (The Sole Source of Truth)
+            var targetTime = DateTime.UtcNow;
+            var zoneIds = zones.Select(z => z.ZoneId).ToList();
 
-            RepositioningPlan plan = null;
+            var features6h = await _aiFeatureProvider.GetDemand6hFeaturesAsync(zoneIds, targetTime, cancellationToken);
+            var featuresRev = await _aiFeatureProvider.GetRevenueFeaturesAsync(zoneIds, targetTime, cancellationToken);
+            var featuresStock = await _aiFeatureProvider.GetStockOutFeaturesAsync(zoneIds, targetTime, cancellationToken);
+
+            var dict6h = features6h.ToDictionary(f => f.ZoneId, f => f);
+            var dictRev = featuresRev.ToDictionary(f => f.ZoneId, f => f);
+            var dictStock = featuresStock.ToDictionary(f => f.ZoneId, f => f);
+
+            var pmInputs = new List<ProfitMaximizationInput>();
+            var targetDateTimeStr = targetTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+            foreach (var z in zones)
+            {
+                var f6h = dict6h.GetValueOrDefault(z.ZoneId);
+                var fRev = dictRev.GetValueOrDefault(z.ZoneId);
+                var fStock = dictStock.GetValueOrDefault(z.ZoneId);
+
+                int currentDrivers = driverSupplyDict.GetValueOrDefault(z.ZoneId, 0);
+                bool allowAsSource = true;
+                bool allowAsTarget = true;
+                bool isEventZone = false;
+                bool isAirportZone = z.ZoneName.Contains("Airport", StringComparison.OrdinalIgnoreCase) || z.ZoneId == 132 || z.ZoneId == 138 || z.ZoneId == 1;
+
+                pmInputs.Add(new ProfitMaximizationInput(
+                    targetDateTimeStr,
+                    z.ZoneId,
+                    currentDrivers,
+                    allowAsSource,
+                    allowAsTarget,
+                    isEventZone,
+                    isAirportZone,
+                    targetTime.Hour,
+                    (int)targetTime.DayOfWeek,
+                    targetTime.DayOfWeek == DayOfWeek.Saturday || targetTime.DayOfWeek == DayOfWeek.Sunday ? 1 : 0,
+                    f6h?.TempC ?? 20.0,
+                    f6h?.RainMm ?? 0.0,
+                    (f6h?.IsRain ?? false) ? 1 : 0,
+                    f6h?.WeatherCode ?? 0,
+                    (f6h?.IsHoliday ?? false) ? 1 : 0,
+                    f6h?.Lag1_6h ?? 0.0,
+                    f6h?.Lag2_6h ?? 0.0,
+                    f6h?.Lag4_6h ?? 0.0,
+                    f6h?.RollingMean24h ?? 0.0,
+                    fRev?.RevLag1_6h ?? 0.0,
+                    fRev?.RevLag1Week ?? 0.0,
+                    fRev?.RevRollingMean7d ?? 0.0,
+                    fRev?.RevRollingMean30d ?? 0.0,
+                    fRev?.AvgFare ?? 0.0,
+                    fRev?.TipRate ?? 0.15,
+                    f6h?.PickupCount ?? 0,
+                    (int)(fStock?.DropoffCount ?? 0),
+                    fStock?.NetFlow ?? 0.0,
+                    fStock?.ActivityRatio ?? 1.0,
+                    fStock?.Lag1Pickup ?? 0.0,
+                    fStock?.Lag1Dropoff ?? 0.0,
+                    fStock?.Lag1NetFlow ?? 0.0
+                ));
+            }
+
+            ProfitMaximizationResult? profitResult = null;
             try
             {
-                plan = await _aiService.OptimizeRepositioningAsync(DateTime.UtcNow, zoneStates, null, cancellationToken);
+                int currentZoneId = zoneIds.FirstOrDefault(id => id >= 1 && id <= 265);
+                if (currentZoneId == 0) currentZoneId = 1;
+                profitResult = await _aiService.MaximizeProfitAsync(targetDateTimeStr, currentZoneId, pmInputs, cancellationToken);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Fallback plan if FastAPI is offline
-                plan = null;
+                _logger.LogWarning(ex, "Failed to call external FastAPI model endpoints for GetRecommendedZones. Using local fallback.");
             }
 
-            if (plan != null && plan.ZoneSummaries.Count > 0)
+            if (profitResult != null && profitResult.ZoneEvaluations.Count > 0)
             {
-                var summaryDict = plan.ZoneSummaries.ToDictionary(s => s.ZoneId, s => s);
-
-                foreach (var zId in summaryDict.Keys)
+                foreach (var eval in profitResult.ZoneEvaluations)
                 {
-                    if (zoneDict.TryGetValue(zId, out var zone))
+                    if (zoneDict.TryGetValue(eval.ZoneId, out var zone))
                     {
-                        var summary = summaryDict[zId];
-                        double ratio = summary.SupplyAfter > 0 ? summary.DemandForecast / summary.SupplyAfter : summary.DemandForecast;
-                        double score = Math.Clamp(summary.CoverageRatioAfter * 100.0, 10.0, 99.0);
+                        double gapScore = eval.DriverGap > 0 ? (eval.DriverGap / (double)Math.Max(1, eval.DriversNeeded6h)) * 50.0 : 0.0;
+                        double stockoutScore = eval.StockoutProb * 30.0;
+                        double servedScore = (1.0 - eval.ServedRatioBaseline) * 20.0;
+                        double score = Math.Clamp(gapScore + stockoutScore + servedScore + 30.0, 10.0, 99.0);
+
+                        double ratio = eval.CurrentDrivers > 0 ? eval.Demand6h / eval.CurrentDrivers : eval.Demand6h;
+
+                        string reason = !string.IsNullOrEmpty(eval.Reason) 
+                            ? eval.Reason 
+                            : (eval.TargetCandidate ? "High profit opportunity with driver gap." : "Stable driver demand/supply balance.");
 
                         recommendations.Add(new RecommendedZoneDto
                         {
@@ -163,12 +238,12 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                             CenterLongitude = zone.CenterLong,
                             RecommendationScore = Math.Round((decimal)score, 2),
                             DemandSupplyRatio = Math.Round((decimal)ratio, 2),
-                            PredictedRevenueYield = Math.Round(revenueDict.GetValueOrDefault(zone.ZoneId, 0m) * 1.15m, 2),
-                            Reason = summary.CoverageRatioAfter > 0.8 ? "High optimized demand coverage opportunity." : "Optimized ML repositioning destination.",
+                            PredictedRevenueYield = Math.Round((decimal)eval.RevenueP50, 2),
+                            Reason = reason,
                             
                             // Legacy Support
-                            AvgFare = Math.Round(revenueDict.GetValueOrDefault(zone.ZoneId, 0m) / Math.Max(1, demandDict.GetValueOrDefault(zone.ZoneId, 1)), 2),
-                            AvgTip = Math.Round((revenueDict.GetValueOrDefault(zone.ZoneId, 0m) * 0.15m) / Math.Max(1, demandDict.GetValueOrDefault(zone.ZoneId, 1)), 2)
+                            AvgFare = Math.Round((decimal)eval.RevenueP50, 2),
+                            AvgTip = Math.Round((decimal)(eval.RevenueP50 * 0.15), 2)
                         });
                     }
                 }

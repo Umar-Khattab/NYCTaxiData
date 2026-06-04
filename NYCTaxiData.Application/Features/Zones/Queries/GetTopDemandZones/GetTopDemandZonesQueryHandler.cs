@@ -86,7 +86,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopDemandZones
                         {
                             ZoneId = zone.ZoneId,
                             ZoneName = zoneName,
-                            Borough = "Obsolete",
                             OsmId = osmId,
                             CenterLatitude = centerLat,
                             CenterLongitude = centerLong,
@@ -178,7 +177,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopDemandZones
                 {
                     ZoneId = zone.ZoneId,
                     ZoneName = zone.ZoneName ?? "Unknown",
-                    Borough = "Obsolete",
                     OsmId = zone.OsmId,
                     CenterLatitude = zone.CenterLat,
                     CenterLongitude = zone.CenterLong,

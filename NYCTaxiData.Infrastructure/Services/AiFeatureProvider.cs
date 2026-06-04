@@ -55,7 +55,25 @@ public class AiFeatureProvider : IAiFeatureProvider
 
             if (feature is null)
             {
-                _logger.LogWarning("Demand15Min historical feature vector not found in AI database for PU Zone {ZoneId} at Rounded Time {Hour:D2}:{Minute:D2}. Skipping zone.", zoneId, hour, roundedMinute);
+                _logger.LogWarning("Demand15Min historical feature vector not found in AI database for PU Zone {ZoneId} at Rounded Time {Hour:D2}:{Minute:D2}. Creating default fallback.", zoneId, hour, roundedMinute);
+                results.Add(new Demand15MinInput(
+                    zoneId,
+                    hour,
+                    roundedMinute,
+                    dayOfWeek,
+                    month,
+                    targetTime.DayOfWeek == DayOfWeek.Saturday || targetTime.DayOfWeek == DayOfWeek.Sunday,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    20.0,
+                    0.0,
+                    false,
+                    0,
+                    0
+                ));
                 continue;
             }
 
@@ -104,7 +122,23 @@ public class AiFeatureProvider : IAiFeatureProvider
 
             if (feature is null)
             {
-                _logger.LogWarning("Demand6h historical feature vector not found in AI database for Zone {ZoneId} at Hour {Hour}. Skipping zone.", zoneId, hour);
+                _logger.LogWarning("Demand6h historical feature vector not found in AI database for Zone {ZoneId} at Hour {Hour}. Creating default fallback.", zoneId, hour);
+                results.Add(new Demand6hInput(
+                    zoneId,
+                    hour,
+                    dayOfWeek,
+                    targetTime.DayOfWeek == DayOfWeek.Saturday || targetTime.DayOfWeek == DayOfWeek.Sunday,
+                    false,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    20.0,
+                    0.0,
+                    false,
+                    0,
+                    0
+                ));
                 continue;
             }
 
@@ -202,7 +236,28 @@ public class AiFeatureProvider : IAiFeatureProvider
 
             if (feature is null)
             {
-                _logger.LogWarning("Revenue historical feature vector not found in AI database for Zone {ZoneId} at Hour {Hour}. Skipping zone.", zoneId, hour);
+                _logger.LogWarning("Revenue historical feature vector not found in AI database for Zone {ZoneId} at Hour {Hour}. Creating default fallback.", zoneId, hour);
+                results.Add(new RevenueInput(
+                    zoneId,
+                    hour,
+                    dayOfWeek,
+                    targetTime.DayOfWeek == DayOfWeek.Saturday || targetTime.DayOfWeek == DayOfWeek.Sunday,
+                    0,
+                    0,
+                    0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0m,
+                    0.0,
+                    0.15,
+                    20.0,
+                    0.0,
+                    false,
+                    0,
+                    false
+                ));
                 continue;
             }
 
@@ -254,7 +309,26 @@ public class AiFeatureProvider : IAiFeatureProvider
 
             if (feature is null)
             {
-                _logger.LogWarning("Stockout historical feature vector not found in AI database for Zone {ZoneId} at Hour {Hour}. Skipping zone.", zoneId, hour);
+                _logger.LogWarning("Stockout historical feature vector not found in AI database for Zone {ZoneId} at Hour {Hour}. Creating default fallback.", zoneId, hour);
+                results.Add(new StockOutInput(
+                    zoneId,
+                    targetTime,
+                    0.0, // PickupCount
+                    0.0, // DropoffCount
+                    0.0, // NetFlow
+                    hour,
+                    dayOfWeek,
+                    targetTime.DayOfWeek == DayOfWeek.Saturday || targetTime.DayOfWeek == DayOfWeek.Sunday,
+                    false, // IsHoliday
+                    1.0, // ActivityRatio
+                    20.0, // TempC
+                    0.0, // RainMm
+                    false, // IsRain
+                    0.0, // Lag1Pickup
+                    0.0, // Lag1Dropoff
+                    0.0, // Lag1NetFlow
+                    0 // WeatherCode
+                ));
                 continue;
             }
 

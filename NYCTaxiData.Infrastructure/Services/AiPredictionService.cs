@@ -139,12 +139,22 @@ public class AiPredictionService : IAiPredictionService
     public async Task<RepositioningPlan> OptimizeRepositioningAsync(
         DateTime timeWindow, List<ZoneSupplyState> zoneStates, OptimizationConstraints? constraints, CancellationToken ct = default)
     {
-        var response = await _httpClient.PostAsJsonAsync(_endpoint, new
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = null
+        };
+
+        var requestBody = new
         {
             time_window = timeWindow,
             zone_states = zoneStates,
             constraints
-        }, ct);
+        };
+
+        var jsonString = JsonSerializer.Serialize(requestBody, options);
+        var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.PostAsync(_endpoint, content, ct);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -161,12 +171,22 @@ public class AiPredictionService : IAiPredictionService
     public async Task<ProfitMaximizationResult> MaximizeProfitAsync(
         string targetDateTime, int currentZone, List<ProfitMaximizationInput> zones, CancellationToken ct = default)
     {
-        var response = await _httpClient.PostAsJsonAsync("/decision/profit_plan_6h", new
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = null
+        };
+
+        var requestBody = new
         {
             target_datetime = targetDateTime,
             current_zone = currentZone,
             zones
-        }, ct);
+        };
+
+        var jsonString = JsonSerializer.Serialize(requestBody, options);
+        var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.PostAsync("/decision/profit_plan_6h", content, ct);
 
         if (!response.IsSuccessStatusCode)
         {

@@ -260,22 +260,22 @@ public record CausalImpactResult(
 /// Represents the current supply state of a single zone for optimization.
 /// </summary>
 public record ZoneSupplyState(
-    [Range(1, 265)] int ZoneId,
-    [Range(0, int.MaxValue)] int CurrentSupply,
-    [Range(0, int.MaxValue)] int ActiveTrips,
-    double? ForecastedDemand,
-    [Range(0, 1)] double? StockOutRisk,
-    double? ExpectedRevenue
+    [property: JsonPropertyName("zone_id")] [Range(1, 265)] int ZoneId,
+    [property: JsonPropertyName("current_supply")] [Range(0, int.MaxValue)] int CurrentSupply,
+    [property: JsonPropertyName("active_trips")] [Range(0, int.MaxValue)] int ActiveTrips,
+    [property: JsonPropertyName("forecasted_demand")] double? ForecastedDemand,
+    [property: JsonPropertyName("stock_out_risk")] [Range(0, 1)] double? StockOutRisk,
+    [property: JsonPropertyName("expected_revenue")] double? ExpectedRevenue
 );
 
 /// <summary>
 /// Constraints applied to the repositioning optimization algorithm.
 /// </summary>
 public record OptimizationConstraints(
-    [Range(1, int.MaxValue)] int MaxTravelTimeMinutes = 30,
-    [Range(0, double.MaxValue)] double MinProfitPerTrip = 15.0,
-    [Range(0, 1)] double MaxEmptyRelocationRatio = 0.3,
-    [Range(1, int.MaxValue)] int? MaxVehiclesToMove = null
+    [property: JsonPropertyName("max_travel_time_minutes")] [Range(1, int.MaxValue)] int MaxTravelTimeMinutes = 30,
+    [property: JsonPropertyName("min_profit_per_trip")] [Range(0, double.MaxValue)] double MinProfitPerTrip = 15.0,
+    [property: JsonPropertyName("max_empty_relocation_ratio")] [Range(0, 1)] double MaxEmptyRelocationRatio = 0.3,
+    [property: JsonPropertyName("max_vehicles_to_move")] [Range(1, int.MaxValue)] int? MaxVehiclesToMove = null
 );
 
 /// <summary>

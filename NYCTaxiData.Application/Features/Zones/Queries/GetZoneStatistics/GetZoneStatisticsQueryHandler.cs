@@ -120,7 +120,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
                         {
                             ZoneId = 0,
                             ZoneName = "All Zones",
-                            Borough = "All Boroughs",
                             Calculated = new ZoneCalculatedStats
                             {
                                 TotalPickupTrips = (int)totalSimDemand,
