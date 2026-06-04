@@ -1387,8 +1387,8 @@ public partial class TaxiDbContext : DbContext
             entity.Property(e => e.ZoneId)
                 .ValueGeneratedNever()
                 .HasColumnName("zone_id");
-            entity.Property(e => e.CenterLat).HasColumnName("center_latitude");
-            entity.Property(e => e.CenterLong).HasColumnName("center_longitude");
+            entity.Property(e => e.CenterLat).HasColumnName("center_lat");
+            entity.Property(e => e.CenterLong).HasColumnName("center_long");
             entity.Property(e => e.OsmId).HasColumnName("osm_id");
             entity.Property(e => e.ZoneName)
                 .HasMaxLength(255)
