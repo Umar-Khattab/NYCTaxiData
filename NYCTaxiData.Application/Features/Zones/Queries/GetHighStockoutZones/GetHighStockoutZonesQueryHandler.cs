@@ -22,17 +22,20 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHighStockoutZones
         private readonly ISimulationOrchestrator _orchestrator;
         private readonly IAiPredictionService _aiService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAiTemporalResolver _temporalResolver;
 
         public GetHighStockoutZonesQueryHandler(
             IMemoryCache cache,
             ISimulationOrchestrator orchestrator,
             IAiPredictionService aiService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IAiTemporalResolver temporalResolver)
         {
             _cache = cache;
             _orchestrator = orchestrator;
             _aiService = aiService;
             _unitOfWork = unitOfWork;
+            _temporalResolver = temporalResolver;
         }
 
         public async Task<Result<List<HighStockoutZoneDto>>> Handle(
@@ -149,15 +152,16 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHighStockoutZones
             var cacheKeyPredictions = "FastAPIPredictions_Stockout";
             if (!_cache.TryGetValue(cacheKeyPredictions, out List<StockOutResult>? predictions) || predictions == null)
             {
+                var resolvedTime = _temporalResolver.ResolveTemporalContext(DateTime.UtcNow);
                 var batchStockInputs = zones.Select(z => {
                     int pickups = demandDict.GetValueOrDefault(z.ZoneId, 0);
                     int drivers = driverSupplyDict.GetValueOrDefault(z.ZoneId, 0);
                     int deficit = Math.Max(0, pickups - drivers);
                     
                     return new StockOutInput(
-                        z.ZoneId, DateTime.UtcNow, pickups, drivers, deficit,
-                        DateTime.UtcNow.Hour, (int)DateTime.UtcNow.DayOfWeek,
-                        DateTime.UtcNow.DayOfWeek == DayOfWeek.Saturday || DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday,
+                        z.ZoneId, resolvedTime, pickups, drivers, deficit,
+                        resolvedTime.Hour, (int)resolvedTime.DayOfWeek,
+                        resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday,
                         false, 1.0, 20.0, 0.0, false, 0, 0, 0, 0
                     );
                 }).ToList();

@@ -22,17 +22,20 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics
         private readonly ISimulationOrchestrator _orchestrator;
         private readonly IAiPredictionService _aiService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IAiTemporalResolver _temporalResolver;
 
         public GetZoneStatisticsQueryHandler(
             IMemoryCache cache,
             ISimulationOrchestrator orchestrator,
             IAiPredictionService aiService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IAiTemporalResolver temporalResolver)
         {
             _cache = cache;
             _orchestrator = orchestrator;
             _aiService = aiService;
             _unitOfWork = unitOfWork;
+            _temporalResolver = temporalResolver;
         }
 
         public async Task<Result<List<ZoneStatisticsDto>>> Handle(
@@ -148,9 +151,10 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics
             var statisticsList = new List<ZoneStatisticsDto>();
 
             // 4. FastAPI AI batch predictions
+            var resolvedTime = _temporalResolver.ResolveTemporalContext(DateTime.UtcNow);
             var batch15mInputs = pickupsGroup.Select(p => new Demand15MinInput(
-                p.ZoneId, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, (int)DateTime.UtcNow.DayOfWeek,
-                DateTime.UtcNow.Month, DateTime.UtcNow.DayOfWeek == DayOfWeek.Saturday || DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday,
+                p.ZoneId, resolvedTime.Hour, resolvedTime.Minute, (int)resolvedTime.DayOfWeek,
+                resolvedTime.Month, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday,
                 0, 0, 0, 0, 0, 20.0, 0.0, false, 0, p.Count
             )).ToList();
 

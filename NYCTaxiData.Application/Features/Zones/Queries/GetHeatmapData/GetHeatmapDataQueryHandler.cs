@@ -22,17 +22,20 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
         private readonly IMemoryCache _cache;
         private readonly ISimulationOrchestrator _orchestrator;
         private readonly IAiPredictionService _aiService;
+        private readonly IAiTemporalResolver _temporalResolver;
 
         public GetHeatmapDataQueryHandler(
             IUnitOfWork unitOfWork,
             IMemoryCache cache,
             ISimulationOrchestrator orchestrator,
-            IAiPredictionService aiService)
+            IAiPredictionService aiService,
+            IAiTemporalResolver temporalResolver)
         {
             _unitOfWork = unitOfWork;
             _cache = cache;
             _orchestrator = orchestrator;
             _aiService = aiService;
+            _temporalResolver = temporalResolver;
         }
 
         public async Task<Result<List<HeatmapDataPointDto>>> Handle(
@@ -120,11 +123,13 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
             var cacheKeyDemand = "FastAPIPredictions_Demand15m";
             var cacheKeyRevenue = "FastAPIPredictions_Revenue";
 
+            var resolvedTime = _temporalResolver.ResolveTemporalContext(DateTime.UtcNow);
+
             if (!_cache.TryGetValue(cacheKeyDemand, out List<Demand15MinResult>? predictions15m) || predictions15m == null)
             {
                 var batchInputs = zones.Select(z => new Demand15MinInput(
-                    z.ZoneId, DateTime.UtcNow.Hour, DateTime.UtcNow.Minute, (int)DateTime.UtcNow.DayOfWeek,
-                    DateTime.UtcNow.Month, DateTime.UtcNow.DayOfWeek == DayOfWeek.Saturday || DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday,
+                    z.ZoneId, resolvedTime.Hour, resolvedTime.Minute, (int)resolvedTime.DayOfWeek,
+                    resolvedTime.Month, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday,
                     0, 0, 0, 0, 0, 20.0, 0.0, false, 0, dbTripDict.GetValueOrDefault(z.ZoneId, 0)
                 )).ToList();
 
@@ -147,8 +152,8 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
             if (!_cache.TryGetValue(cacheKeyRevenue, out List<RevenueResult>? predictionsRev) || predictionsRev == null)
             {
                 var batchInputsRev = zones.Select(z => new RevenueInput(
-                    z.ZoneId, DateTime.UtcNow.Hour, (int)DateTime.UtcNow.DayOfWeek,
-                    DateTime.UtcNow.DayOfWeek == DayOfWeek.Saturday || DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday,
+                    z.ZoneId, resolvedTime.Hour, (int)resolvedTime.DayOfWeek,
+                    resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday,
                     0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0m, 15.0, 0.15, 20.0, 0.0, false, 0, false
                 )).ToList();
 
