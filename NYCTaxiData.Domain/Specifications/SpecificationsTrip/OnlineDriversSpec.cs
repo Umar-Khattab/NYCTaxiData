@@ -10,7 +10,7 @@ namespace NYCTaxiData.Domain.Specifications.Trips
     public class OnlineDriversSpec : BaseSpecification<Driver>
     {
         public OnlineDriversSpec(int page, int limit)
-            : base(d => d.Status == CurrentStatus.On_Trip)
+            : base(d => d.Status == CurrentStatus.On_Trip.ToString())
         {
             AddOrderByDescending(d => d.Rating!);
 

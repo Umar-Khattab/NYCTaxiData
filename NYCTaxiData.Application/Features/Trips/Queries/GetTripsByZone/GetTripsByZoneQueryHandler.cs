@@ -26,7 +26,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripsByZone
 
             var query = _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.DeletedAt == null &&
+                .Where(t =>  
                            ((t.PickupLocation != null && t.PickupLocation.ZoneId == request.ZoneId) ||
                             (t.DropoffLocation != null && t.DropoffLocation.ZoneId == request.ZoneId)));
 

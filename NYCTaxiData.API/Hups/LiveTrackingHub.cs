@@ -136,7 +136,7 @@ public class LiveTrackingHub : Hub
             var activeDriversFromDb = await _context.Drivers
                 .Include(d => d.User) 
                 .AsNoTracking()
-                .Where(d => d.Status != CurrentStatus.Offline)
+                .Where(d => d.Status != CurrentStatus.Offline.ToString())
                 .ToListAsync();
 
             foreach (var d in activeDriversFromDb)

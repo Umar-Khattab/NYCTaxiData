@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NYCTaxiData.Domain.Entities;
+namespace   NYCTaxiData.Domain.Entities;
 
 public partial class WebauthnCredential
 {

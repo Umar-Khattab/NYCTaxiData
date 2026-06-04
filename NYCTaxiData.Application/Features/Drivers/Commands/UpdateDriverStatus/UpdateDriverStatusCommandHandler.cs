@@ -27,7 +27,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Commands.UpdateDriverStatus
                 return Result<Unit>.Failure("Invalid status value.");
             }
 
-            driver.Status = newStatus;
+            driver.Status = newStatus.ToString();
 
             await _unitOfWork.Drivers.UpdateAsync(driver);
 

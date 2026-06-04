@@ -22,14 +22,14 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetDriverDistribution
             // 1. Get active drivers and project their latest active location (pickup/dropoff depending on status)
             var activeDriversInfo = await _unitOfWork.Drivers.Query()
                 .AsNoTracking()
-                .Where(d => d.Status != CurrentStatus.Offline)
+                .Where(d => d.Status != CurrentStatus.Offline.ToString())
                 .Select(d => new
                 {
                     DriverId = d.UserId,
                     Status = d.Status,
                     LatestLocationId = d.Trips
                         .OrderByDescending(t => t.StartedAt)
-                        .Select(t => d.Status == CurrentStatus.On_Trip ? t.PickupLocationId : t.DropoffLocationId)
+                        .Select(t => d.Status == CurrentStatus.On_Trip.ToString() ? t.PickupLocationId : t.DropoffLocationId)
                         .FirstOrDefault()
                 })
                 .ToListAsync(cancellationToken);
@@ -49,7 +49,8 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetDriverDistribution
                 {
                     ZoneId = z.ZoneId,
                     ZoneName = z.ZoneName,
-                    Borough = z.Borough ?? "Unknown",
+                    CenterLat = z.CenterLat,
+                    CenterLong = z.CenterLong,
                     ActiveDriversCount = 0,
                     AvailableDriversCount = 0,
                     OnTripDriversCount = 0
@@ -64,11 +65,11 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetDriverDistribution
                     if (distributionDict.TryGetValue(zoneId, out var dto))
                     {
                         dto.ActiveDriversCount++;
-                        if (driver.Status == CurrentStatus.Available)
+                        if (driver.Status == CurrentStatus.Available.ToString())
                         {
                             dto.AvailableDriversCount++;
                         }
-                        else if (driver.Status == CurrentStatus.On_Trip)
+                        else if (driver.Status == CurrentStatus.On_Trip.ToString())
                         {
                             dto.OnTripDriversCount++;
                         }
@@ -83,11 +84,11 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetDriverDistribution
                     if (distributionDict.TryGetValue(defaultZoneId, out var dto))
                     {
                         dto.ActiveDriversCount++;
-                        if (driver.Status == CurrentStatus.Available)
+                        if (driver.Status == CurrentStatus.Available.ToString())
                         {
                             dto.AvailableDriversCount++;
                         }
-                        else if (driver.Status == CurrentStatus.On_Trip)
+                        else if (driver.Status == CurrentStatus.On_Trip.ToString())
                         {
                             dto.OnTripDriversCount++;
                         }

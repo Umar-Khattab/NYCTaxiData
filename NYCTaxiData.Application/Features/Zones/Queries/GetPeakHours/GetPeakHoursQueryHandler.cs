@@ -139,8 +139,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetPeakHours
                 .Select(g => new
                 {
                     Hour = g.Key,
-                    TripCount = g.Count(),
-                    Revenue = g.Sum(t => t.TotalAmount ?? 0m),
+                    TripCount = g.Count(), 
                     AvgFare = g.Average(t => t.FareAmount)
                 })
                 .ToListAsync(cancellationToken);
@@ -179,8 +178,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetPeakHours
 
                 if (hourDbDict.TryGetValue(h, out var agg))
                 {
-                    tripCount = agg.TripCount;
-                    totalRevenue = (decimal)agg.Revenue;
+                    tripCount = agg.TripCount; 
                     avgFare = (decimal)agg.AvgFare;
                 }
 

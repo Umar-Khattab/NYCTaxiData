@@ -13,8 +13,8 @@ namespace NYCTaxiData.Domain.Specifications.Trips
         {
             // 1. الفلترة بناءً على حالة السائق الحالية (موجود ومضمون 100%)
             AddCriteria(d =>
-                d.Status == CurrentStatus.Available ||
-                d.Status == CurrentStatus.On_Trip);
+                d.Status == CurrentStatus.Available.ToString() ||
+                d.Status == CurrentStatus.On_Trip.ToString());
 
             // 2. 🚀 الـ Includes السحرية لجلب البيانات الحقيقية من الـ Database ومنع الـ null تماماً
             AddInclude(d => d.User);

@@ -20,13 +20,12 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripTrends
         {
             var dailyAggregates = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.StartedAt != null)
+                .Where(t =>   t.StartedAt != null)
                 .GroupBy(t => t.StartedAt!.Value.Date)
                 .Select(g => new
                 {
                     Date = g.Key,
-                    Count = g.Count(),
-                    Revenue = g.Sum(t => t.TotalAmount ?? 0m),
+                    Count = g.Count(), 
                     Fare = g.Average(t => t.FareAmount)
                 })
                 .OrderBy(x => x.Date)
@@ -36,8 +35,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripTrends
             {
                 PeriodLabel = x.Date.ToString("yyyy-MM-dd"),
                 TripCount = x.Count,
-                AverageFare = Math.Round(x.Fare, 2),
-                TotalRevenue = Math.Round(x.Revenue, 2)
+                AverageFare = Math.Round(x.Fare ?? 0, 2)
             }).ToList();
 
             return Result<List<TripTrendDto>>.Success(trendList, "Trip trends calculated successfully");

@@ -20,7 +20,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripById
                 .AsNoTracking()
                 .Include(t => t.PickupLocation).ThenInclude(l => l.Zone)
                 .Include(t => t.DropoffLocation).ThenInclude(l => l.Zone)
-                .FirstOrDefaultAsync(t => t.TripId == request.TripId && t.DeletedAt == null, cancellationToken);
+                .FirstOrDefaultAsync(t => t.TripId == request.TripId  , cancellationToken);
 
             if (trip == null)
                 return Result<TripDto>.Failure($"Trip with ID {request.TripId} not found", "NotFound");

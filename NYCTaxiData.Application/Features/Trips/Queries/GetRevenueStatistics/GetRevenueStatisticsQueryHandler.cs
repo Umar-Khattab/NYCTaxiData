@@ -19,7 +19,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetRevenueStatistics
             CancellationToken cancellationToken)
         {
             var query = _unitOfWork.Trips.Query().AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.StartedAt != null);
+                .Where(t =>  t.StartedAt != null);
 
             if (request.StartDate.HasValue)
                 query = query.Where(t => t.StartedAt >= request.StartDate.Value);
@@ -36,9 +36,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetRevenueStatistics
             var timeSeries = new List<RevenuePeriodPointDto>();
 
             if (totalTrips > 0)
-            {
-                totalRevenue = await query.SumAsync(t => t.TotalAmount ?? 0m, cancellationToken);
-                totalFare = await query.SumAsync(t => t.FareAmount, cancellationToken);
+            {  
                 totalTip = await query.SumAsync(t => t.TipAmount ?? 0m, cancellationToken);
 
                 if (totalFare > 0)
@@ -51,8 +49,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetRevenueStatistics
                     .GroupBy(t => t.StartedAt!.Value.Date)
                     .Select(g => new
                     {
-                        Date = g.Key,
-                        Revenue = g.Sum(t => t.TotalAmount ?? 0m),
+                        Date = g.Key, 
                         Fare = g.Sum(t => t.FareAmount),
                         Tip = g.Sum(t => t.TipAmount ?? 0m)
                     })
@@ -61,9 +58,8 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetRevenueStatistics
 
                 timeSeries = dailyAggs.Select(x => new RevenuePeriodPointDto
                 {
-                    PeriodLabel = x.Date.ToString("yyyy-MM-dd"),
-                    Revenue = Math.Round(x.Revenue, 2),
-                    FareAmount = Math.Round(x.Fare, 2),
+                    PeriodLabel = x.Date.ToString("yyyy-MM-dd"), 
+                    FareAmount = Math.Round(x.Fare ?? 0, 2),
                     TipAmount = Math.Round(x.Tip, 2)
                 }).ToList();
             }

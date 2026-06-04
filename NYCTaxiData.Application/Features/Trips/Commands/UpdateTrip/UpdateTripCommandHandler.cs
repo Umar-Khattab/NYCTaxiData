@@ -22,8 +22,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.UpdateTrip
 
             // Update properties
             trip.FareAmount = request.FareAmount;
-            trip.TipAmount = request.TipAmount;
-            trip.TotalAmount = request.FareAmount + request.TipAmount;
+            trip.TipAmount = request.TipAmount; 
             trip.ProcessStatus = request.ProcessStatus;
 
             if (request.ProcessStatus.Equals("Completed", StringComparison.OrdinalIgnoreCase) && !trip.EndedAt.HasValue)

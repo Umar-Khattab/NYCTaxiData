@@ -19,31 +19,33 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneMetadata
             var totalZones = await _unitOfWork.Zones.Query().CountAsync(cancellationToken);
 
             var totalBoroughs = await _unitOfWork.Zones.Query()
-                .Where(z => z.Borough != null && z.Borough != "")
-                .Select(z => z.Borough)
+                .Where(z => z.CenterLat != null && z.CenterLong != null) 
                 .Distinct()
                 .CountAsync(cancellationToken);
 
             var totalServiceZones = await _unitOfWork.Zones.Query()
-                .Where(z => z.ServiceZone != null && z.ServiceZone != "")
-                .Select(z => z.ServiceZone)
+                .Where(z => z.OsmId != null  )
+                .Select(z => z.OsmId)
                 .Distinct()
                 .CountAsync(cancellationToken);
 
-            var boroughCountsList = await _unitOfWork.Zones.Query()
-                .Where(z => z.Borough != null && z.Borough != "")
-                .GroupBy(z => z.Borough)
-                .Select(g => new { Borough = g.Key!, Count = g.Count() })
-                .ToListAsync(cancellationToken);
-
-            var boroughCounts = boroughCountsList.ToDictionary(x => x.Borough, x => x.Count);
+            var zoneCountsList = await _unitOfWork.Zones.Query()
+            .Where(z => z.CenterLat != null && z.CenterLong != null) // التأكد من وجود الإحداثيات
+            .GroupBy(z => z.OsmId) // تجميع المناطق بناءً على الـ OsmId
+            .Select(g => new {
+                OsmId = g.Key, // المفتاح هو الـ OsmId
+                Count = g.Count() // عدد المناطق المرتبطة بهذا الـ OsmId
+            })
+           .ToListAsync(cancellationToken);
+             
+            var zoneCounts = zoneCountsList.ToDictionary(x => x.OsmId.ToString(), x => x.Count);
 
             var metadata = new ZoneMetadataDto
             {
                 TotalZones = totalZones,
                 TotalBoroughs = totalBoroughs,
                 TotalServiceZones = totalServiceZones,
-                BoroughCounts = boroughCounts
+                BoroughCounts = zoneCounts
             };
 
             return Result<ZoneMetadataDto>.Success(metadata, "Zone metadata retrieved successfully");

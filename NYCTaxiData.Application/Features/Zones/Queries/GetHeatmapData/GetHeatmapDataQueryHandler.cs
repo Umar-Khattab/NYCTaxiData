@@ -58,7 +58,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
                         if (zoneDict.TryGetValue(zone.ZoneId, out var dbz))
                         {
                             zoneName = dbz.ZoneName;
-                            borough = dbz.Borough ?? "Unknown";
+                            //borough = dbz.Borough ?? "Unknown";
                         }
 
                         double baseLat = 40.7306;
@@ -88,7 +88,8 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
                         {
                             ZoneId = zone.ZoneId,
                             ZoneName = zoneName,
-                            Borough = borough,
+                            //Latitude = zone.CenterLat,  
+                            //Longitude = zone.CenterLong,
                             Latitude = Math.Round(baseLat + latOffset, 4),
                             Longitude = Math.Round(baseLon + lonOffset, 4),
                             CalculatedTripCount = (int)zone.Demand,
@@ -177,7 +178,8 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
                 {
                     ZoneId = zone.ZoneId,
                     ZoneName = zone.ZoneName,
-                    Borough = zone.Borough ?? "Unknown",
+                    CenterLat = zone.CenterLat,
+                    CenterLong = zone.CenterLong,
                     Latitude = Math.Round(baseLat + latOffset, 4),
                     Longitude = Math.Round(baseLon + lonOffset, 4),
                     CalculatedTripCount = calculatedTrips,
@@ -205,7 +207,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
         {
             var data = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
+                .Where(t =>  t.PickupLocation != null && t.PickupLocation.ZoneId != null)
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
                 .Select(g => new { ZoneId = g.Key, Count = g.Count() })
                 .ToListAsync(ct);

@@ -84,13 +84,12 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetPeakHours
 
             // 3. High-Speed Parallel Execution
             var dbPeakHoursTask = _unitOfWork.Trips.Query().AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.StartedAt != null)
+                .Where(t =>   t.StartedAt != null)
                 .GroupBy(t => t.StartedAt!.Value.Hour)
                 .Select(g => new
                 {
                     Hour = g.Key,
                     TripCount = g.Count(),
-                    Revenue = g.Sum(t => t.TotalAmount ?? 0m)
                 })
                 .ToListAsync(cancellationToken);
 
@@ -128,8 +127,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetPeakHours
 
                 if (hourDbDict.TryGetValue(h, out var agg))
                 {
-                    tripCount = agg.TripCount;
-                    totalRevenue = (decimal)agg.Revenue;
+                    tripCount = agg.TripCount; 
                     if (tripCount > 0)
                         avgFare = totalRevenue / tripCount;
                 }

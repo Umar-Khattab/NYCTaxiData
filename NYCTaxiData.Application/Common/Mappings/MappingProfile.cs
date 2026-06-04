@@ -22,7 +22,7 @@ namespace NYCTaxiData.Application.Common.Mappings
         {
             // ===== RegisterDriverCommand Mapping =====
             CreateMap<RegisterDriverCommand, User1>()
-                .ForMember(dest => dest.Userrole, opt => opt.MapFrom(_ => "Driver"))
+                .ForMember(dest => dest.Role, opt => opt.MapFrom(_ => "Driver"))
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore());
 
             CreateMap<RegisterDriverCommand, Driver>()
@@ -36,7 +36,7 @@ namespace NYCTaxiData.Application.Common.Mappings
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.Userrole, opt => opt.MapFrom(_ => "Driver")) ;
+                .ForMember(dest => dest.Role, opt => opt.MapFrom(_ => "Driver")) ;
 
             CreateMap<DriverRegisterDto, Driver>()
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"))
@@ -47,7 +47,7 @@ namespace NYCTaxiData.Application.Common.Mappings
 
             // ===== Manager Registration ===== 
             CreateMap<RegisterManagerCommand, User1>()
-                .ForMember(dest => dest.Userrole, opt => opt.MapFrom(_ => "Manager"))
+                .ForMember(dest => dest.Role, opt => opt.MapFrom(_ => "Manager"))
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore());
 
             CreateMap<RegisterManagerCommand, Manager>()
@@ -60,7 +60,7 @@ namespace NYCTaxiData.Application.Common.Mappings
                 .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.FirstName))
                 .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.LastName))
 
-                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Userrole))
+                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role))
                 .ForMember(dest => dest.EmployeeId, opt => opt.Ignore())
                 .ForMember(dest => dest.Department, opt => opt.Ignore());
 
@@ -74,7 +74,7 @@ namespace NYCTaxiData.Application.Common.Mappings
               
               CreateMap<RegisterDriverCommand, User1>()
              .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())  
-             .ForMember(dest => dest.Userrole, opt => opt.MapFrom(src => "Driver"));
+             .ForMember(dest => dest.Role, opt => opt.MapFrom(src => "Driver"));
             CreateMap<User, VerifyOtpResultDto>();
 
             CreateMap<RegisterDriverCommand, Driver>();

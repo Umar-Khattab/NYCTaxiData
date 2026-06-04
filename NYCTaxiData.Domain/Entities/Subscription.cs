@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NYCTaxiData.Domain.Entities;
+namespace   NYCTaxiData.Domain.Entities;
 
 public partial class Subscription
 {
@@ -14,4 +14,6 @@ public partial class Subscription
     public DateTime CreatedAt { get; set; }
 
     public string? ActionFilter { get; set; }
+
+    public List<string>? SelectedColumns { get; set; }
 }

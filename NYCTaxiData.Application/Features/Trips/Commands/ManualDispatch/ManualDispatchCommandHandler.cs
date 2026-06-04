@@ -73,14 +73,13 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
                     TripId = finalTripId,
                     DriverId = request.DriverId,
                     PickupLocationId = finalPickupLocationId, // هتنزل null بأمان في الـ DB
-                    DropoffLocationId = finalDropoffLocationId, // هتنزل null بأمان في الـ DB
-                    CreatedAt = DateTime.UtcNow,
+                    DropoffLocationId = finalDropoffLocationId, 
                     StartedAt = DateTime.UtcNow,
                     EndedAt = null
                 };
 
                 // 5️⃣ تحديث حالة السائق لـ مشغول برحلة
-                driver.Status = CurrentStatus.On_Trip;
+                driver.Status = CurrentStatus.On_Trip.ToString();
 
                 // حفظ التغييرات في قاعدة البيانات (Supabase)
                 await _unitOfWork.Trips.AddAsync(trip);

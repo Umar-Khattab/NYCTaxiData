@@ -31,7 +31,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
                     LastName = request.LastName,
                     PhoneNumber = request.PhoneNumber,
                     PasswordHash = passwordHash,
-                    Userrole = "Manager", 
+                    Role = "Manager", 
                     Manager = new Manager
                     {
                         Employeeid = request.EmployeeId,

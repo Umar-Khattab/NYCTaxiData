@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NYCTaxiData.Domain.Entities;
+namespace   NYCTaxiData.Domain.Entities;
 
 /// <summary>
 /// auth: stores authenticator method reference claims for multi factor authentication

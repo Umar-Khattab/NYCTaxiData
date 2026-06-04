@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NYCTaxiData.Domain.Entities;
+namespace   NYCTaxiData.Domain.Entities;
 
 /// <summary>
 /// Auth: Manages SSO email address domain mapping to an SSO Identity Provider.

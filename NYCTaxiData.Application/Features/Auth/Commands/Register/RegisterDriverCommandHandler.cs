@@ -36,7 +36,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterDriver
 
             // الربط السحري (Navigation Property)
             user.Driver = driver;
-            user.Userrole = "Driver";
+            user.Role = "Driver";
 
             // 3. Persistence
             var saveResult = await _uow.ExecuteInTransactionAsync(async ct =>

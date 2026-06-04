@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 
-namespace NYCTaxiData.Domain.Entities;
+namespace   NYCTaxiData.Domain.Entities;
 
 /// <summary>
 /// auth: stores metadata about challenge requests made

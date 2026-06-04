@@ -40,8 +40,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneTrends
                     .Select(g => new
                     {
                         Day = g.Key,
-                        Count = g.Count(),
-                        Revenue = g.Sum(t => t.TotalAmount ?? 0m),
+                        Count = g.Count(), 
                         Fare = g.Average(t => t.FareAmount)
                     })
                     .ToListAsync(cancellationToken);
@@ -49,9 +48,8 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneTrends
                 trends = dailyAggregates.Select(x => new ZoneTrendDto
                 {
                     TimeLabel = x.Day.ToString(),
-                    TripCount = x.Count,
-                    TotalRevenue = Math.Round(x.Revenue, 2),
-                    AvgFare = Math.Round(x.Fare, 2)
+                    TripCount = x.Count, 
+                    AvgFare = Math.Round(x.Fare ?? 0, 2)
                 })
                 .OrderBy(x => Enum.Parse<DayOfWeek>(x.TimeLabel))
                 .ToList();
@@ -63,8 +61,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneTrends
                     .Select(g => new
                     {
                         Hour = g.Key,
-                        Count = g.Count(),
-                        Revenue = g.Sum(t => t.TotalAmount ?? 0m),
+                        Count = g.Count(), 
                         Fare = g.Average(t => t.FareAmount)
                     })
                     .ToListAsync(cancellationToken);
@@ -78,9 +75,8 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneTrends
                         trends.Add(new ZoneTrendDto
                         {
                             TimeLabel = $"{h:D2}:00",
-                            TripCount = agg.Count,
-                            TotalRevenue = Math.Round(agg.Revenue, 2),
-                            AvgFare = Math.Round(agg.Fare, 2)
+                            TripCount = agg.Count, 
+                            AvgFare = Math.Round(agg.Fare ?? 0, 2)
                         });
                     }
                     else

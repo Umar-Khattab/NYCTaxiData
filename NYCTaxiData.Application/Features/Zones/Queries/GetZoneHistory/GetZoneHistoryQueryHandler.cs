@@ -36,8 +36,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneHistory
                 .Select(g => new
                 {
                     Date = g.Key,
-                    TotalTrips = g.Count(),
-                    TotalRevenue = g.Sum(t => t.TotalAmount ?? 0m),
+                    TotalTrips = g.Count(), 
                     AvgFare = g.Average(t => t.FareAmount)
                 })
                 .ToListAsync(cancellationToken);
@@ -45,9 +44,8 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneHistory
             var historyList = dbHistory.Select(x => new ZoneHistoryDto
             {
                 Date = x.Date,
-                TotalTrips = x.TotalTrips,
-                TotalRevenue = Math.Round(x.TotalRevenue, 2),
-                AverageFare = Math.Round(x.AvgFare, 2),
+                TotalTrips = x.TotalTrips, 
+                AverageFare = Math.Round(x.AvgFare ?? 0, 2),
                 PeakHour = 17 // Simulated default or we can calculate. (17 represents 5 PM peak rush)
             })
             .OrderBy(x => x.Date)

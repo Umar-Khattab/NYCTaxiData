@@ -1,8 +1,7 @@
-﻿using NYCTaxiData.Domain.Enums;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-namespace NYCTaxiData.Domain.Entities;
+namespace   NYCTaxiData.Domain.Entities;
 
 public partial class Driver
 {
@@ -15,8 +14,10 @@ public partial class Driver
     public string LicenseNumber { get; set; } = null!;
 
     public decimal? Rating { get; set; }
+
+    public string Status { get; set; } = null!;
+
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();
 
     public virtual User1 User { get; set; } = null!;
-    public CurrentStatus Status { get; set; } = CurrentStatus.Offline;
 }

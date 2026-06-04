@@ -69,7 +69,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopDemandZones
                         if (simZoneDict.TryGetValue(zone.ZoneId, out var dbZone))
                         {
                             zoneName = dbZone.ZoneName;
-                            borough = dbZone.Borough ?? "Unknown";
+                            //borough = dbZone.Borough ?? "Unknown";
                         }
 
                         double calcPercentage = totalSimDemand > 0 ? (zone.Demand / totalSimDemand) * 100.0 : 0.0;
@@ -161,7 +161,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopDemandZones
                     {
                         ZoneId = zone.ZoneId,
                         ZoneName = zone.ZoneName,
-                        Borough = zone.Borough ?? "Unknown",
+                        //Borough = zone.Borough ?? "Unknown",
                         CalculatedPickups = item.Count,
                         PercentageOfTotalCalculated = Math.Round(calcPercentage, 2),
                         PredictedPickups = Math.Round(predictedVal, 2),

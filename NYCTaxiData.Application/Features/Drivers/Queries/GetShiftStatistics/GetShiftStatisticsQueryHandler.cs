@@ -34,9 +34,7 @@ public sealed class GetShiftStatisticsQueryHandler : IRequestHandler<GetShiftSta
 
         // EndedAt áÓå Nullable ÝÈäÓíÈ HasValue Òí ãÇ åí
         var completedTrips = trips.Count(t => t.EndedAt.HasValue);
-
-        // ÊÛííÑ ActualFare áÜ TotalAmount ÈäÇÁð Úáì ÇáÜ Entity ÇáÌÏíÏÉ
-        var totalEarnings = trips.Sum(t => t.TotalAmount ?? 0m);
+         
 
         var activeMinutes = trips.Sum(t =>
         {
@@ -66,8 +64,7 @@ public sealed class GetShiftStatisticsQueryHandler : IRequestHandler<GetShiftSta
             ShiftStartUtc = shiftStart,
             ShiftEndUtc = shiftEnd,
             HoursActive = Math.Round(activeMinutes / 60d, 2),
-            TripsCompleted = completedTrips,
-            TotalEarnings = totalEarnings,
+            TripsCompleted = completedTrips, 
             IdleTimeMinutes = idleTimeMinutes
         };
 

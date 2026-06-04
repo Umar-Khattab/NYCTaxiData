@@ -69,7 +69,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopRevenueZones
                         if (simZoneDict.TryGetValue(zone.ZoneId, out var dbZone))
                         {
                             zoneName = dbZone.ZoneName;
-                            borough = dbZone.Borough ?? "Unknown";
+                           // borough = dbZone.Borough ?? "Unknown";
                         }
 
                         double calcPercentage = totalSimRevenue > 0 ? (zone.Revenue / totalSimRevenue) * 100.0 : 0.0;
@@ -105,14 +105,14 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopRevenueZones
             // 3. High-Speed Parallel Execution
             var totalRevenueSum = (decimal)await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.TotalAmount != null)
-                .SumAsync(t => t.TotalAmount!.Value, cancellationToken);
+                .Where(t => t.FareAmount != null)
+                .SumAsync(t => t.FareAmount!.Value, cancellationToken);
 
             var dbRevenue = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.PickupLocation != null && t.PickupLocation.ZoneId != null && t.TotalAmount != null)
+                .Where(t => t.PickupLocation != null && t.PickupLocation.ZoneId != null  )
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
-                .Select(g => new { ZoneId = g.Key, Revenue = g.Sum(t => t.TotalAmount!.Value) })
+                .Select(g => new { ZoneId = g.Key, Revenue = g.Sum(t => t.FareAmount!.Value) })
                 .OrderByDescending(x => x.Revenue)
                 .Take(limit)
                 .ToListAsync(cancellationToken);
@@ -163,7 +163,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopRevenueZones
                     {
                         ZoneId = zone.ZoneId,
                         ZoneName = zone.ZoneName,
-                        Borough = zone.Borough ?? "Unknown",
+                        //Borough = zone.Borough ?? "Unknown",
                         CalculatedRevenue = Math.Round((decimal)item.Revenue, 2),
                         PercentageOfTotalCalculated = Math.Round(calcPercentage, 2),
                         PredictedRevenue = Math.Round(predictedVal, 2),

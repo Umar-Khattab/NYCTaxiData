@@ -21,13 +21,13 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetDriverActivity
             // Group trip earnings and count by driver on database
             var driverAggregates = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.DriverId != null && t.TotalAmount != null)
+                .Where(t => t.EndedAt == null && t.DriverId != null && t.FareAmount != null)
                 .GroupBy(t => t.DriverId!.Value)
                 .Select(g => new
                 {
                     DriverId = g.Key,
                     Count = g.Count(),
-                    Earnings = g.Sum(t => t.TotalAmount!.Value)
+                    Earnings = g.Sum(t => t.FareAmount!.Value)
                 })
                 .ToListAsync(cancellationToken);
 

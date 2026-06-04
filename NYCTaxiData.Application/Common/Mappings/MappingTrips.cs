@@ -27,8 +27,7 @@ namespace NYCTaxiData.Application.Common.Mappings
                 .ForMember(dest => dest.DurationMinutes, opt => opt.MapFrom(src =>
                     (src.EndedAt.HasValue && src.StartedAt.HasValue)
                         ? (int)(src.EndedAt.Value - src.StartedAt.Value).TotalMinutes
-                        : 0))
-                .ForMember(dest => dest.TotalFare, opt => opt.MapFrom(src => src.TotalAmount ?? 0m))
+                        : 0)) 
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => "Completed"));
 
             // ===== Trips - DispatchResultDto =====
@@ -44,8 +43,7 @@ namespace NYCTaxiData.Application.Common.Mappings
             // ===== Trips - GetTripHistory =====
             CreateMap<Trip, TripHistoryItemDto>()
                 .ForMember(dest => dest.PickupZone, opt => opt.MapFrom(src => src.PickupLocation!.Zone!.ZoneName ?? "Unknown Zone"))
-                .ForMember(dest => dest.DropoffZone, opt => opt.MapFrom(src => src.DropoffLocation!.Zone!.ZoneName ?? "Unknown Zone"))
-                .ForMember(dest => dest.TotalFare, opt => opt.MapFrom(src => src.TotalAmount))
+                .ForMember(dest => dest.DropoffZone, opt => opt.MapFrom(src => src.DropoffLocation!.Zone!.ZoneName ?? "Unknown Zone")) 
                 .ForMember(dest => dest.DurationMinutes, opt => opt.MapFrom(src =>
                     (!src.StartedAt.HasValue) ? 0 :
                     src.EndedAt.HasValue

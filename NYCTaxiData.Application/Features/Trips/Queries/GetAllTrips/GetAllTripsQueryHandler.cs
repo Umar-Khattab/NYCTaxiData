@@ -24,7 +24,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetAllTrips
             // Query only non-deleted trips
             var query = _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.DeletedAt == null);
+                .Where(t => t.EndedAt == null);
 
             if (request.StartDate.HasValue)
                 query = query.Where(t => t.StartedAt >= request.StartDate.Value);

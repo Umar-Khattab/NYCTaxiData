@@ -42,7 +42,7 @@ namespace NYCTaxiData.Infrastructure.Services
                    ? completedTrips.Average(t => ((t.EndedAt - t.StartedAt).Value).TotalMinutes)
                    : 0;
 
-                var totalRevenue = completedTrips.Sum(t => t.TotalAmount ?? 0);
+                var totalRevenue = completedTrips.Sum(t => t.FareAmount ?? 0);
                 var avgFare = completedTrips.Any() ? totalRevenue / completedTrips.Count : 0;
 
                 var targetDateOnly = DateOnly.FromDateTime(targetDate);

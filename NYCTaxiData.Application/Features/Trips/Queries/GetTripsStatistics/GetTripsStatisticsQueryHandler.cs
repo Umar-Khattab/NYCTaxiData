@@ -17,8 +17,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripsStatistics
             GetTripsStatisticsQuery request,
             CancellationToken cancellationToken)
         {
-            var query = _unitOfWork.Trips.Query().AsNoTracking()
-                .Where(t => t.DeletedAt == null);
+            var query = _unitOfWork.Trips.Query().AsNoTracking();
 
             var totalTrips = await query.CountAsync(cancellationToken);
 
@@ -33,9 +32,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetTripsStatistics
             double avgDuration = 0.0;
 
             if (totalTrips > 0)
-            {
-                totalRevenue = await query.SumAsync(t => t.TotalAmount ?? 0m, cancellationToken);
-                avgFare = await query.AverageAsync(t => t.FareAmount, cancellationToken);
+            {  
                 avgTip = await query.AverageAsync(t => t.TipAmount ?? 0m, cancellationToken);
 
                 // Calculate average duration in minutes for completed trips

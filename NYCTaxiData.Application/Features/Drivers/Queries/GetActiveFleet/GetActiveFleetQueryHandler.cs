@@ -24,7 +24,7 @@ public sealed class GetActiveFleetQueryHandler
         var (items, totalCount) = await _unitOfWork.Drivers.GetPagedAsync(
     pageNumber: request.PageNumber,
     pageSize: request.PageSize,
-    predicate: d => d.Status != CurrentStatus.Offline,
+    predicate: d => d.Status != CurrentStatus.Offline.ToString(),
     orderBy: query => query.OrderBy(d => d.FullName),
     d => d.User);
 

@@ -12,7 +12,7 @@ namespace NYCTaxiData.Domain.Specifications.Drivers
     {
         public AvailableDriversSpec(int page, int limit)
         {
-            AddCriteria(d => d.Status == CurrentStatus.Available);
+            AddCriteria(d => d.Status == CurrentStatus.Available.ToString());
 
             AddInclude(d => d.User!);
             AddOrderBy(d => d.User!.FirstName!);

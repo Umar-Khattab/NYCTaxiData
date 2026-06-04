@@ -59,7 +59,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics
                         if (zoneDict.TryGetValue(zone.ZoneId, out var dbz))
                         {
                             zoneName = dbz.ZoneName;
-                            borough = dbz.Borough ?? "Unknown";
+                            borough = dbz.OsmId?.ToString() ?? "Unknown";
                         }
 
                         double expectedDemand15 = zone.Demand / 4.0;
@@ -118,20 +118,19 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics
             // 3. High-Speed Parallel Execution (LINQ compiles directly to batch native SQL queries)
             // 3. High-Speed Sequential Execution to ensure DbContext thread safety
             var pickupsGroup = await _unitOfWork.Trips.Query().AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
+                .Where(t =>   t.PickupLocation != null && t.PickupLocation.ZoneId != null)
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
                 .Select(g => new
                 {
                     ZoneId = g.Key,
-                    Count = g.Count(),
-                    Revenue = g.Sum(t => t.TotalAmount ?? 0m),
+                    Count = g.Count(), 
                     AvgFare = g.Average(t => t.FareAmount),
                     AvgTip = g.Average(t => t.TipAmount ?? 0m)
                 })
                 .ToListAsync(cancellationToken);
 
             var dropoffsGroup = await _unitOfWork.Trips.Query().AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.DropoffLocation != null && t.DropoffLocation.ZoneId != null)
+                .Where(t =>  t.DropoffLocation != null && t.DropoffLocation.ZoneId != null)
                 .GroupBy(t => t.DropoffLocation!.ZoneId!.Value)
                 .Select(g => new { ZoneId = g.Key, Count = g.Count() })
                 .ToListAsync(cancellationToken);
@@ -171,8 +170,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics
 
                 if (pickupDict.TryGetValue(zone.ZoneId, out var pInfo))
                 {
-                    totalPickups = pInfo.Count;
-                    totalRevenue = (decimal)pInfo.Revenue;
+                    totalPickups = pInfo.Count; 
                     avgFare = (decimal)pInfo.AvgFare;
                     avgTip = (decimal)pInfo.AvgTip;
                 }
@@ -186,7 +184,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetZoneStatistics
                 {
                     ZoneId = zone.ZoneId,
                     ZoneName = zone.ZoneName,
-                    Borough = zone.Borough,
+                    Borough = zone.ZoneName ?? "Unknown",
                     Calculated = new ZoneCalculatedStats
                     {
                         TotalPickupTrips = totalPickups,

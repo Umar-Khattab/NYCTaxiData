@@ -31,8 +31,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverProfile
 
             // الحسابات
             var completedTrips = trips.Count(t => t.EndedAt.HasValue);
-            var activeTrips = trips.Count(t => !t.EndedAt.HasValue);
-            var totalEarnings = trips.Sum(t => t.TotalAmount ?? 0m);
+            var activeTrips = trips.Count(t => !t.EndedAt.HasValue); 
             var lastTripEndedAt = trips.Where(t => t.EndedAt.HasValue)
                                        .OrderByDescending(t => t.EndedAt)
                                        .Select(t => t.EndedAt)
@@ -49,8 +48,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverProfile
                 Status = driver.Status.ToString(),
                 PhoneNumber = driver.User?.PhoneNumber ?? string.Empty, 
                 CompletedTrips = completedTrips,
-                ActiveTrips = activeTrips,
-                TotalEarnings = totalEarnings,
+                ActiveTrips = activeTrips, 
                 LastTripEndedAt = lastTripEndedAt
             };
 

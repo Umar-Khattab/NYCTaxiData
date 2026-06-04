@@ -46,8 +46,7 @@ public sealed class SyncOfflineDataCommandHandler : IRequestHandler<SyncOfflineD
                     PickupLocationId = t.PickupLocationId,
                     DropoffLocationId = t.DropoffLocationId,
                     StartedAt = t.StartedAt,
-                    EndedAt = t.EndedAt,
-                    TotalAmount = t.ActualFare
+                    EndedAt = t.EndedAt 
                 };
 
                 await _unitOfWork.Trips.AddAsync(trip);

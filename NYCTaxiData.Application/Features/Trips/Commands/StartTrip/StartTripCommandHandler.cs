@@ -31,12 +31,12 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.StartTrip
                 if (driver == null)
                     return Result<TripStartResultDto>.Failure($"Driver with ID {request.DriverId} not found", "NotFound");
 
-                if (driver.Status == CurrentStatus.On_Trip)
+                if (driver.Status == CurrentStatus.On_Trip.ToString())
                     return Result<TripStartResultDto>.Failure("Driver is already on another trip.", "Conflict");
 
                 // 2?? ÅÓäÇÏ ÇáÈíÇäÇÊ ááÜ ÇáĞÇßÑÉ æÊÍÏíË ÍÇáÉ ÇáÓÇÆŞ
                 trip.StartedAt = DateTime.UtcNow;
-                driver.Status = CurrentStatus.On_Trip;
+                driver.Status = CurrentStatus.On_Trip.ToString();
 
                 // ?? ÇáÍÓã ÇáåäÏÓí ÇáäåÇÆí (ÇáÎØÉ ÇáÈÏíáÉ ÇáŞÇØÚÉ):
                 // ÈãÇ Åä ÇáÜ Tracker ŞÇİá ÇáÊÚÏíá ÈÓÈÈ ÇáÜ No-Tracking¡ åäÚÏá ÇáÍŞæá Ïí ãÈÇÔÑÉ İí ÇáÜ DB íÏæíÇğ Ãæ äÚÊãÏ Úáì ÇáÍİÙ ÇáÕÑíÍ

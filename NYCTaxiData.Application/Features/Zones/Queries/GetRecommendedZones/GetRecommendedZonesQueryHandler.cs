@@ -65,7 +65,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                         if (dbZone != null)
                         {
                             zoneName = dbZone.ZoneName;
-                            borough = dbZone.Borough ?? "Unknown";
+                            //borough = dbZone.Borough ?? "Unknown";
                         }
 
                         double ratio = zone.DriverCount > 0 ? zone.Demand / zone.DriverCount : zone.Demand;
@@ -152,7 +152,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                         {
                             ZoneId = zone.ZoneId,
                             ZoneName = zone.ZoneName,
-                            Borough = zone.Borough ?? "Unknown",
+                            //Borough = zone.Borough ?? "Unknown",
                             RecommendationScore = Math.Round((decimal)score, 2),
                             DemandSupplyRatio = Math.Round((decimal)ratio, 2),
                             PredictedRevenueYield = Math.Round(revenueDict.GetValueOrDefault(zone.ZoneId, 0m) * 1.15m, 2),
@@ -189,7 +189,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                     {
                         ZoneId = z.ZoneId,
                         ZoneName = z.ZoneName,
-                        Borough = z.Borough ?? "Unknown",
+                     //   Borough = z.Borough ?? "Unknown",
                         RecommendationScore = finalScore,
                         DemandSupplyRatio = Math.Round((decimal)ratio, 2),
                         PredictedRevenueYield = Math.Round(revenue * 1.12m, 2),
@@ -217,7 +217,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
         {
             var data = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
+                .Where(t =>  t.PickupLocation != null && t.PickupLocation.ZoneId != null)
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
                 .Select(g => new { ZoneId = g.Key, Count = g.Count() })
                 .ToListAsync(ct);
@@ -229,12 +229,12 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
         {
             var data = await _unitOfWork.Drivers.Query()
                 .AsNoTracking()
-                .Where(d => d.Status == CurrentStatus.Available)
+                .Where(d => d.Status == CurrentStatus.Available.ToString())
                 .Select(d => new
                 {
                     DriverId = d.UserId,
                     LastTripDropoffZoneId = d.Trips
-                        .Where(t => t.DeletedAt == null && t.DropoffLocation != null && t.DropoffLocation.ZoneId != null)
+                        .Where(t => t.DropoffLocation != null && t.DropoffLocation.ZoneId != null)
                         .OrderByDescending(t => t.StartedAt)
                         .Select(t => t.DropoffLocation!.ZoneId)
                         .FirstOrDefault()
@@ -251,9 +251,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
         {
             var data = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.TotalAmount != null && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
+                .Where(t => t.PickupLocation != null && t.PickupLocation.ZoneId != null)
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
-                .Select(g => new { ZoneId = g.Key, Revenue = g.Sum(t => t.TotalAmount!.Value) })
+                .Select(g => new { ZoneId = g.Key, Revenue = g.Sum(t => t.FareAmount!.Value) })
                 .ToListAsync(ct);
 
             return data.Select(x => (x.ZoneId, x.Revenue)).ToList();
@@ -263,7 +263,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
         {
             var data = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.ProcessStatus == "Ongoing" && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
+                .Where(t =>   t.ProcessStatus == "Ongoing" && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
                 .Select(g => new { ZoneId = g.Key, Count = g.Count() })
                 .ToListAsync(ct);

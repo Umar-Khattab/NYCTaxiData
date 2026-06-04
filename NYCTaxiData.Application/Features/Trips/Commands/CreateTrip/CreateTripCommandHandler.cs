@@ -39,11 +39,9 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.CreateTrip
                 PickupLocationId = request.PickupLocationId,
                 DropoffLocationId = request.DropoffLocationId,
                 FareAmount = request.FareAmount,
-                TipAmount = request.TipAmount,
-                TotalAmount = request.FareAmount + request.TipAmount, // Computed or explicit
+                TipAmount = request.TipAmount, 
                 StartedAt = DateTime.UtcNow.AddMinutes(-20), // Simulation: started 20 mins ago
-                EndedAt = DateTime.UtcNow,
-                CreatedAt = DateTime.UtcNow,
+                EndedAt = DateTime.UtcNow, 
                 ProcessStatus = "Completed"
             };
 

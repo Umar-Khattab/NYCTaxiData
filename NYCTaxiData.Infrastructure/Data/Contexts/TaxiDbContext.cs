@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using NYCTaxiData.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using NYCTaxiData.Domain.Entities;
-using Object = NYCTaxiData.Domain.Entities.Object;
 
-namespace NYCTaxiData.Infrastructure.Data.Contexts; 
+namespace NYCTaxiData.Infrastructure.Data.Contexts;
 
 public partial class TaxiDbContext : DbContext
 {
@@ -57,7 +57,7 @@ public partial class TaxiDbContext : DbContext
 
     public virtual DbSet<OauthConsent> OauthConsents { get; set; }
 
-    public virtual DbSet< Object> Objects { get; set; }
+    public virtual DbSet<NYCTaxiData.Domain.Entities.Object> Objects { get; set; }
 
     public virtual DbSet<OneTimeToken> OneTimeTokens { get; set; }
 
@@ -99,111 +99,10 @@ public partial class TaxiDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql("Host=aws-1-eu-central-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.aufjywcejdsmyfbkyoal;Password=*GradProject2026#;SSL Mode=Require;Trust Server Certificate=true;Command Timeout=120;Timeout=120;Keepalive=30;Multiplexing=False;Pooling=true;Minimum Pool Size=1;Maximum Pool Size=10;");
+        => optionsBuilder.UseNpgsql("Host=aws-1-eu-central-1.pooler.supabase.com;Port=6543;Database=postgres;Username=postgres.aufjywcejdsmyfbkyoal;Password=*GradProject2026#;SSL Mode=Require;Trust Server Certificate=true");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User1>(entity =>
-        {
-            entity.ToTable("users");
-
-            // ✅ أضف دول
-            entity.Property(e => e.FirstName)
-                  .HasColumnName("first_name");
-
-            entity.Property(e => e.LastName)
-                  .HasColumnName("last_name");
-
-            entity.Property(e => e.PhoneNumber)
-                  .HasColumnName("phone_number");
-
-            entity.Property(e => e.PasswordHash)
-                  .HasColumnName("password_hash");
-
-            entity.Property(e => e.CreatedAt)
-                  .HasColumnName("created_at");
-        });
-        modelBuilder.Entity<User>()
-          .HasKey(u => u.Id);
-        modelBuilder.Entity<User>()
-            .Property(u => u.Id)
-            .ValueGeneratedNever();
-
-        // OR: let DB generate GUIDs
-        modelBuilder.Entity<User>()
-            .Property(u => u.Id)
-            .HasDefaultValueSql("gen_random_uuid()");
-
-        modelBuilder.Entity<User1>(entity =>
-        {
-            entity.ToTable("users"); // شيل الـ schema "auth" لو إنت مش مستخدمها فعلياً في سوبابيز
-            entity.HasKey(u => u.Id);
-            entity.Property(u => u.Id)
-          .HasColumnName("id")
-          .HasDefaultValueSql("gen_random_uuid()") // 👈 يخلي الداتابيز تولده تلقائياً
-          .ValueGeneratedOnAdd();
-
-            entity.Property(e => e.FirstName)
-      .HasColumnName("first_name");  // ✅
-
-            entity.Property(e => e.LastName)
-                  .HasColumnName("last_name");
-            entity.Property(u => u.FirstName).HasColumnName("first_name");
-            entity.Property(u => u.LastName).HasColumnName("last_name");
-            entity.Property(u => u.PhoneNumber).HasColumnName("phone_number");
-            entity.Property(u => u.PasswordHash).HasColumnName("password_hash");
-
-            // ⚠️ مهم جداً: تأكد إن النوع في الداتابيز بقى text زي ما غيرناه
-            entity.Property(u => u.Userrole).HasColumnName("role");
-
-            entity.Property(u => u.CreatedAt)
-                  .HasColumnName("created_at")
-                  .HasDefaultValueSql("now()");
-
-            entity.Property(u => u.Updatedat).HasColumnName("updated_at");
-        });
-
-        modelBuilder.Entity<Manager>(entity =>
-        {
-            entity.ToTable("managers");
-            entity.HasKey(m => m.Id);
-
-            entity.Property(m => m.Id).HasColumnName("id");
-            entity.Property(m => m.Employeeid).HasColumnName("employeeid");
-            entity.Property(m => m.Department).HasColumnName("department");
-
-            entity.HasOne<User1>()
-                  .WithOne(u => u.Manager)
-                  .HasForeignKey<Manager>(m => m.Id)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<Driver>(entity =>
-        {
-            entity.ToTable("drivers");
-            entity.HasKey(d => d.UserId);
-            entity.Property(d => d.UserId)
-          .HasColumnName("user_id")
-          .ValueGeneratedNever();
-            entity.Property(d => d.UserId).HasColumnName("user_id");
-            entity.Property(d => d.LicenseNumber).HasColumnName("license_number");
-            entity.Property(d => d.PlateNumber).HasColumnName("plate_number");
-            entity.Property(d => d.FullName).HasColumnName("full_name");
-
-            entity.Property(d => d.Status)
-                  .HasColumnName("status")
-                  .HasConversion<string>();
-
-            entity.HasOne<User1>()
-                  .WithOne(u => u.Driver)
-                  .HasForeignKey<Driver>(d => d.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-
-            entity.Property(d => d.Status)
-      .HasColumnName("status")
-      .HasConversion<string>();
-        });
-
         modelBuilder
             .HasPostgresEnum("auth", "aal_level", new[] { "aal1", "aal2", "aal3" })
             .HasPostgresEnum("auth", "code_challenge_method", new[] { "s256", "plain" })
@@ -411,9 +310,7 @@ public partial class TaxiDbContext : DbContext
 
         modelBuilder.Entity<Driver>(entity =>
         {
-            entity.Property(e => e.Status)
-     .HasColumnName("status") // 👈 دي أهم حتة عشان يربط بـ status اللي في Postgres
-     .HasConversion<string>();
+            entity.HasKey(e => e.UserId).HasName("drivers_pkey");
 
             entity.ToTable("drivers");
 
@@ -437,6 +334,9 @@ public partial class TaxiDbContext : DbContext
                 .HasPrecision(3, 2)
                 .HasDefaultValue(5.0m)
                 .HasColumnName("rating");
+            entity.Property(e => e.Status)
+                .HasDefaultValueSql("'Offline'::driver_status")
+                .HasColumnName("status");
 
             entity.HasOne(d => d.User).WithOne(p => p.Driver)
                 .HasForeignKey<Driver>(d => d.UserId)
@@ -539,7 +439,7 @@ public partial class TaxiDbContext : DbContext
             entity.HasOne(d => d.Zone).WithMany(p => p.Locations)
                 .HasForeignKey(d => d.ZoneId)
                 .OnDelete(DeleteBehavior.Cascade)
-                .HasConstraintName("location_zone_id_fkey");
+                .HasConstraintName("fk_location_zone");
         });
 
         modelBuilder.Entity<Manager>(entity =>
@@ -796,7 +696,7 @@ public partial class TaxiDbContext : DbContext
                 .HasConstraintName("oauth_consents_user_id_fkey");
         });
 
-        modelBuilder.Entity<Object>(entity =>
+        modelBuilder.Entity<NYCTaxiData.Domain.Entities.Object>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("objects_pkey");
 
@@ -1173,6 +1073,7 @@ public partial class TaxiDbContext : DbContext
                 .HasDefaultValueSql("timezone('utc'::text, now())")
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("created_at");
+            entity.Property(e => e.SelectedColumns).HasColumnName("selected_columns");
             entity.Property(e => e.SubscriptionId).HasColumnName("subscription_id");
         });
 
@@ -1182,10 +1083,12 @@ public partial class TaxiDbContext : DbContext
 
             entity.ToTable("trips");
 
-            entity.HasIndex(e => new { e.StartedAt, e.PickupLocationId }, "idx_trips_time_zone");
-
-            entity.Property(e => e.TripId).HasColumnName("trip_id");
-            entity.Property(e => e.CvDataPath).HasColumnName("cv_data_path");
+            entity.Property(e => e.TripId)
+                .ValueGeneratedNever()
+                .HasColumnName("trip_id");
+            entity.Property(e => e.CvDataPath)
+                .HasMaxLength(500)
+                .HasColumnName("cv_data_path");
             entity.Property(e => e.DriverId).HasColumnName("driver_id");
             entity.Property(e => e.DropoffLocationId).HasColumnName("dropoff_location_id");
             entity.Property(e => e.EndedAt).HasColumnName("ended_at");
@@ -1194,44 +1097,27 @@ public partial class TaxiDbContext : DbContext
                 .HasColumnName("fare_amount");
             entity.Property(e => e.PickupLocationId).HasColumnName("pickup_location_id");
             entity.Property(e => e.ProcessStatus)
-                .HasMaxLength(20)
-                .HasDefaultValueSql("'Pending'::character varying")
+                .HasMaxLength(50)
                 .HasColumnName("process_status");
             entity.Property(e => e.StartedAt).HasColumnName("started_at");
             entity.Property(e => e.TipAmount)
                 .HasPrecision(10, 2)
-                .HasDefaultValue(0.0m)
                 .HasColumnName("tip_amount");
-            entity.Property(e => e.TotalAmount)
-                .HasPrecision(10, 2)
-                .HasComputedColumnSql("(fare_amount + tip_amount)", true)
-                .HasColumnName("total_amount");
 
             entity.HasOne(d => d.Driver).WithMany(p => p.Trips)
                 .HasForeignKey(d => d.DriverId)
-                .HasConstraintName("trips_driver_id_fkey");
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_trips_driver");
 
             entity.HasOne(d => d.DropoffLocation).WithMany(p => p.TripDropoffLocations)
                 .HasForeignKey(d => d.DropoffLocationId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("trips_dropoff_location_id_fkey");
 
             entity.HasOne(d => d.PickupLocation).WithMany(p => p.TripPickupLocations)
                 .HasForeignKey(d => d.PickupLocationId)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("trips_pickup_location_id_fkey");
-            entity.Property(e => e.CreatedAt)
-          .HasColumnName("created_at");
-            entity.Property(e => e.CreatedAt)
-                      .HasDefaultValueSql("now()")  
-                      .ValueGeneratedOnAdd();
-
-            entity.Property(e => e.CreatedBy)
-          .HasColumnName("created_by");
-
-            entity.Property(e => e.DeletedAt)
-          .HasColumnName("deleted_at");  
-
-            entity.Property(e => e.DeletedBy)
-                  .HasColumnName("deleted_by");
         });
 
         modelBuilder.Entity<User>(entity =>
@@ -1354,7 +1240,35 @@ public partial class TaxiDbContext : DbContext
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         });
 
-      
+        modelBuilder.Entity<User1>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("users_pkey");
+
+            entity.ToTable("users");
+
+            entity.HasIndex(e => e.PhoneNumber, "users_phone_number_key").IsUnique();
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_at");
+            entity.Property(e => e.FirstName)
+                .HasMaxLength(50)
+                .HasColumnName("first_name");
+            entity.Property(e => e.LastName)
+                .HasMaxLength(50)
+                .HasColumnName("last_name");
+            entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
+            entity.Property(e => e.PhoneNumber)
+                .HasMaxLength(15)
+                .HasColumnName("phone_number");
+            entity.Property(e => e.Role).HasColumnName("role");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("updated_at");
+        });
 
         modelBuilder.Entity<VectorIndex>(entity =>
         {
@@ -1470,13 +1384,12 @@ public partial class TaxiDbContext : DbContext
 
             entity.ToTable("zones");
 
-            entity.Property(e => e.ZoneId).HasColumnName("zone_id");
-            entity.Property(e => e.Borough)
-                .HasMaxLength(100)
-                .HasColumnName("borough");
-            entity.Property(e => e.ServiceZone)
-                .HasMaxLength(100)
-                .HasColumnName("service_zone");
+            entity.Property(e => e.ZoneId)
+                .ValueGeneratedNever()
+                .HasColumnName("zone_id");
+            entity.Property(e => e.CenterLat).HasColumnName("center_lat");
+            entity.Property(e => e.CenterLong).HasColumnName("center_long");
+            entity.Property(e => e.OsmId).HasColumnName("osm_id");
             entity.Property(e => e.ZoneName)
                 .HasMaxLength(255)
                 .HasColumnName("zone_name");

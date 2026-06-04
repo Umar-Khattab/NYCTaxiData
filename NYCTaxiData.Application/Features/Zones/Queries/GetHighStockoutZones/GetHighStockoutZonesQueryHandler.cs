@@ -65,7 +65,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHighStockoutZones
                         if (zoneDict.TryGetValue(zone.ZoneId, out var dbZone))
                         {
                             zoneName = dbZone.ZoneName;
-                            borough = dbZone.Borough ?? "Unknown";
+                            //borough = dbZone.Borough ?? "Unknown";
                         }
 
                         int deficit = Math.Max(0, (int)zone.Demand - zone.DriverCount);
@@ -110,7 +110,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHighStockoutZones
 
             var activeDriversInfo = await _unitOfWork.Drivers.Query()
                 .AsNoTracking()
-                .Where(d => d.Status == CurrentStatus.Available)
+                .Where(d => d.Status == CurrentStatus.Available.ToString())
                 .Select(d => new
                 {
                     DriverId = d.UserId,
@@ -188,7 +188,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHighStockoutZones
                 {
                     ZoneId = zone.ZoneId,
                     ZoneName = zone.ZoneName,
-                    Borough = zone.Borough ?? "Unknown",
+                    //Borough = zone.Borough ?? "Unknown",
                     CalculatedDeficit = calcDeficit,
                     CalculatedStockoutProbability = Math.Round(calcProb, 4),
                     PredictedDeficit = predDeficit,

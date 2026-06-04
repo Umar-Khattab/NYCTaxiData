@@ -6,7 +6,8 @@ namespace NYCTaxiData.Application.DTOs.Zone
     {
         public int ZoneId { get; set; }
         public string ZoneName { get; set; } = string.Empty;
-        public string Borough { get; set; } = string.Empty;
+        public double? CenterLat { get; set; }
+        public double? CenterLong { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         

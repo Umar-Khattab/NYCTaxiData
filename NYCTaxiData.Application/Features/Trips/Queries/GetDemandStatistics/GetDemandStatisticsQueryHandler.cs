@@ -19,7 +19,7 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetDemandStatistics
             CancellationToken cancellationToken)
         {
             var query = _unitOfWork.Trips.Query().AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.StartedAt != null);
+                .Where(t =>   t.StartedAt != null);
 
             if (request.StartDate.HasValue)
                 query = query.Where(t => t.StartedAt >= request.StartDate.Value);

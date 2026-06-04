@@ -18,10 +18,7 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.DeleteTrip
             var trip = await _unitOfWork.Trips.GetByIdAsync(request.TripId);
             if (trip == null)
                 return Result<bool>.Failure($"Trip with ID {request.TripId} not found", "NotFound");
-
-            // Perform soft delete using existing columns
-            trip.DeletedAt = DateTime.UtcNow;
-            trip.DeletedBy = _currentUserService.UserName ?? "System";
+             
 
             await _unitOfWork.Trips.UpdateAsync(trip);
             await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -40,7 +40,7 @@ public sealed class GetDriverListQueryHandler
         }
 
         Expression<Func<Driver, bool>> predicate = driver =>
-            (!parsedStatus.HasValue || driver.Status == parsedStatus.Value)
+            (!parsedStatus.HasValue || driver.Status == parsedStatus.Value.ToString())
             && (!request.ZoneId.HasValue
                 || driver.Trips.Any(t =>
                     (t.PickupLocation != null && t.PickupLocation.ZoneId == request.ZoneId.Value)

@@ -10,7 +10,7 @@ namespace NYCTaxiData.Domain.Specifications.Drivers
     public class DriverByStatusSpec : BaseSpecification<Driver>
     {
         public DriverByStatusSpec(CurrentStatus status)
-            : base(d => d.Status == status)
+            : base(d => d.Status == status.ToString())
         {
             AddOrderBy(d => d.FullName!);
         }

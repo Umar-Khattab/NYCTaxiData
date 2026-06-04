@@ -62,7 +62,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
                         if (dbZone != null)
                         {
                             zoneName = dbZone.ZoneName;
-                            borough = dbZone.Borough ?? "Unknown";
+                            //borough = dbZone.Borough ?? "Unknown";
                         }
 
                         if (zoneSnapshot != null)
@@ -165,7 +165,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
                     return Result<ZoneStatisticsDto>.Failure($"Zone with ID {targetZoneId.Value} not found", "NotFound");
 
                 targetZoneName = zone.ZoneName;
-                targetBorough = zone.Borough ?? "Unknown";
+              //  targetBorough = zone.Borough ?? "Unknown";
             }
 
             // 3. High-Speed Parallel Execution
@@ -209,8 +209,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
             decimal avgTip = 0m;
 
             if (totalPickupTrips > 0)
-            {
-                totalRevenue = (decimal)await pickupQuery.SumAsync(t => t.TotalAmount ?? 0m, cancellationToken);
+            { 
                 avgFare = (decimal)await pickupQuery.AverageAsync(t => t.FareAmount, cancellationToken);
                 avgTip = (decimal)await pickupQuery.AverageAsync(t => t.TipAmount ?? 0m, cancellationToken);
             }

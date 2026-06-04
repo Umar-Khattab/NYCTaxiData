@@ -57,8 +57,9 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
                     var zoneHistory = _orchestrator.GetZoneHistory(zId);
                     zoneDictSim.TryGetValue(zId, out var dbZone);
                     var zoneName = dbZone != null ? dbZone.ZoneName : "Simulated Zone " + zId;
-                    var borough = dbZone != null ? dbZone.Borough ?? "Unknown" : "Manhattan";
-
+                    var borough = (dbZone != null && !string.IsNullOrEmpty(dbZone.ZoneName))
+              ? dbZone.ZoneName
+              : "Manhattan";
                     int tripCount = 0;
                     double revenue = 0.0;
                     double avgFare = 0.0;
@@ -178,10 +179,8 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
 
                 if (pickupDict.TryGetValue(zoneId, out var pInfo))
                 {
-                    totalPickups = pInfo.Count;
-                    totalRevenue = pInfo.Revenue;
-                    avgFare = pInfo.AvgFare;
-                    avgTip = pInfo.AvgTip;
+                    totalPickups = pInfo.Count; 
+                    avgFare = pInfo.AvgFare; 
                 }
 
                 double pred15m = predDict.GetValueOrDefault(zoneId, totalPickups / 4.0 * 1.15);
@@ -193,7 +192,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
                 {
                     ZoneId = zoneId,
                     ZoneName = zone.ZoneName,
-                    Borough = zone.Borough,
+                    Borough = zone.ZoneName ?? "Unknown",
                     Calculated = new ZoneCalculatedStats
                     {
                         TotalPickupTrips = totalPickups,
@@ -249,14 +248,12 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
         {
             return await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.PickupLocation != null && t.PickupLocation.ZoneId != null && zoneIds.Contains(t.PickupLocation.ZoneId.Value))
+                .Where(t =>   t.PickupLocation != null && t.PickupLocation.ZoneId != null && zoneIds.Contains(t.PickupLocation.ZoneId.Value))
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
                 .Select(g => new BatchPickupResult(
                     g.Key,
-                    g.Count(),
-                    g.Sum(t => t.TotalAmount ?? 0m),
-                    g.Average(t => t.FareAmount),
-                    g.Average(t => t.TipAmount ?? 0m)
+                    g.Count(), 
+                    g.Average(t => t.FareAmount ?? 0) 
                 ))
                 .ToListAsync(ct);
         }
@@ -265,7 +262,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
         {
             var data = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.DeletedAt == null && t.DropoffLocation != null && t.DropoffLocation.ZoneId != null && zoneIds.Contains(t.DropoffLocation.ZoneId.Value))
+                .Where(t =>   t.DropoffLocation != null && t.DropoffLocation.ZoneId != null && zoneIds.Contains(t.DropoffLocation.ZoneId.Value))
                 .GroupBy(t => t.DropoffLocation!.ZoneId!.Value)
                 .Select(g => new { ZoneId = g.Key, Count = g.Count() })
                 .ToListAsync(ct);
@@ -273,6 +270,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
             return data.Select(x => (x.ZoneId, x.Count)).ToList();
         }
 
-        private record BatchPickupResult(int ZoneId, int Count, decimal Revenue, decimal AvgFare, decimal AvgTip);
+        private record BatchPickupResult(int ZoneId, int Count,  decimal AvgFare );
     }
 }

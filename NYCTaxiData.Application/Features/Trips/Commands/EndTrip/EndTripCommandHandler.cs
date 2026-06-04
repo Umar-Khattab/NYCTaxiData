@@ -41,13 +41,12 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.EndTrip
 
             var totalFare = Math.Round(((decimal)durationMinutes * request.FarePerMinute + request.BaseFare) * request.SurgeMultiplier, 2);
              
-            trip.EndedAt = endedAt;
-            trip.TotalAmount = totalFare;
+            trip.EndedAt = endedAt; 
              
             var driver = await _unitOfWork.Drivers.GetByIdAsync(trip.DriverId);
             if (driver != null)
             {
-                driver.Status = CurrentStatus.Available;
+                driver.Status = CurrentStatus.Available.ToString();
             }
 
             try

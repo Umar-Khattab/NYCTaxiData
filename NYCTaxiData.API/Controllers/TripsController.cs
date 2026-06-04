@@ -176,9 +176,7 @@ public class TripsController(
 
         var responseData = new
         {
-            TripId = newTrip.TripId,
-            CreatedBy = newTrip.CreatedBy,
-            CreatedAt = newTrip.CreatedAt,
+            TripId = newTrip.TripId, 
             UserFromToken = _currentUserService.UserName ?? "System"
         };
 
