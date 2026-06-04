@@ -1095,6 +1095,9 @@ public partial class TaxiDbContext : DbContext
             entity.Property(e => e.FareAmount)
                 .HasPrecision(10, 2)
                 .HasColumnName("fare_amount");
+            entity.Property(e => e.TotalAmount)
+                .HasPrecision(10, 2)
+                .HasColumnName("total_amount");
             entity.Property(e => e.PickupLocationId).HasColumnName("pickup_location_id");
             entity.Property(e => e.ProcessStatus)
                 .HasMaxLength(50)
