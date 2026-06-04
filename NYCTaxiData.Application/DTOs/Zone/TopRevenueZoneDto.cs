@@ -14,6 +14,9 @@ namespace NYCTaxiData.Application.DTOs.Zone
         public double? CenterLatitude { get; set; }
         public double? CenterLongitude { get; set; }
         
+        // Predictions
+        public double RevenuePrediction { get; set; }
+        
         // Calculated (Historical)
         public decimal CalculatedRevenue { get; set; }
         public double PercentageOfTotalCalculated { get; set; }

@@ -14,6 +14,9 @@ namespace NYCTaxiData.Application.DTOs.Zone
         public double? CenterLatitude { get; set; }
         public double? CenterLongitude { get; set; }
         
+        // Predictions
+        public double StockoutPrediction { get; set; }
+        
         // Calculated (Historical / Current State)
         public int CalculatedDeficit { get; set; }
         public double CalculatedStockoutProbability { get; set; }
