@@ -168,6 +168,35 @@ public class AiFeatureProvider : IAiFeatureProvider
     {
         var results = new List<ETAInput>();
 
+        if (routes == null || !routes.Any())
+        {
+            return results;
+        }
+
+        var routeParams = routes.Select(r => new
+        {
+            r.PickupZoneId,
+            r.DropoffZoneId,
+            PickupHour = r.TargetTime.Hour,
+            PickupDow = (int)r.TargetTime.DayOfWeek,
+            PickupMinute = (r.TargetTime.Minute / 15) * 15
+        }).ToList();
+
+        var pickupZoneIds = routeParams.Select(rp => rp.PickupZoneId).Distinct().ToList();
+        var dropoffZoneIds = routeParams.Select(rp => rp.DropoffZoneId).Distinct().ToList();
+        var hours = routeParams.Select(rp => rp.PickupHour).Distinct().ToList();
+        var dows = routeParams.Select(rp => rp.PickupDow).Distinct().ToList();
+        var minutes = routeParams.Select(rp => rp.PickupMinute).Distinct().ToList();
+
+        var features = await _aiDbContext.Eta
+            .AsNoTracking()
+            .Where(e => e.PuLocationId != null && pickupZoneIds.Contains(e.PuLocationId.Value)
+                     && e.DoLocationId != null && dropoffZoneIds.Contains(e.DoLocationId.Value)
+                     && e.PickupHour != null && hours.Contains(e.PickupHour.Value)
+                     && e.PickupDow != null && dows.Contains(e.PickupDow.Value)
+                     && e.PickupMinute != null && minutes.Contains(e.PickupMinute.Value))
+            .ToListAsync(ct);
+
         foreach (var route in routes)
         {
             var pickupHour = route.TargetTime.Hour;
@@ -175,13 +204,11 @@ public class AiFeatureProvider : IAiFeatureProvider
             var pickupMonth = route.TargetTime.Month;
             var pickupMinute = (route.TargetTime.Minute / 15) * 15;
 
-            var feature = await _aiDbContext.Eta
-                .AsNoTracking()
-                .FirstOrDefaultAsync(e => e.PuLocationId == route.PickupZoneId
-                                       && e.DoLocationId == route.DropoffZoneId
-                                       && e.PickupHour == pickupHour
-                                       && e.PickupDow == pickupDow
-                                       && e.PickupMinute == pickupMinute, ct);
+            var feature = features.FirstOrDefault(e => e.PuLocationId == route.PickupZoneId
+                                                    && e.DoLocationId == route.DropoffZoneId
+                                                    && e.PickupHour == pickupHour
+                                                    && e.PickupDow == pickupDow
+                                                    && e.PickupMinute == pickupMinute);
 
             if (feature is null)
             {

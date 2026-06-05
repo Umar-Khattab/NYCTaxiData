@@ -140,7 +140,8 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetPeakHours
                 {
                     Hour = g.Key,
                     TripCount = g.Count(), 
-                    AvgFare = g.Average(t => t.FareAmount)
+                    AvgFare = g.Average(t => t.FareAmount),
+                    TotalRevenue = g.Sum(t => t.FareAmount ?? 0m)
                 })
                 .ToListAsync(cancellationToken);
 
@@ -180,6 +181,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetPeakHours
                 {
                     tripCount = agg.TripCount; 
                     avgFare = (decimal)agg.AvgFare;
+                    totalRevenue = agg.TotalRevenue;
                 }
 
                 double predCount = hourPredDict.GetValueOrDefault(h, (double)tripCount * 1.15);

@@ -113,95 +113,108 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopRevenueZones
             }
 
             // 3. DB queries executed sequentially to avoid DbContext concurrency issues
+            var recentTime = DateTime.UtcNow.AddHours(-24);
             var totalRevenueSum = (decimal)await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.FareAmount != null)
+                .Where(t => t.StartedAt >= recentTime && t.FareAmount != null)
                 .SumAsync(t => t.FareAmount!.Value, cancellationToken);
 
             var dbRevenue = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.PickupLocation != null && t.PickupLocation.ZoneId != null)
+                .Where(t => t.StartedAt >= recentTime && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
                 .Select(g => new { ZoneId = g.Key, Revenue = g.Sum(t => t.FareAmount!.Value) })
                 .ToListAsync(cancellationToken);
 
-            var zones = await _unitOfWork.Zones.Query().AsNoTracking().ToListAsync(cancellationToken);
+            var zones = await _unitOfWork.Zones.Query().AsNoTracking().Where(z => z.ZoneId >= 1 && z.ZoneId <= 265).ToListAsync(cancellationToken);
 
             var dbTripDict = dbRevenue.ToDictionary(x => x.ZoneId, x => (double)x.Revenue);
 
-            // 4. FastAPI AI Predictions (Utilizing Shared Cache - 5 minutes)
-            var cacheKeyPredictions = "FastAPIPredictions_Revenue";
-            if (!_cache.TryGetValue(cacheKeyPredictions, out List<RevenueResult>? predictions) || predictions == null)
+            // 4. FastAPI AI Predictions (Utilizing Shared Cache if available, otherwise fallback)
+            Dictionary<int, double> predDict;
+            double totalPredictedRevenue;
+
+            if (_cache.TryGetValue("Shared_ProfitPlanEvaluations", out List<ProfitZoneEvaluation>? evaluations) && evaluations != null)
             {
-                var zoneIds = zones.Select(z => z.ZoneId).ToList();
-                
-                var features = await _aiFeatureProvider.GetRevenueFeaturesAsync(zoneIds, DateTime.UtcNow, cancellationToken);
-
-                try
+                predDict = evaluations.ToDictionary(e => e.ZoneId, e => e.RevenueP50);
+                totalPredictedRevenue = predDict.Values.Sum();
+            }
+            else
+            {
+                var cacheKeyPredictions = "FastAPIPredictions_Revenue";
+                if (!_cache.TryGetValue(cacheKeyPredictions, out List<RevenueResult>? predictions) || predictions == null)
                 {
-                    predictions = await _aiService.PredictRevenueAsync(features, cancellationToken);
-                }
-                catch (Exception)
-                {
-                    // Fallback
-                    predictions = zones.Select(z => {
-                        double historicalRev = dbTripDict.GetValueOrDefault(z.ZoneId, 0.0);
-                        double mockPred = historicalRev > 0 ? historicalRev * 1.1 : (((z.ZoneId * 17) % 35) + 5.0) * 14.50 + ((z.ZoneId * 3) % 10);
-                        return new RevenueResult(z.ZoneId, mockPred, mockPred * 1.15);
-                    }).ToList();
+                    var zoneIds = zones.Select(z => z.ZoneId).ToList();
+                    var features = await _aiFeatureProvider.GetRevenueFeaturesAsync(zoneIds, DateTime.UtcNow, cancellationToken);
+
+                    try
+                    {
+                        predictions = await _aiService.PredictRevenueAsync(features, cancellationToken);
+                    }
+                    catch (Exception)
+                    {
+                        // Fallback
+                        predictions = zones.Select(z => {
+                            double historicalRev = dbTripDict.GetValueOrDefault(z.ZoneId, 0.0);
+                            double mockPred = historicalRev > 0 ? historicalRev * 1.1 : (((z.ZoneId * 17) % 35) + 5.0) * 14.50 + ((z.ZoneId * 3) % 10);
+                            return new RevenueResult(z.ZoneId, mockPred, mockPred * 1.15);
+                        }).ToList();
+                    }
+
+                    _cache.Set(cacheKeyPredictions, predictions, TimeSpan.FromMinutes(5));
                 }
 
-                _cache.Set(cacheKeyPredictions, predictions, TimeSpan.FromMinutes(5));
+                predDict = predictions.ToDictionary(p => p.ZoneId, p => p.P50);
+                totalPredictedRevenue = predDict.Values.Sum();
             }
 
-            var predDict = predictions.ToDictionary(p => p.ZoneId, p => p.P50);
-            var totalPredictedRevenue = predDict.Values.Sum();
+            var sortedZones = zones
+                .Select(zone => {
+                    double calculatedRevenue = dbTripDict.GetValueOrDefault(zone.ZoneId, 0.0);
+                    double predictedRevenue = predDict.GetValueOrDefault(zone.ZoneId, 0.0);
+                    
+                    // Fallback baseline check (non-zero value check)
+                    if (predictedRevenue <= 0.0)
+                    {
+                        double mockDemand = ((zone.ZoneId * 17) % 35) + 5.0;
+                        predictedRevenue = mockDemand * 14.50 + ((zone.ZoneId * 3) % 10);
+                    }
+                    return new { Zone = zone, CalculatedRevenue = calculatedRevenue, PredictedRevenue = predictedRevenue };
+                })
+                .OrderByDescending(x => x.PredictedRevenue)
+                .Take(limit)
+                .ToList();
 
-            var topRevenueZones = new List<TopRevenueZoneDto>();
+            var finalResult = new List<TopRevenueZoneDto>();
 
-            foreach (var zone in zones)
+            foreach (var item in sortedZones)
             {
-                double calculatedRevenue = dbTripDict.GetValueOrDefault(zone.ZoneId, 0.0);
-                double predictedRevenue = predDict.GetValueOrDefault(zone.ZoneId, 0.0);
-                
-                // Fallback baseline check (non-zero value check)
-                if (predictedRevenue <= 0.0)
-                {
-                    double mockDemand = ((zone.ZoneId * 17) % 35) + 5.0;
-                    predictedRevenue = mockDemand * 14.50 + ((zone.ZoneId * 3) % 10);
-                }
-
                 double calcPercentage = totalRevenueSum > 0
-                    ? (double)((decimal)calculatedRevenue / totalRevenueSum) * 100.0
+                    ? (double)((decimal)item.CalculatedRevenue / totalRevenueSum) * 100.0
                     : 0.0;
 
                 double predPercentage = totalPredictedRevenue > 0
-                    ? (double)predictedRevenue / totalPredictedRevenue * 100.0
+                    ? (double)item.PredictedRevenue / totalPredictedRevenue * 100.0
                     : 0.0;
 
-                topRevenueZones.Add(new TopRevenueZoneDto
+                finalResult.Add(new TopRevenueZoneDto
                 {
-                    ZoneId = zone.ZoneId,
-                    ZoneName = zone.ZoneName ?? "Unknown",
-                    OsmId = zone.OsmId,
-                    CenterLatitude = zone.CenterLat,
-                    CenterLongitude = zone.CenterLong,
-                    RevenuePrediction = Math.Round(predictedRevenue, 2),
-                    CalculatedRevenue = Math.Round((decimal)calculatedRevenue, 2),
+                    ZoneId = item.Zone.ZoneId,
+                    ZoneName = item.Zone.ZoneName ?? "Unknown",
+                    OsmId = item.Zone.OsmId,
+                    CenterLatitude = item.Zone.CenterLat,
+                    CenterLongitude = item.Zone.CenterLong,
+                    RevenuePrediction = Math.Round(item.PredictedRevenue, 2),
+                    CalculatedRevenue = Math.Round((decimal)item.CalculatedRevenue, 2),
                     PercentageOfTotalCalculated = Math.Round(calcPercentage, 2),
-                    PredictedRevenue = Math.Round((decimal)predictedRevenue, 2),
+                    PredictedRevenue = Math.Round((decimal)item.PredictedRevenue, 2),
                     PercentageOfTotalPredicted = Math.Round(predPercentage, 2),
 
                     // Legacy Support
-                    TotalRevenue = Math.Round((decimal)calculatedRevenue, 2),
+                    TotalRevenue = Math.Round((decimal)item.CalculatedRevenue, 2),
                     PercentageOfTotal = Math.Round(calcPercentage, 2)
                 });
             }
-
-            var finalResult = topRevenueZones
-                .OrderByDescending(x => x.RevenuePrediction)
-                .Take(limit)
-                .ToList();
 
             _cache.Set(cacheKey, finalResult, TimeSpan.FromSeconds(15));
 

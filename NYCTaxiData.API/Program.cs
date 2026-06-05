@@ -131,4 +131,51 @@ app.MapHub<LiveTrackingHub>("/hubs/tracking");
 app.MapHub<DispatchHub>("/hubs/dispatch");
 app.MapHub<SimulationHub>("/hubs/simulation"); 
 
+// ✅ Database Index Optimization Startup Check
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    var config = services.GetRequiredService<IConfiguration>();
+    var defaultConnStr = config.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrEmpty(defaultConnStr))
+    {
+        try
+        {
+            logger.LogInformation("Verifying optimized database indexes...");
+            using var conn = new NpgsqlConnection(defaultConnStr);
+            await conn.OpenAsync();
+            
+            using var cmd = conn.CreateCommand();
+            cmd.CommandTimeout = 300; // Allow sufficient time for index creation
+            
+            logger.LogInformation("Creating index idx_trips_started_pickup_fare if not exists...");
+            cmd.CommandText = "CREATE INDEX IF NOT EXISTS idx_trips_started_pickup_fare ON trips (started_at DESC, pickup_location_id) INCLUDE (fare_amount);";
+            await cmd.ExecuteNonQueryAsync();
+
+            logger.LogInformation("Creating index idx_trips_driver_started_dropoff if not exists...");
+            cmd.CommandText = "CREATE INDEX IF NOT EXISTS idx_trips_driver_started_dropoff ON trips (driver_id, started_at DESC, dropoff_location_id);";
+            await cmd.ExecuteNonQueryAsync();
+
+            logger.LogInformation("Creating index idx_trips_status_pickup if not exists...");
+            cmd.CommandText = "CREATE INDEX IF NOT EXISTS idx_trips_status_pickup ON trips (process_status, pickup_location_id) WHERE process_status = 'Ongoing';";
+            await cmd.ExecuteNonQueryAsync();
+
+            logger.LogInformation("Creating index idx_drivers_status if not exists...");
+            cmd.CommandText = "CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers (status);";
+            await cmd.ExecuteNonQueryAsync();
+
+            logger.LogInformation("Creating index idx_location_zone_id if not exists...");
+            cmd.CommandText = "CREATE INDEX IF NOT EXISTS idx_location_zone_id ON location (zone_id) WHERE zone_id IS NOT NULL;";
+            await cmd.ExecuteNonQueryAsync();
+
+            logger.LogInformation("Database indexes verified/created successfully.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while creating database indexes.");
+        }
+    }
+}
+
 app.Run();

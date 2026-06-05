@@ -116,66 +116,79 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
 
             // 3. High-Speed DB queries executed sequentially to avoid DbContext concurrency issues
             var dbTripCounts = await GetTripCountsPerZoneNativelyAsync(cancellationToken);
-            var zones = await _unitOfWork.Zones.Query().AsNoTracking().ToListAsync(cancellationToken);
+            var zones = await _unitOfWork.Zones.Query().AsNoTracking().Where(z => z.ZoneId >= 1 && z.ZoneId <= 265).ToListAsync(cancellationToken);
             var dbTripDict = dbTripCounts.ToDictionary(x => x.ZoneId, x => x.Count);
 
             // 4. FastAPI batch predictions with Shared Cache (5 minutes)
-            var cacheKeyDemand = "FastAPIPredictions_Demand15m";
-            var cacheKeyRevenue = "FastAPIPredictions_Revenue";
+            Dictionary<int, double> predDict;
+            Dictionary<int, double> revDict;
+            bool predictionsLoaded = false;
 
-            var resolvedTime = _temporalResolver.ResolveTemporalContext(DateTime.UtcNow);
-
-            if (!_cache.TryGetValue(cacheKeyDemand, out List<Demand15MinResult>? predictions15m) || predictions15m == null)
+            if (_cache.TryGetValue("Shared_ProfitPlanEvaluations", out List<ProfitZoneEvaluation>? evaluations) && evaluations != null)
             {
-                var batchInputs = zones.Select(z => new Demand15MinInput(
-                    z.ZoneId, resolvedTime.Hour, resolvedTime.Minute, (int)resolvedTime.DayOfWeek,
-                    resolvedTime.Month, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday,
-                    0, 0, 0, 0, 0, 20.0, 0.0, false, 0, dbTripDict.GetValueOrDefault(z.ZoneId, 0)
-                )).ToList();
+                predDict = evaluations.ToDictionary(e => e.ZoneId, e => e.Demand6h / 24.0);
+                revDict = evaluations.ToDictionary(e => e.ZoneId, e => e.RevenueP50);
+                predictionsLoaded = true;
+            }
+            else
+            {
+                var cacheKeyDemand = "FastAPIPredictions_Demand15m";
+                var cacheKeyRevenue = "FastAPIPredictions_Revenue";
 
-                try
+                var resolvedTime = _temporalResolver.ResolveTemporalContext(DateTime.UtcNow);
+
+                if (!_cache.TryGetValue(cacheKeyDemand, out List<Demand15MinResult>? predictions15m) || predictions15m == null)
                 {
-                    predictions15m = await _aiService.PredictDemand15MinAsync(batchInputs, true, cancellationToken);
-                }
-                catch (Exception)
-                {
-                    // Deterministic pseudo-random baseline fallback to handle empty db trips or FastAPI down
-                    predictions15m = zones.Select(z => new Demand15MinResult(
-                        z.ZoneId, 
-                        ((z.ZoneId * 17) % 35) + 5.0
+                    var batchInputs = zones.Select(z => new Demand15MinInput(
+                        z.ZoneId, resolvedTime.Hour, resolvedTime.Minute, (int)resolvedTime.DayOfWeek,
+                        resolvedTime.Month, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday,
+                        0, 0, 0, 0, 0, 20.0, 0.0, false, 0, dbTripDict.GetValueOrDefault(z.ZoneId, 0)
                     )).ToList();
+
+                    try
+                    {
+                        predictions15m = await _aiService.PredictDemand15MinAsync(batchInputs, true, cancellationToken);
+                    }
+                    catch (Exception)
+                    {
+                        // Deterministic pseudo-random baseline fallback to handle empty db trips or FastAPI down
+                        predictions15m = zones.Select(z => new Demand15MinResult(
+                            z.ZoneId, 
+                            ((z.ZoneId * 17) % 35) + 5.0
+                        )).ToList();
+                    }
+
+                    _cache.Set(cacheKeyDemand, predictions15m, TimeSpan.FromMinutes(5));
                 }
 
-                _cache.Set(cacheKeyDemand, predictions15m, TimeSpan.FromMinutes(5));
-            }
-
-            if (!_cache.TryGetValue(cacheKeyRevenue, out List<RevenueResult>? predictionsRev) || predictionsRev == null)
-            {
-                var batchInputsRev = zones.Select(z => new RevenueInput(
-                    z.ZoneId, resolvedTime.Hour, (int)resolvedTime.DayOfWeek,
-                    resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday,
-                    0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0m, 15.0, 0.15, 20.0, 0.0, false, 0, false
-                )).ToList();
-
-                try
+                if (!_cache.TryGetValue(cacheKeyRevenue, out List<RevenueResult>? predictionsRev) || predictionsRev == null)
                 {
-                    predictionsRev = await _aiService.PredictRevenueAsync(batchInputsRev, cancellationToken);
-                }
-                catch (Exception)
-                {
-                    // Fallback
-                    predictionsRev = zones.Select(z => {
-                        double demand = ((z.ZoneId * 17) % 35) + 5.0;
-                        double rev = demand * 14.50 + ((z.ZoneId * 3) % 10);
-                        return new RevenueResult(z.ZoneId, rev, rev * 1.15);
-                    }).ToList();
+                    var batchInputsRev = zones.Select(z => new RevenueInput(
+                        z.ZoneId, resolvedTime.Hour, (int)resolvedTime.DayOfWeek,
+                        resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday,
+                        0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0m, 15.0, 0.15, 20.0, 0.0, false, 0, false
+                    )).ToList();
+
+                    try
+                    {
+                        predictionsRev = await _aiService.PredictRevenueAsync(batchInputsRev, cancellationToken);
+                    }
+                    catch (Exception)
+                    {
+                        // Fallback
+                        predictionsRev = zones.Select(z => {
+                            double demand = ((z.ZoneId * 17) % 35) + 5.0;
+                            double rev = demand * 14.50 + ((z.ZoneId * 3) % 10);
+                            return new RevenueResult(z.ZoneId, rev, rev * 1.15);
+                        }).ToList();
+                    }
+
+                    _cache.Set(cacheKeyRevenue, predictionsRev, TimeSpan.FromMinutes(5));
                 }
 
-                _cache.Set(cacheKeyRevenue, predictionsRev, TimeSpan.FromMinutes(5));
+                predDict = predictions15m.ToDictionary(p => p.ZoneId, p => p.PredictedDemand);
+                revDict = predictionsRev.ToDictionary(r => r.ZoneId, r => r.P50);
             }
-
-            var predDict = predictions15m.ToDictionary(p => p.ZoneId, p => p.PredictedDemand);
-            var revDict = predictionsRev.ToDictionary(r => r.ZoneId, r => r.P50);
 
             var heatmapPoints = new List<HeatmapDataPointDto>();
             foreach (var zone in zones)
@@ -246,9 +259,10 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHeatmapData
 
         private async Task<List<(int ZoneId, int Count)>> GetTripCountsPerZoneNativelyAsync(CancellationToken ct)
         {
+            var recentTime = DateTime.UtcNow.AddHours(-24);
             var data = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.PickupLocation != null && t.PickupLocation.ZoneId != null)
+                .Where(t => t.StartedAt >= recentTime && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
                 .Select(g => new { ZoneId = g.Key, Count = g.Count() })
                 .ToListAsync(ct);

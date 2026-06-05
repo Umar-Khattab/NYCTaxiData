@@ -24,9 +24,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneInsights
             if (zone == null)
                 return Result<ZoneInsightsDto>.Failure($"Zone with ID {request.ZoneId} not found", "NotFound");
 
-            var zones = await _unitOfWork.Zones.Query().AsNoTracking().ToListAsync(cancellationToken);
-            var zoneDict = zones.ToDictionary(z => z.ZoneId, z => z);
-
             // 2. Identify Peak Period based on busiest hour
             var busiestHourGroup = await _unitOfWork.Trips.Query()
                 .AsNoTracking()

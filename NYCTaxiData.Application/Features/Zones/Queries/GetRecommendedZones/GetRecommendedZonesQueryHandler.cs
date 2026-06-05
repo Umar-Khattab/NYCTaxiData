@@ -7,6 +7,7 @@ using NYCTaxiData.Application.Common.Interfaces.Simulation;
 using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.DTOs.AI;
 using NYCTaxiData.Application.DTOs.Zone;
+using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Enums;
 using NYCTaxiData.Domain.Interfaces;
 using System;
@@ -118,21 +119,36 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                 return Result<List<RecommendedZoneDto>>.Success(cachedData, "Recommended zones retrieved from cache");
             }
 
-            // 3. Fetch Operational Active States via Sequential Queries to ensure DbContext thread safety
-            var demandList = await GetDemandPerZoneNativelyAsync(cancellationToken);
-            var supplyList = await GetDriverSupplyPerZoneNativelyAsync(cancellationToken);
-            var revenueList = await GetRevenuePerZoneNativelyAsync(cancellationToken);
-            var activeTripsList = await GetActiveTripsPerZoneNativelyAsync(cancellationToken);
-
-            var demandDict = demandList.ToDictionary(d => d.ZoneId, d => d.PickupCount);
-            var driverSupplyDict = supplyList.ToDictionary(s => s.ZoneId, s => s.DriverCount);
-            var revenueDict = revenueList.ToDictionary(r => r.ZoneId, r => r.Revenue);
-            var activeTripsDict = activeTripsList.ToDictionary(a => a.ZoneId, a => a.ActiveCount);
-
-            var zones = await _unitOfWork.Zones.Query()
+            // 3. Fetch Operational Active States via Consolidated Database Queries
+            var recentTime = DateTime.UtcNow.AddHours(-24);
+            var consolidatedData = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(z => z.ZoneId >= 1 && z.ZoneId <= 265)
+                .Where(t => (t.StartedAt >= recentTime || t.ProcessStatus == "Ongoing")
+                         && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
+                .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
+                .Select(g => new
+                {
+                    ZoneId = g.Key,
+                    PickupCount = g.Count(t => t.StartedAt >= recentTime),
+                    Revenue = g.Where(t => t.StartedAt >= recentTime).Sum(t => t.FareAmount ?? 0),
+                    ActiveCount = g.Count(t => t.ProcessStatus == "Ongoing")
+                })
                 .ToListAsync(cancellationToken);
+
+            var demandDict = consolidatedData.ToDictionary(x => x.ZoneId, x => x.PickupCount);
+            var revenueDict = consolidatedData.ToDictionary(x => x.ZoneId, x => x.Revenue);
+            var activeTripsDict = consolidatedData.ToDictionary(x => x.ZoneId, x => x.ActiveCount);
+
+            var supplyList = await GetDriverSupplyPerZoneNativelyAsync(cancellationToken);
+            var driverSupplyDict = supplyList.ToDictionary(s => s.ZoneId, s => s.DriverCount);
+
+            const string zonesCacheKey = "ZoneDistribution_ZonesList";
+            if (!_cache.TryGetValue(zonesCacheKey, out List<Zone>? allZones) || allZones == null)
+            {
+                allZones = await _unitOfWork.Zones.Query().AsNoTracking().ToListAsync(cancellationToken);
+                _cache.Set(zonesCacheKey, allZones, TimeSpan.FromHours(1));
+            }
+            var zones = allZones.Where(z => z.ZoneId >= 1 && z.ZoneId <= 265).ToList();
             var zoneDict = zones.ToDictionary(z => z.ZoneId, z => z);
 
             var recommendations = new List<RecommendedZoneDto>();
@@ -165,7 +181,6 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
                 bool isAirportZone = z.ZoneName.Contains("Airport", StringComparison.OrdinalIgnoreCase) || z.ZoneId == 132 || z.ZoneId == 138 || z.ZoneId == 1;
 
                 pmInputs.Add(new ProfitMaximizationInput(
-                    targetDateTimeStr,
                     z.ZoneId,
                     currentDrivers,
                     allowAsSource,
@@ -214,6 +229,8 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
 
             if (profitResult != null && profitResult.ZoneEvaluations.Count > 0)
             {
+                _cache.Set("Shared_ProfitPlanEvaluations", profitResult.ZoneEvaluations, TimeSpan.FromSeconds(60));
+
                 foreach (var eval in profitResult.ZoneEvaluations)
                 {
                     if (zoneDict.TryGetValue(eval.ZoneId, out var zone))
@@ -298,62 +315,34 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetRecommendedZones
             return Result<List<RecommendedZoneDto>>.Success(sortedRecommendations, "Recommended zones generated successfully");
         }
 
-        private async Task<List<(int ZoneId, int PickupCount)>> GetDemandPerZoneNativelyAsync(CancellationToken ct)
-        {
-            var data = await _unitOfWork.Trips.Query()
-                .AsNoTracking()
-                .Where(t =>  t.PickupLocation != null && t.PickupLocation.ZoneId != null)
-                .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
-                .Select(g => new { ZoneId = g.Key, Count = g.Count() })
-                .ToListAsync(ct);
-
-            return data.Select(x => (x.ZoneId, x.Count)).ToList();
-        }
 
         private async Task<List<(int ZoneId, int DriverCount)>> GetDriverSupplyPerZoneNativelyAsync(CancellationToken ct)
         {
-            var data = await _unitOfWork.Drivers.Query()
+            var recentTime = DateTime.UtcNow.AddHours(-24);
+            var availableStatusStr = CurrentStatus.Available.ToString();
+
+            var availableDrivers = await _unitOfWork.Drivers.Query()
                 .AsNoTracking()
-                .Where(d => d.Status == CurrentStatus.Available.ToString())
-                .Select(d => new
-                {
-                    DriverId = d.UserId,
-                    LastTripDropoffZoneId = d.Trips
-                        .Where(t => t.DropoffLocation != null && t.DropoffLocation.ZoneId != null)
-                        .OrderByDescending(t => t.StartedAt)
-                        .Select(t => t.DropoffLocation!.ZoneId)
-                        .FirstOrDefault()
-                })
-                .Where(d => d.LastTripDropoffZoneId != null)
-                .GroupBy(d => d.LastTripDropoffZoneId!.Value)
-                .Select(g => new { ZoneId = g.Key, Count = g.Count() })
+                .Where(d => d.Status == availableStatusStr)
+                .Select(d => d.UserId)
                 .ToListAsync(ct);
 
-            return data.Select(x => (x.ZoneId, x.Count)).ToList();
-        }
-
-        private async Task<List<(int ZoneId, decimal Revenue)>> GetRevenuePerZoneNativelyAsync(CancellationToken ct)
-        {
-            var data = await _unitOfWork.Trips.Query()
+            var trips = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.PickupLocation != null && t.PickupLocation.ZoneId != null)
-                .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
-                .Select(g => new { ZoneId = g.Key, Revenue = g.Sum(t => t.FareAmount!.Value) })
+                .Where(t => t.StartedAt >= recentTime && t.DriverId != null && availableDrivers.Contains(t.DriverId.Value) && t.DropoffLocation != null && t.DropoffLocation.ZoneId != null)
+                .Select(t => new { t.DriverId, t.StartedAt, ZoneId = t.DropoffLocation!.ZoneId!.Value })
                 .ToListAsync(ct);
 
-            return data.Select(x => (x.ZoneId, x.Revenue)).ToList();
+            var driverSupply = trips
+                .GroupBy(t => t.DriverId)
+                .Select(g => g.OrderByDescending(t => t.StartedAt).First().ZoneId)
+                .GroupBy(zoneId => zoneId)
+                .Select(g => (ZoneId: g.Key, DriverCount: g.Count()))
+                .ToList();
+
+            return driverSupply;
         }
 
-        private async Task<List<(int ZoneId, int ActiveCount)>> GetActiveTripsPerZoneNativelyAsync(CancellationToken ct)
-        {
-            var data = await _unitOfWork.Trips.Query()
-                .AsNoTracking()
-                .Where(t =>   t.ProcessStatus == "Ongoing" && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
-                .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
-                .Select(g => new { ZoneId = g.Key, Count = g.Count() })
-                .ToListAsync(ct);
 
-            return data.Select(x => (x.ZoneId, x.Count)).ToList();
-        }
     }
 }

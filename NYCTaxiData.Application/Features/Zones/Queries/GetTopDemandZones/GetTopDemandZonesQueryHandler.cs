@@ -113,89 +113,102 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetTopDemandZones
             }
 
             // 3. DB queries executed sequentially to avoid DbContext concurrency issues
-            var totalTripsCount = await _unitOfWork.Trips.Query().AsNoTracking().CountAsync(cancellationToken);
+            var recentTime = DateTime.UtcNow.AddHours(-24);
+            var totalTripsCount = await _unitOfWork.Trips.Query().AsNoTracking().Where(t => t.StartedAt >= recentTime).CountAsync(cancellationToken);
             var dbDemand = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.PickupLocation != null && t.PickupLocation.ZoneId != null)
+                .Where(t => t.StartedAt >= recentTime && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
                 .Select(g => new { ZoneId = g.Key, Count = g.Count() })
                 .ToListAsync(cancellationToken);
-            var zones = await _unitOfWork.Zones.Query().AsNoTracking().ToListAsync(cancellationToken);
+            var zones = await _unitOfWork.Zones.Query().AsNoTracking().Where(z => z.ZoneId >= 1 && z.ZoneId <= 265).ToListAsync(cancellationToken);
 
             var dbTripDict = dbDemand.ToDictionary(x => x.ZoneId, x => x.Count);
 
-            // 4. FastAPI AI Predictions (Utilizing Shared Cache - 5 minutes)
-            var cacheKeyPredictions = "FastAPIPredictions_Demand6h";
-            if (!_cache.TryGetValue(cacheKeyPredictions, out List<Demand6hResult>? predictions) || predictions == null)
+            // 4. FastAPI AI Predictions (Utilizing Shared Cache if available, otherwise fallback)
+            Dictionary<int, double> predDict;
+            double totalPredictedCount;
+
+            if (_cache.TryGetValue("Shared_ProfitPlanEvaluations", out List<ProfitZoneEvaluation>? evaluations) && evaluations != null)
             {
-                var zoneIds = zones.Select(z => z.ZoneId).ToList();
-                
-                var features = await _aiFeatureProvider.GetDemand6hFeaturesAsync(zoneIds, DateTime.UtcNow, cancellationToken);
-
-                try
+                predDict = evaluations.ToDictionary(e => e.ZoneId, e => e.Demand6h);
+                totalPredictedCount = predDict.Values.Sum();
+            }
+            else
+            {
+                var cacheKeyPredictions = "FastAPIPredictions_Demand6h";
+                if (!_cache.TryGetValue(cacheKeyPredictions, out List<Demand6hResult>? predictions) || predictions == null)
                 {
-                    predictions = await _aiService.PredictDemand6hAsync(features, cancellationToken);
-                }
-                catch (Exception)
-                {
-                    // Fallback
-                    predictions = zones.Select(z => {
-                        int historicalCount = dbTripDict.GetValueOrDefault(z.ZoneId, 0);
-                        double mockPred = historicalCount > 0 ? historicalCount * 1.1 : ((z.ZoneId * 17) % 35) + 5.0;
-                        return new Demand6hResult(z.ZoneId, mockPred);
-                    }).ToList();
+                    var zoneIds = zones.Select(z => z.ZoneId).ToList();
+                    var features = await _aiFeatureProvider.GetDemand6hFeaturesAsync(zoneIds, DateTime.UtcNow, cancellationToken);
+
+                    try
+                    {
+                        predictions = await _aiService.PredictDemand6hAsync(features, cancellationToken);
+                    }
+                    catch (Exception)
+                    {
+                        // Fallback
+                        predictions = zones.Select(z => {
+                            int historicalCount = dbTripDict.GetValueOrDefault(z.ZoneId, 0);
+                            double mockPred = historicalCount > 0 ? historicalCount * 1.1 : ((z.ZoneId * 17) % 35) + 5.0;
+                            return new Demand6hResult(z.ZoneId, mockPred);
+                        }).ToList();
+                    }
+
+                    _cache.Set(cacheKeyPredictions, predictions, TimeSpan.FromMinutes(5));
                 }
 
-                _cache.Set(cacheKeyPredictions, predictions, TimeSpan.FromMinutes(5));
+                predDict = predictions.ToDictionary(p => p.ZoneId, p => p.PredictedDemand);
+                totalPredictedCount = predDict.Values.Sum();
             }
 
-            var predDict = predictions.ToDictionary(p => p.ZoneId, p => p.PredictedDemand);
-            var totalPredictedCount = predDict.Values.Sum();
+            var sortedZones = zones
+                .Select(zone => {
+                    int calculatedPickups = dbTripDict.GetValueOrDefault(zone.ZoneId, 0);
+                    double predictedDemand = predDict.GetValueOrDefault(zone.ZoneId, 0.0);
+                    
+                    // Fallback baseline check (non-zero value check)
+                    if (predictedDemand <= 0.0)
+                    {
+                        predictedDemand = ((zone.ZoneId * 17) % 35) + 5.0;
+                    }
+                    return new { Zone = zone, CalculatedPickups = calculatedPickups, PredictedDemand = predictedDemand };
+                })
+                .OrderByDescending(x => x.PredictedDemand)
+                .Take(limit)
+                .ToList();
 
-            var topDemandZones = new List<TopDemandZoneDto>();
+            var finalResult = new List<TopDemandZoneDto>();
 
-            foreach (var zone in zones)
+            foreach (var item in sortedZones)
             {
-                int calculatedPickups = dbTripDict.GetValueOrDefault(zone.ZoneId, 0);
-                double predictedDemand = predDict.GetValueOrDefault(zone.ZoneId, 0.0);
-                
-                // Fallback baseline check (non-zero value check)
-                if (predictedDemand <= 0.0)
-                {
-                    predictedDemand = ((zone.ZoneId * 17) % 35) + 5.0;
-                }
-
                 double calcPercentage = totalTripsCount > 0
-                    ? (double)calculatedPickups / totalTripsCount * 100.0
+                    ? (double)item.CalculatedPickups / totalTripsCount * 100.0
                     : 0.0;
 
                 double predPercentage = totalPredictedCount > 0
-                    ? (double)predictedDemand / totalPredictedCount * 100.0
+                    ? (double)item.PredictedDemand / totalPredictedCount * 100.0
                     : 0.0;
 
-                topDemandZones.Add(new TopDemandZoneDto
+                finalResult.Add(new TopDemandZoneDto
                 {
-                    ZoneId = zone.ZoneId,
-                    ZoneName = zone.ZoneName ?? "Unknown",
-                    OsmId = zone.OsmId,
-                    CenterLatitude = zone.CenterLat,
-                    CenterLongitude = zone.CenterLong,
-                    DemandPrediction = Math.Round(predictedDemand, 2),
-                    CalculatedPickups = calculatedPickups,
+                    ZoneId = item.Zone.ZoneId,
+                    ZoneName = item.Zone.ZoneName ?? "Unknown",
+                    OsmId = item.Zone.OsmId,
+                    CenterLatitude = item.Zone.CenterLat,
+                    CenterLongitude = item.Zone.CenterLong,
+                    DemandPrediction = Math.Round(item.PredictedDemand, 2),
+                    CalculatedPickups = item.CalculatedPickups,
                     PercentageOfTotalCalculated = Math.Round(calcPercentage, 2),
-                    PredictedPickups = Math.Round(predictedDemand, 2),
+                    PredictedPickups = Math.Round(item.PredictedDemand, 2),
                     PercentageOfTotalPredicted = Math.Round(predPercentage, 2),
                     
                     // Legacy Support
-                    PickupCount = calculatedPickups,
+                    PickupCount = item.CalculatedPickups,
                     PercentageOfTotal = Math.Round(calcPercentage, 2)
                 });
             }
-
-            var finalResult = topDemandZones
-                .OrderByDescending(x => x.DemandPrediction)
-                .Take(limit)
-                .ToList();
 
             _cache.Set(cacheKey, finalResult, TimeSpan.FromSeconds(15));
 

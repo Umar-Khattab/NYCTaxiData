@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace NYCTaxiData.Application.Common.Plumbing
 {
     public class Result
     {
-        protected Result(bool isSuccess, string? message = null, string? errorCode = null)
+        [JsonConstructor]
+        public Result(bool isSuccess, string? message = null, string? errorCode = null)
         {
             IsSuccess = isSuccess;
             Message = message;
@@ -34,7 +36,8 @@ namespace NYCTaxiData.Application.Common.Plumbing
 
     public class Result<T> : Result
     {
-        private Result(
+        [JsonConstructor]
+        public Result(
             bool isSuccess,
             T? data,
             string? message = null,
@@ -47,7 +50,7 @@ namespace NYCTaxiData.Application.Common.Plumbing
         public T? Data { get; }
 
         // ===== Factory Methods =====
-        public static Result<T> Success(T data, string? message = null)
+        public new static Result<T> Success(T data, string? message = null)
             => new(true, data, message);
 
         public new static Result<T> Failure(string message, string? errorCode = null)

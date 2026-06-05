@@ -192,35 +192,50 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
                 dropoffQuery = dropoffQuery.Where(t => t.DropoffLocationId != null);
             }
 
-            var totalPickupTrips = await pickupQuery.CountAsync(cancellationToken);
             var totalDropoffTrips = await dropoffQuery.CountAsync(cancellationToken);
 
-            var busiestHour = await pickupQuery
-                .Where(t => t.StartedAt != null)
-                .GroupBy(t => t.StartedAt!.Value.Hour)
-                .Select(g => new { Hour = g.Key, Count = g.Count() })
-                .OrderByDescending(x => x.Count)
-                .Select(x => x.Hour)
+            var pickupStats = await pickupQuery
+                .GroupBy(t => 1)
+                .Select(g => new
+                {
+                    Count = g.Count(),
+                    AvgFare = g.Average(t => t.FareAmount),
+                    AvgTip = g.Average(t => t.TipAmount ?? 0m),
+                    TotalRevenue = g.Sum(t => t.FareAmount ?? 0m)
+                })
                 .FirstOrDefaultAsync(cancellationToken);
 
-            var busiestDayVal = await pickupQuery
+            var totalPickupTrips = pickupStats?.Count ?? 0;
+            decimal avgFare = pickupStats?.AvgFare ?? 0m;
+            decimal avgTip = pickupStats?.AvgTip ?? 0m;
+            decimal totalRevenue = pickupStats?.TotalRevenue ?? 0m;
+
+            var timeStats = await pickupQuery
                 .Where(t => t.StartedAt != null)
-                .GroupBy(t => t.StartedAt!.Value.DayOfWeek)
-                .Select(g => new { Day = g.Key, Count = g.Count() })
-                .OrderByDescending(x => x.Count)
-                .Select(x => x.Day)
-                .FirstOrDefaultAsync(cancellationToken);
+                .GroupBy(t => new { Hour = t.StartedAt!.Value.Hour, Day = t.StartedAt!.Value.DayOfWeek })
+                .Select(g => new { g.Key.Hour, g.Key.Day, Count = g.Count() })
+                .ToListAsync(cancellationToken);
 
-            var busiestDay = busiestDayVal.ToString();
+            int busiestHour = 0;
+            string busiestDay = "Monday";
 
-            decimal totalRevenue = 0m;
-            decimal avgFare = 0m;
-            decimal avgTip = 0m;
+            if (timeStats.Any())
+            {
+                busiestHour = timeStats
+                    .GroupBy(x => x.Hour)
+                    .Select(g => new { Hour = g.Key, Count = g.Sum(x => x.Count) })
+                    .OrderByDescending(x => x.Count)
+                    .Select(x => x.Hour)
+                    .FirstOrDefault();
 
-            if (totalPickupTrips > 0)
-            { 
-                avgFare = (decimal)await pickupQuery.AverageAsync(t => t.FareAmount, cancellationToken);
-                avgTip = (decimal)await pickupQuery.AverageAsync(t => t.TipAmount ?? 0m, cancellationToken);
+                var busiestDayVal = timeStats
+                    .GroupBy(x => x.Day)
+                    .Select(g => new { Day = g.Key, Count = g.Sum(x => x.Count) })
+                    .OrderByDescending(x => x.Count)
+                    .Select(x => x.Day)
+                    .FirstOrDefault();
+
+                busiestDay = busiestDayVal.ToString();
             }
 
             var stats = new ZoneStatisticsDto
@@ -242,48 +257,76 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneStatistics
                 }
             };
 
-            // 4. FastAPI AI Predictions (Executed concurrently)
+            // 4. FastAPI AI Predictions (Executed concurrently or retrieved from shared cache)
             double predDemand15m = 0.0;
             double predDemand6h = 0.0;
             decimal predRevenue6h = 0.0m;
             double predStockoutProb = 0.0;
+            bool predictionsLoaded = false;
 
-            if (targetZoneId.HasValue)
+            if (_cache.TryGetValue("Shared_ProfitPlanEvaluations", out List<ProfitZoneEvaluation>? evaluations) && evaluations != null)
             {
-                var resolvedTime = _temporalResolver.ResolveTemporalContext(DateTime.UtcNow);
-                var row15m = new Demand15MinInput(targetZoneId.Value, resolvedTime.Hour, resolvedTime.Minute, (int)resolvedTime.DayOfWeek, resolvedTime.Month, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday, 0, 0, 0, 0, 0, 20.0, 0.0, false, 0, totalPickupTrips);
-                var row6h = new Demand6hInput(targetZoneId.Value, resolvedTime.Hour, (int)resolvedTime.DayOfWeek, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday, false, 0.0, 0.0, 0.0, 0.0, 20.0, 0.0, false, 0, totalPickupTrips);
-                var rowRev = new RevenueInput(targetZoneId.Value, resolvedTime.Hour, (int)resolvedTime.DayOfWeek, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday, 0, 0, 0, (double)totalRevenue, (double)totalRevenue, (double)totalRevenue, (double)totalRevenue, totalRevenue, (double)totalRevenue, 0.15, 20.0, 0.0, false, 0, false);
-                var rowStock = new StockOutInput(targetZoneId.Value, resolvedTime, totalPickupTrips, totalDropoffTrips, totalPickupTrips - totalDropoffTrips, resolvedTime.Hour, (int)resolvedTime.DayOfWeek, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday, false, 1.0, 20.0, 0.0, false, 0, 0, 0, 0);
-
-                var task15m = _aiService.PredictDemand15MinAsync(new List<Demand15MinInput> { row15m }, true, cancellationToken);
-                var task6h = _aiService.PredictDemand6hAsync(new List<Demand6hInput> { row6h }, cancellationToken);
-                var taskRev = _aiService.PredictRevenueAsync(new List<RevenueInput> { rowRev }, cancellationToken);
-                var taskStock = _aiService.PredictStockOutAsync(new List<StockOutInput> { rowStock }, cancellationToken);
-
-                try
+                if (targetZoneId.HasValue)
                 {
-                    await Task.WhenAll(task15m, task6h, taskRev, taskStock);
-                    
-                    predDemand15m = task15m.Result.FirstOrDefault()?.PredictedDemand ?? 0.0;
-                    predDemand6h = task6h.Result.FirstOrDefault()?.PredictedDemand ?? 0.0;
-                    predRevenue6h = (decimal)(taskRev.Result.FirstOrDefault()?.P50 ?? 0.0);
-                    predStockoutProb = taskStock.Result.FirstOrDefault()?.Probability ?? 0.0;
+                    var eval = evaluations.FirstOrDefault(e => e.ZoneId == targetZoneId.Value);
+                    if (eval != null)
+                    {
+                        predDemand15m = eval.Demand6h / 24.0;
+                        predDemand6h = eval.Demand6h;
+                        predRevenue6h = (decimal)eval.RevenueP50;
+                        predStockoutProb = eval.StockoutProb;
+                        predictionsLoaded = true;
+                    }
                 }
-                catch (Exception)
+                else
+                {
+                    predDemand6h = evaluations.Sum(e => e.Demand6h);
+                    predDemand15m = predDemand6h / 24.0;
+                    predRevenue6h = (decimal)evaluations.Sum(e => e.RevenueP50);
+                    predStockoutProb = evaluations.Any() ? evaluations.Average(e => e.StockoutProb) : 0.15;
+                    predictionsLoaded = true;
+                }
+            }
+
+            if (!predictionsLoaded)
+            {
+                if (targetZoneId.HasValue)
+                {
+                    var resolvedTime = _temporalResolver.ResolveTemporalContext(DateTime.UtcNow);
+                    var row15m = new Demand15MinInput(targetZoneId.Value, resolvedTime.Hour, resolvedTime.Minute, (int)resolvedTime.DayOfWeek, resolvedTime.Month, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday, 0, 0, 0, 0, 0, 20.0, 0.0, false, 0, totalPickupTrips);
+                    var row6h = new Demand6hInput(targetZoneId.Value, resolvedTime.Hour, (int)resolvedTime.DayOfWeek, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday, false, 0.0, 0.0, 0.0, 0.0, 20.0, 0.0, false, 0, totalPickupTrips);
+                    var rowRev = new RevenueInput(targetZoneId.Value, resolvedTime.Hour, (int)resolvedTime.DayOfWeek, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday, 0, 0, 0, (double)totalRevenue, (double)totalRevenue, (double)totalRevenue, (double)totalRevenue, totalRevenue, (double)totalRevenue, 0.15, 20.0, 0.0, false, 0, false);
+                    var rowStock = new StockOutInput(targetZoneId.Value, resolvedTime, totalPickupTrips, totalDropoffTrips, totalPickupTrips - totalDropoffTrips, resolvedTime.Hour, (int)resolvedTime.DayOfWeek, resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday, false, 1.0, 20.0, 0.0, false, 0, 0, 0, 0);
+
+                    var task15m = _aiService.PredictDemand15MinAsync(new List<Demand15MinInput> { row15m }, true, cancellationToken);
+                    var task6h = _aiService.PredictDemand6hAsync(new List<Demand6hInput> { row6h }, cancellationToken);
+                    var taskRev = _aiService.PredictRevenueAsync(new List<RevenueInput> { rowRev }, cancellationToken);
+                    var taskStock = _aiService.PredictStockOutAsync(new List<StockOutInput> { rowStock }, cancellationToken);
+
+                    try
+                    {
+                        await Task.WhenAll(task15m, task6h, taskRev, taskStock);
+                        
+                        predDemand15m = task15m.Result.FirstOrDefault()?.PredictedDemand ?? 0.0;
+                        predDemand6h = task6h.Result.FirstOrDefault()?.PredictedDemand ?? 0.0;
+                        predRevenue6h = (decimal)(taskRev.Result.FirstOrDefault()?.P50 ?? 0.0);
+                        predStockoutProb = taskStock.Result.FirstOrDefault()?.Probability ?? 0.0;
+                    }
+                    catch (Exception)
+                    {
+                        predDemand15m = totalPickupTrips / 4.0 * 1.1;
+                        predDemand6h = totalPickupTrips * 1.15;
+                        predRevenue6h = totalRevenue * 1.15m;
+                        predStockoutProb = totalPickupTrips > 0 ? (double)totalPickupTrips / (totalPickupTrips + 5.0) : 0.0;
+                    }
+                }
+                else
                 {
                     predDemand15m = totalPickupTrips / 4.0 * 1.1;
                     predDemand6h = totalPickupTrips * 1.15;
-                    predRevenue6h = totalRevenue * 1.15m;
-                    predStockoutProb = totalPickupTrips > 0 ? (double)totalPickupTrips / (totalPickupTrips + 5.0) : 0.0;
+                    predRevenue6h = totalRevenue * 1.12m;
+                    predStockoutProb = 0.15;
                 }
-            }
-            else
-            {
-                predDemand15m = totalPickupTrips / 4.0 * 1.1;
-                predDemand6h = totalPickupTrips * 1.15;
-                predRevenue6h = totalRevenue * 1.12m;
-                predStockoutProb = 0.15;
             }
 
             stats.Predicted = new ZonePredictedStats

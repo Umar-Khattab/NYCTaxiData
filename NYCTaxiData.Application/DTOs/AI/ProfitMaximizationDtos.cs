@@ -8,7 +8,6 @@ namespace NYCTaxiData.Application.DTOs.AI;
 /// Input features for profit maximization prediction per zone.
 /// </summary>
 public record ProfitMaximizationInput(
-    [property: JsonPropertyName("target_datetime")] string TargetDatetime,
     [property: JsonPropertyName("zone_id")] int ZoneId,
     [property: JsonPropertyName("current_drivers")] int CurrentDrivers,
     [property: JsonPropertyName("allow_as_source")] bool AllowAsSource,

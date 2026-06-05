@@ -56,7 +56,7 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.CompareZones
             if (simStatus.Status == SimulationStatus.Running)
             {
                 var simStatsList = new List<ZoneStatisticsDto>();
-                var zonesList = await _unitOfWork.Zones.Query().AsNoTracking().ToListAsync(cancellationToken);
+                var zonesList = await _unitOfWork.Zones.Query().AsNoTracking().Where(z => uniqueZoneIds.Contains(z.ZoneId)).ToListAsync(cancellationToken);
                 var zoneDictSim = zonesList.ToDictionary(z => z.ZoneId, z => z);
 
                 foreach (var zId in uniqueZoneIds)

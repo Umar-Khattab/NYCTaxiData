@@ -110,130 +110,151 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetHighStockoutZones
             }
 
             // 3. DB queries executed sequentially to avoid DbContext concurrency issues
+            var recentTime = DateTime.UtcNow.AddHours(-24);
             var demandList = await _unitOfWork.Trips.Query()
                 .AsNoTracking()
-                .Where(t => t.PickupLocation != null && t.PickupLocation.ZoneId != null)
+                .Where(t => t.StartedAt >= recentTime && t.PickupLocation != null && t.PickupLocation.ZoneId != null)
                 .GroupBy(t => t.PickupLocation!.ZoneId!.Value)
                 .Select(g => new { ZoneId = g.Key, PickupCount = g.Count() })
                 .ToListAsync(cancellationToken);
 
-            var activeDriversInfo = await _unitOfWork.Drivers.Query()
-                .AsNoTracking()
-                .Where(d => d.Status == CurrentStatus.Available.ToString())
-                .Select(d => new
-                {
-                    DriverId = d.UserId,
-                    LatestLocationId = d.Trips
-                        .OrderByDescending(t => t.StartedAt)
-                        .Select(t => t.DropoffLocationId)
-                        .FirstOrDefault()
-                })
-                .ToListAsync(cancellationToken);
-
-            var locations = await _unitOfWork.Locations.Query().AsNoTracking().ToListAsync(cancellationToken);
-            var zones = await _unitOfWork.Zones.Query().AsNoTracking().ToListAsync(cancellationToken);
+            var zones = await _unitOfWork.Zones.Query().AsNoTracking().Where(z => z.ZoneId >= 1 && z.ZoneId <= 265).ToListAsync(cancellationToken);
 
             var demandDict = demandList.ToDictionary(d => d.ZoneId, d => d.PickupCount);
-            var locDict = locations.ToDictionary(l => l.LocationId, l => l);
             var driverSupplyDict = zones.ToDictionary(z => z.ZoneId, z => 0);
 
-            foreach (var driver in activeDriversInfo)
+            var availableStatusStr = CurrentStatus.Available.ToString();
+            var availableDrivers = await _unitOfWork.Drivers.Query()
+                .AsNoTracking()
+                .Where(d => d.Status == availableStatusStr)
+                .Select(d => d.UserId)
+                .ToListAsync(cancellationToken);
+
+            var trips = await _unitOfWork.Trips.Query()
+                .AsNoTracking()
+                .Where(t => t.StartedAt >= recentTime && t.DriverId != null && availableDrivers.Contains(t.DriverId.Value) && t.DropoffLocation != null && t.DropoffLocation.ZoneId != null)
+                .Select(t => new { t.DriverId, t.StartedAt, ZoneId = t.DropoffLocation!.ZoneId!.Value })
+                .ToListAsync(cancellationToken);
+
+            var latestLocations = trips
+                .GroupBy(t => t.DriverId)
+                .Select(g => g.OrderByDescending(t => t.StartedAt).First().ZoneId)
+                .ToList();
+
+            foreach (var zId in latestLocations)
             {
-                if (driver.LatestLocationId.HasValue && locDict.TryGetValue(driver.LatestLocationId.Value, out var loc) && loc.ZoneId.HasValue)
+                if (driverSupplyDict.ContainsKey(zId))
                 {
-                    if (driverSupplyDict.ContainsKey(loc.ZoneId.Value))
-                    {
-                        driverSupplyDict[loc.ZoneId.Value]++;
-                    }
+                    driverSupplyDict[zId]++;
                 }
             }
 
             // 4. FastAPI AI batch predictions with Shared Cache (5 minutes)
-            var cacheKeyPredictions = "FastAPIPredictions_Stockout";
-            if (!_cache.TryGetValue(cacheKeyPredictions, out List<StockOutResult>? predictions) || predictions == null)
-            {
-                var resolvedTime = _temporalResolver.ResolveTemporalContext(DateTime.UtcNow);
-                var batchStockInputs = zones.Select(z => {
-                    int pickups = demandDict.GetValueOrDefault(z.ZoneId, 0);
-                    int drivers = driverSupplyDict.GetValueOrDefault(z.ZoneId, 0);
-                    int deficit = Math.Max(0, pickups - drivers);
-                    
-                    return new StockOutInput(
-                        z.ZoneId, resolvedTime, pickups, drivers, deficit,
-                        resolvedTime.Hour, (int)resolvedTime.DayOfWeek,
-                        resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday,
-                        false, 1.0, 20.0, 0.0, false, 0, 0, 0, 0
-                    );
-                }).ToList();
+            Dictionary<int, double> predDict;
 
-                try
+            if (_cache.TryGetValue("Shared_ProfitPlanEvaluations", out List<ProfitZoneEvaluation>? evaluations) && evaluations != null)
+            {
+                predDict = evaluations.ToDictionary(e => e.ZoneId, e => e.StockoutProb);
+            }
+            else
+            {
+                var cacheKeyPredictions = "FastAPIPredictions_Stockout";
+                if (!_cache.TryGetValue(cacheKeyPredictions, out List<StockOutResult>? predictions) || predictions == null)
                 {
-                    predictions = await _aiService.PredictStockOutAsync(batchStockInputs, cancellationToken);
-                }
-                catch (Exception)
-                {
-                    // Fallback
-                    predictions = zones.Select(z => {
+                    var resolvedTime = _temporalResolver.ResolveTemporalContext(DateTime.UtcNow);
+                    var batchStockInputs = zones.Select(z => {
                         int pickups = demandDict.GetValueOrDefault(z.ZoneId, 0);
                         int drivers = driverSupplyDict.GetValueOrDefault(z.ZoneId, 0);
-                        double prob = pickups > 0 ? (double)pickups / (pickups + drivers + 1) : 0.0;
-                        // Robust non-zero check for fallback baseline visualizer
-                        if (prob <= 0.0)
-                        {
-                            prob = ((z.ZoneId * 3) % 10) / 10.0; // E.g., 0.0 to 0.9 range
-                        }
-                        return new StockOutResult(z.ZoneId, prob * 1.1);
+                        int deficit = Math.Max(0, pickups - drivers);
+                        
+                        return new StockOutInput(
+                            z.ZoneId, resolvedTime, pickups, drivers, deficit,
+                            resolvedTime.Hour, (int)resolvedTime.DayOfWeek,
+                            resolvedTime.DayOfWeek == DayOfWeek.Saturday || resolvedTime.DayOfWeek == DayOfWeek.Sunday,
+                            false, 1.0, 20.0, 0.0, false, 0, 0, 0, 0
+                        );
                     }).ToList();
+
+                    try
+                    {
+                        predictions = await _aiService.PredictStockOutAsync(batchStockInputs, cancellationToken);
+                    }
+                    catch (Exception)
+                    {
+                        // Fallback
+                        predictions = zones.Select(z => {
+                            int pickups = demandDict.GetValueOrDefault(z.ZoneId, 0);
+                            int drivers = driverSupplyDict.GetValueOrDefault(z.ZoneId, 0);
+                            double prob = pickups > 0 ? (double)pickups / (pickups + drivers + 1) : 0.0;
+                            // Robust non-zero check for fallback baseline visualizer
+                            if (prob <= 0.0)
+                            {
+                                prob = ((z.ZoneId * 3) % 10) / 10.0;
+                            }
+                            return new StockOutResult(z.ZoneId, prob * 1.1);
+                        }).ToList();
+                    }
+
+                    _cache.Set(cacheKeyPredictions, predictions, TimeSpan.FromMinutes(5));
                 }
 
-                _cache.Set(cacheKeyPredictions, predictions, TimeSpan.FromMinutes(5));
+                predDict = predictions.ToDictionary(p => p.ZoneId, p => p.Probability);
             }
 
-            var predDict = predictions.ToDictionary(p => p.ZoneId, p => p.Probability);
+            var sortedZones = zones
+                .Select(zone => {
+                    int pickups = demandDict.GetValueOrDefault(zone.ZoneId, 0);
+                    int availableDrivers = driverSupplyDict.GetValueOrDefault(zone.ZoneId, 0);
 
-            var stockoutList = new List<HighStockoutZoneDto>();
-            foreach (var zone in zones)
-            {
-                int pickups = demandDict.GetValueOrDefault(zone.ZoneId, 0);
-                int availableDrivers = driverSupplyDict.GetValueOrDefault(zone.ZoneId, 0);
+                    int calcDeficit = Math.Max(0, pickups - availableDrivers);
+                    double calcProb = pickups > 0 ? (double)pickups / (pickups + availableDrivers + 1) : 0.0;
 
-                int calcDeficit = Math.Max(0, pickups - availableDrivers);
-                double calcProb = pickups > 0 ? (double)pickups / (pickups + availableDrivers + 1) : 0.0;
+                    double predProb = predDict.GetValueOrDefault(zone.ZoneId, calcProb * 1.1);
+                    // Non-zero baseline fallback checks
+                    if (predProb <= 0.0)
+                    {
+                        predProb = ((zone.ZoneId * 3) % 10) / 10.0;
+                    }
+                    int predDeficit = Math.Max(0, (int)(pickups * 1.1) - availableDrivers);
 
-                double predProb = predDict.GetValueOrDefault(zone.ZoneId, calcProb * 1.1);
-                // Non-zero baseline fallback checks
-                if (predProb <= 0.0)
-                {
-                    predProb = ((zone.ZoneId * 3) % 10) / 10.0;
-                }
-                int predDeficit = Math.Max(0, (int)(pickups * 1.1) - availableDrivers);
-
-                stockoutList.Add(new HighStockoutZoneDto
-                {
-                    ZoneId = zone.ZoneId,
-                    ZoneName = zone.ZoneName ?? "Unknown",
-                    OsmId = zone.OsmId,
-                    CenterLatitude = zone.CenterLat,
-                    CenterLongitude = zone.CenterLong,
-                    StockoutPrediction = Math.Round(predProb, 4),
-                    CalculatedDeficit = calcDeficit,
-                    CalculatedStockoutProbability = Math.Round(calcProb, 4),
-                    PredictedDeficit = predDeficit,
-                    PredictedStockoutProbability = Math.Round(predProb, 4),
-
-                    // Legacy Support
-                    PickupCount = pickups,
-                    AvailableDriversCount = availableDrivers,
-                    DeficitCount = calcDeficit,
-                    StockoutProbability = Math.Round(calcProb, 4)
-                });
-            }
-
-            var finalResult = stockoutList
-                .OrderByDescending(x => x.StockoutPrediction)
-                .ThenByDescending(x => x.CalculatedDeficit)
+                    return new {
+                        Zone = zone,
+                        Pickups = pickups,
+                        AvailableDrivers = availableDrivers,
+                        CalcDeficit = calcDeficit,
+                        CalcProb = calcProb,
+                        PredProb = predProb,
+                        PredDeficit = predDeficit
+                    };
+                })
+                .OrderByDescending(x => x.PredProb)
+                .ThenByDescending(x => x.CalcDeficit)
                 .Take(limit)
                 .ToList();
+
+            var finalResult = new List<HighStockoutZoneDto>();
+            foreach (var item in sortedZones)
+            {
+                finalResult.Add(new HighStockoutZoneDto
+                {
+                    ZoneId = item.Zone.ZoneId,
+                    ZoneName = item.Zone.ZoneName ?? "Unknown",
+                    OsmId = item.Zone.OsmId,
+                    CenterLatitude = item.Zone.CenterLat,
+                    CenterLongitude = item.Zone.CenterLong,
+                    StockoutPrediction = Math.Round(item.PredProb, 4),
+                    CalculatedDeficit = item.CalcDeficit,
+                    CalculatedStockoutProbability = Math.Round(item.CalcProb, 4),
+                    PredictedDeficit = item.PredDeficit,
+                    PredictedStockoutProbability = Math.Round(item.PredProb, 4),
+
+                    // Legacy Support
+                    PickupCount = item.Pickups,
+                    AvailableDriversCount = item.AvailableDrivers,
+                    DeficitCount = item.CalcDeficit,
+                    StockoutProbability = Math.Round(item.CalcProb, 4)
+                });
+            }
 
             _cache.Set(cacheKey, finalResult, TimeSpan.FromSeconds(15));
 

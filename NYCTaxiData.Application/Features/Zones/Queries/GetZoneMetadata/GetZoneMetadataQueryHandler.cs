@@ -16,26 +16,23 @@ namespace NYCTaxiData.Application.Features.Zones.Queries.GetZoneMetadata
             GetZoneMetadataQuery request,
             CancellationToken cancellationToken)
         {
-            var totalZones = await _unitOfWork.Zones.Query().CountAsync(cancellationToken);
+            var zonesData = await _unitOfWork.Zones.Query()
+                .AsNoTracking()
+                .Select(z => new { z.OsmId, z.CenterLat, z.CenterLong })
+                .ToListAsync(cancellationToken);
 
-            var zonesWithOsmId = await _unitOfWork.Zones.Query()
+            var totalZones = zonesData.Count;
+
+            var zonesWithOsmId = zonesData
                 .Where(z => z.OsmId != null)
                 .Select(z => z.OsmId)
                 .Distinct()
-                .CountAsync(cancellationToken);
+                .Count();
 
-            var zoneCountsList = await _unitOfWork.Zones.Query()
+            var zoneCounts = zonesData
                 .Where(z => z.CenterLat != null && z.CenterLong != null && z.OsmId != null)
-                .GroupBy(z => z.OsmId)
-                .Select(g => new {
-                    OsmId = g.Key,
-                    Count = g.Count()
-                })
-                .ToListAsync(cancellationToken);
-             
-            var zoneCounts = zoneCountsList
-                .Where(x => x.OsmId.HasValue)
-                .ToDictionary(x => x.OsmId!.Value.ToString(), x => x.Count);
+                .GroupBy(z => z.OsmId!.Value)
+                .ToDictionary(g => g.Key.ToString(), g => g.Count());
 
             var metadata = new ZoneMetadataDto
             {

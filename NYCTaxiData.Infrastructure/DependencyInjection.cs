@@ -37,7 +37,7 @@ namespace NYCTaxiData.Infrastructure
             // 2. تسجيل الـ DbContexts
             services.AddDbContext<AiDbContext>(options =>
                 options.UseNpgsql(aiConn, npgsql => {
-                    npgsql.CommandTimeout(35); // Fast with indexes; matches MediatR TimeoutBehavior
+                    npgsql.CommandTimeout(45); // Safe threshold under MediatR PerformanceBehavior
                     npgsql.EnableRetryOnFailure(3);
                 }));
 
@@ -45,7 +45,10 @@ namespace NYCTaxiData.Infrastructure
             {
                 var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
                 var auditLogInterceptor = sp.GetRequiredService<AuditLogInterceptor>();
-                options.UseNpgsql(defaultConn, npgsql => npgsql.EnableRetryOnFailure(5))
+                options.UseNpgsql(defaultConn, npgsql => {
+                    npgsql.CommandTimeout(45);
+                    npgsql.EnableRetryOnFailure(5);
+                })
                        .AddInterceptors(auditableInterceptor, auditLogInterceptor);
             });
 
