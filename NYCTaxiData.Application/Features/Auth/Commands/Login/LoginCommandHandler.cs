@@ -30,13 +30,15 @@ namespace NYCTaxiData.Application.Features.Auth.Commands.Login
 
             var fullName = $"{user.FirstName} {user.LastName}";
             var token = _jwt.GenerateToken(user.Id, user.PhoneNumber, role, fullName);
-
-            var resultDto = _mapper.Map<UserResultDto>(user);
-            resultDto.Token = token;
-            resultDto.IsSuccess = true;
-            resultDto.Role = role;
-            resultDto.FullName = fullName;
-             
+            var resultDto = new UserResultDto
+            {
+                Id = user.Id.ToString(),
+                FullName = $"{user.FirstName} {user.LastName}",
+                Token = token,
+                Role = role,
+                IsSuccess = true,
+                Message = "You have been logged in successfully"
+            };
             return Result<UserResultDto>.Success(resultDto);
         }
     }

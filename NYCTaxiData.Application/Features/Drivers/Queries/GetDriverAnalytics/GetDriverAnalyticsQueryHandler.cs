@@ -48,12 +48,9 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
              
             var today = DateTime.UtcNow.Date;
 
-            // 2. ÍÓÇÈ ßã íæã ÝÇÊ Úáì ÈÏÇíÉ ÇáÃÓÈæÚ (ÈÝÑÖ Åä ÇáÃÓÈæÚ íÈÏÃ ÇáÅËäíä ãËáÇð DayOfWeek.Monday)
-            int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
-            var startRange = today.AddDays(-diff); // ÊÇÑíÎ íæã ÇáÅËäíä ÇáãÇÖí ÇáÓÇÚÉ 12 ÈÇááíá
-
-            // 3. äåÇíÉ ÇáÃÓÈæÚ ÇáÍÇáí (ÇáÃÍÏ ÇáÞÇÏã ÇáÓÇÚÉ 11:59 ãÓÇÁð)
-            var endRange = startRange.AddDays(7).AddTicks(-1);
+            var startRange = today.AddDays(-30);
+            var endRange = today.AddDays(1);
+             
 
             // ÍÓÇÈÇÊ ÇáÃÓÈæÚ ÇáÓÇÈÞ (Trends) åÊãÔí ÃæÊæãÇÊíß ÈÑÖå:
             var prevStart = startRange.AddDays(-7);
@@ -64,10 +61,10 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
             // ? 1. Weekly Summary Query
             const string summarySql = """
             SELECT
-                COALESCE(SUM(total_amount), 0.0)                                                AS TotalEarnings,
-                COUNT(*)                                                                        AS CompletedTrips,
+                COALESCE(SUM(fare_amount + COALESCE(tip_amount, 0)), 0.0) AS TotalEarnings,
+                COUNT(*) AS CompletedTrips,
                 COALESCE(SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) / 3600.0, 0.0)
-                    + (COUNT(*) * 10.0 / 60.0)                                                  AS OnlineHours
+                    + (COUNT(*) * 10.0 / 60.0) AS OnlineHours
             FROM trips
             WHERE driver_id = @DriverId
               AND started_at BETWEEN @StartRange AND @EndRange
@@ -93,7 +90,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
 
             // ? 3. Earnings Trend (7 days)
             const string trendSql = """
-            SELECT COALESCE(SUM(total_amount), 0.0) AS Amount
+            SELECT COALESCE(SUM(fare_amount + COALESCE(tip_amount, 0)), 0.0) AS Amount
             FROM trips
             WHERE driver_id = @DriverId
               AND started_at BETWEEN @StartRange AND @EndRange
@@ -106,15 +103,15 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverAnalytics
             var trend = trendDecimals.Select(amt => (double)amt).ToList();
 
             // ? 4. Peak Hours Query
-            const string peakSql = """
+                        const string peakSql = """
             SELECT
                 CASE
                     WHEN EXTRACT(HOUR FROM started_at) BETWEEN 6  AND 9  THEN '6 AM - 9 AM'
                     WHEN EXTRACT(HOUR FROM started_at) BETWEEN 16 AND 19 THEN '4 PM - 7 PM'
                     ELSE 'Off-Peak'
-                END                               AS TimeSlot,
-                COUNT(*)                          AS Trips,
-                COALESCE(SUM(total_amount), 0.0)  AS Earnings
+                END AS TimeSlot,
+                COUNT(*) AS Trips,
+                COALESCE(SUM(fare_amount + COALESCE(tip_amount, 0)), 0.0) AS Earnings
             FROM trips
             WHERE driver_id = @DriverId
               AND started_at BETWEEN @StartRange AND @EndRange

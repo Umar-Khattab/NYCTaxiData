@@ -1,4 +1,4 @@
-using MediatR;
+ï»¿using MediatR;
 using NYCTaxiData.Application.DTOs.DriverAnalytics;
 using System;
 using System.Collections.Generic;
@@ -19,7 +19,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
 
         public GetDriverEarningsQueryHandler(IDbConnection db) => _db = db;
 
-        // 1?? ßáÇÓÇÊ ÏÇÎáíÉ ÕÑíÍÉ áãäÚ ÇáÜ dynamic æÇáÜ RuntimeBinderException äåÇÆíÇğ
+        // 1?? ÙƒÙ„Ø§Ø³Ø§Øª Ø¯Ø§Ø®Ù„ÙŠØ© ØµØ±ÙŠØ­Ø© Ù„Ù…Ù†Ø¹ Ø§Ù„Ù€ dynamic ÙˆØ§Ù„Ù€ RuntimeBinderException Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹
         private class DbHeaderSummaryResult
         {
             public decimal TotalEarnings { get; set; }
@@ -30,7 +30,7 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
         private class DbDailyBreakdownResult
         {
             public string Day { get; set; }
-            public decimal Amount { get; set; } // ÇÓÊŞÈÇá ÇáÜ decimal ÇáŞÇÏã ãä SUM
+            public decimal Amount { get; set; } // Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ Ø§Ù„Ù€ decimal Ø§Ù„Ù‚Ø§Ø¯Ù… Ù…Ù† SUM
         }
 
         private class DbRecentTripResult
@@ -55,10 +55,10 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
             // ? 1. Header Summary Query
             const string headerSql = """
             SELECT
-                COALESCE(SUM(total_amount), 0.0)                                                AS TotalEarnings,
-                COUNT(*)                                                                        AS Trips,
+                COALESCE(SUM(fare_amount + COALESCE(tip_amount, 0)), 0.0) AS TotalEarnings,
+                COUNT(*) AS Trips,
                 COALESCE(SUM(EXTRACT(EPOCH FROM (ended_at - started_at))) / 3600.0, 0.0)
-                    + (COUNT(*) * 10.0 / 60.0)                                                  AS Hours
+                    + (COUNT(*) * 10.0 / 60.0) AS Hours
             FROM trips
             WHERE driver_id = @DriverId
               AND started_at BETWEEN @StartRange AND @EndRange
@@ -79,17 +79,16 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
             // ? 2. Daily Breakdown Query
             const string breakdownSql = """
             SELECT
-                TO_CHAR(started_at, 'Dy')          AS Day,
-                COALESCE(SUM(total_amount), 0.0)   AS Amount
+                TO_CHAR(started_at, 'Dy') AS Day,
+                COALESCE(SUM(fare_amount + COALESCE(tip_amount, 0)), 0.0) AS Amount
             FROM trips
             WHERE driver_id = @DriverId
               AND started_at BETWEEN @StartRange AND @EndRange
-            GROUP BY date_trunc('day', started_at),
-                     TO_CHAR(started_at, 'Dy')
+            GROUP BY date_trunc('day', started_at), TO_CHAR(started_at, 'Dy')
             ORDER BY date_trunc('day', started_at) ASC
             """;
 
-            // ??? ÇáÊÚÏíá ÇáÌæåÑí: ÇáŞÑÇÁÉ ÚÈÑ ßáÇÓ æÓíØ Ëã ÇáÜ Cast áÜ double áãäÚ ÇáÜ Exception
+            // ??? Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø¬ÙˆÙ‡Ø±ÙŠ: Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© Ø¹Ø¨Ø± ÙƒÙ„Ø§Ø³ ÙˆØ³ÙŠØ· Ø«Ù… Ø§Ù„Ù€ Cast Ù„Ù€ double Ù„Ù…Ù†Ø¹ Ø§Ù„Ù€ Exception
             var breakdownRows = await _db.QueryAsync<DbDailyBreakdownResult>(breakdownSql, p);
             var breakdown = breakdownRows.Select(b => new DailyBreakdownDto(
                 Day: b.Day,
@@ -99,11 +98,11 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
             // ? 3. Recent Trips Query
             const string recentSql = """
             SELECT
-                pz.zone_name                                                    AS "From",
-                dz.zone_name                                                    AS "To",
-                t.started_at                                                    AS StartTime,
-                EXTRACT(EPOCH FROM (t.ended_at - t.started_at)) / 60.0          AS DurationMinutes,
-                t.total_amount                                                  AS Fare
+                pz.zone_name AS "From",
+                dz.zone_name AS "To",
+                t.started_at AS StartTime,
+                EXTRACT(EPOCH FROM (t.ended_at - t.started_at)) / 60.0 AS DurationMinutes,
+                (t.fare_amount + COALESCE(t.tip_amount, 0)) AS Fare
             FROM trips t
             JOIN location pl ON t.pickup_location_id  = pl.location_id
             JOIN zones    pz ON pl.zone_id             = pz.zone_id
@@ -140,28 +139,26 @@ namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
                 DailyBreakdown: breakdown,
                 RecentTrips: recentTrips);
 
+            Console.WriteLine($"ğŸ” DEBUG: Ranges: Start={startRange}, End={endRange}");
             return Result<DriverEarningsDto>.Success(dto);
+        }
+
+        private static (DateTime Start, DateTime End) GetCurrentWeekRange(DateTime today)
+        {
+            return (today.AddDays(-90), today.AddDays(1).AddTicks(-1));
         }
 
         private static (DateTime Start, DateTime End) GetRange(string period)
         {
             var today = DateTime.UtcNow.Date;
 
-            return period.ToLower() switch
+            return (period ?? "all").ToLower() switch
             {
                 "today" => (today, today.AddDays(1).AddTicks(-1)),
-                "month" => (new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc),
-                            new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month), 23, 59, 59, DateTimeKind.Utc)),
-                _ => GetCurrentWeekRange(today)
+                "week" => (today.AddDays(-7), today.AddDays(1).AddTicks(-1)),
+                "month" => (today.AddDays(-30), today.AddDays(1).AddTicks(-1)),
+                _ => (new DateTime(2026, 3, 1), today.AddDays(1).AddTicks(-1))  
             };
-        }
-
-        private static (DateTime Start, DateTime End) GetCurrentWeekRange(DateTime today)
-        {
-            int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
-            var startOfWeek = today.AddDays(-diff);
-            var endOfWeek = startOfWeek.AddDays(7).AddTicks(-1);
-            return (startOfWeek, endOfWeek);
         }
 
         private static (DateTime Start, DateTime End) GetPreviousRange(string period)

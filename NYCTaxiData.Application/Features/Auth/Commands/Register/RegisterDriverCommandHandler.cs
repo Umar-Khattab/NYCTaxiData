@@ -57,6 +57,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterDriver
             {
                 IsSuccess = true,
                 FullName = fullName,
+                Id = user.Id.ToString(),
                 Role = "Driver",
                 Token = token,
                 Message = "Driver registered successfully"

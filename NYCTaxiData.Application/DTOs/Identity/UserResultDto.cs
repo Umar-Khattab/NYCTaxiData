@@ -6,6 +6,7 @@ namespace NYCTaxiData.Application.DTOs.Identity
 {
     public class UserResultDto
     {
+        public string? Id { get; set; }
         public bool IsSuccess { get; set; } 
         public string? Token { get; set; }
         public string? Message { get; set; }

@@ -10,7 +10,8 @@ using NYCTaxiData.Application.Auth.Queries.GetProfile;
 using NYCTaxiData.Application.Features.Auth.Commands.ResetPassword;
 using NYCTaxiData.Application.Features.Auth.Commands.SendOtp;  
 using NYCTaxiData.Application.Features.Auth.Commands.VerifyOtp;
-using Twilio.Types;  
+using Twilio.Types;
+using Microsoft.AspNetCore.Authorization;
 
 namespace NYCTaxiData.API.Controllers;
 
@@ -48,16 +49,18 @@ public class AuthController(ISender _mediator) : BaseController
 
     // 4. Send OTP
     [HttpPost("otp/send")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SendOtp([FromBody] SendOtpCommand command)
+    public async Task<IActionResult> SendOtp() // <--- áÇ íæÌÏ Ãí Parameters åäÇ
     {
-        var result = await Mediator.Send(command);
+        // ÃÑÓá ÇáÜ command ÌÏíÏ æÝÇÑÛ íÏæíÇð ÏÇÎá ÇáÜ Handler
+        var result = await Mediator.Send(new SendOtpCommand());
 
         if (result.IsSuccess)
-        { 
+        {
             return OkResult(new { }, result.Message ?? "OTP sent successfully");
-        } 
+        }
         return BadRequestResult(result.Message ?? "Failed to send OTP");
     }
 

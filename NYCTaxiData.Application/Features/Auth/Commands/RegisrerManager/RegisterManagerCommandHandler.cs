@@ -50,6 +50,7 @@ namespace NYCTaxiData.Application.Auth.Commands.RegisterManager
                 {
                     IsSuccess = true,
                     FullName = fullName,
+                    Id=user.Id.ToString(),
                     Message= "Manager registered successfully",
                     Role = "Manager",
                     Token = token

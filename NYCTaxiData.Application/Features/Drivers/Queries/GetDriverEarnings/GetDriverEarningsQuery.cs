@@ -7,6 +7,6 @@ using System.Text;
 
 namespace NYCTaxiData.Application.Features.Drivers.Queries.GetDriverEarnings
 {
-    public record GetDriverEarningsQuery(Guid DriverId, string Period)
+    public record GetDriverEarningsQuery(Guid DriverId, string Period="all")
      : IRequest<Result<DriverEarningsDto>>;
 }
