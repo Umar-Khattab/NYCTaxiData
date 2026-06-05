@@ -39,9 +39,17 @@ public class OptimizeProfitMaximizationCommandHandler : IRequestHandler<Optimize
     {
         try
         {
+            var targetDateTime = request.TargetDateTime;
+            if (string.IsNullOrWhiteSpace(targetDateTime))
+            {
+                targetDateTime = System.DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+            }
+
+            var currentZone = request.CurrentZone ?? 1;
+
             var result = await _aiPredictionService.MaximizeProfitAsync(
-                request.TargetDateTime,
-                request.CurrentZone,
+                targetDateTime,
+                currentZone,
                 request.ZoneStates,
                 cancellationToken);
 

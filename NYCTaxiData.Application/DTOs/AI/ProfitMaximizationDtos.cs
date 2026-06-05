@@ -53,7 +53,11 @@ public record ProfitMaximizationResult(
     [property: JsonPropertyName("reposition_plan")] List<ProfitRepositionPlanItem> RepositionPlan,
     [property: JsonPropertyName("rejected_moves")] List<ProfitRejectedMoveItem> RejectedMoves,
     [property: JsonPropertyName("zone_evaluations")] List<ProfitZoneEvaluation> ZoneEvaluations
-);
+)
+{
+    [JsonExtensionData]
+    public Dictionary<string, object>? ExtensionData { get; init; }
+}
 
 /// <summary>
 /// Net financial and operational impact summary of the profit maximization plan.
@@ -66,7 +70,11 @@ public record ProfitNetImpact(
     [property: JsonPropertyName("total_baseline_profit")] double TotalBaselineProfit,
     [property: JsonPropertyName("total_projected_profit")] double TotalProjectedProfit,
     [property: JsonPropertyName("roi_percent")] double RoiPercent
-);
+)
+{
+    [JsonExtensionData]
+    public Dictionary<string, object>? ExtensionData { get; init; }
+}
 
 /// <summary>
 /// KPI metrics comparing states before and after optimization.
@@ -74,7 +82,11 @@ public record ProfitNetImpact(
 public record ProfitKpis(
     [property: JsonPropertyName("target_deficit_before")] int TargetDeficitBefore,
     [property: JsonPropertyName("target_deficit_after")] int TargetDeficitAfter
-);
+)
+{
+    [JsonExtensionData]
+    public Dictionary<string, object>? ExtensionData { get; init; }
+}
 
 /// <summary>
 /// A recommended driver relocation assignment in the profit maximization plan.
@@ -85,13 +97,17 @@ public record ProfitRepositionPlanItem(
     [property: JsonPropertyName("drivers_moved")] int DriversMoved,
     [property: JsonPropertyName("move_cost")] double MoveCost,
     [property: JsonPropertyName("expected_profit")] double ExpectedProfit,
-    long? FromOsmId = null,
-    double? FromCenterLatitude = null,
-    double? FromCenterLongitude = null,
-    long? ToOsmId = null,
-    double? ToCenterLatitude = null,
-    double? ToCenterLongitude = null
-);
+    [property: JsonPropertyName("from_osm_id")] long? FromOsmId,
+    [property: JsonPropertyName("from_center_latitude")] double? FromCenterLatitude,
+    [property: JsonPropertyName("from_center_longitude")] double? FromCenterLongitude,
+    [property: JsonPropertyName("to_osm_id")] long? ToOsmId,
+    [property: JsonPropertyName("to_center_latitude")] double? ToCenterLatitude,
+    [property: JsonPropertyName("to_center_longitude")] double? ToCenterLongitude
+)
+{
+    [JsonExtensionData]
+    public Dictionary<string, object>? ExtensionData { get; init; }
+}
 
 /// <summary>
 /// Relocations evaluated but rejected during profit optimization.
@@ -102,13 +118,17 @@ public record ProfitRejectedMoveItem(
     [property: JsonPropertyName("expected_profit")] double ExpectedProfit,
     [property: JsonPropertyName("move_cost")] double MoveCost,
     [property: JsonPropertyName("reason")] string Reason,
-    long? FromOsmId = null,
-    double? FromCenterLatitude = null,
-    double? FromCenterLongitude = null,
-    long? ToOsmId = null,
-    double? ToCenterLatitude = null,
-    double? ToCenterLongitude = null
-);
+    [property: JsonPropertyName("from_osm_id")] long? FromOsmId,
+    [property: JsonPropertyName("from_center_latitude")] double? FromCenterLatitude,
+    [property: JsonPropertyName("from_center_longitude")] double? FromCenterLongitude,
+    [property: JsonPropertyName("to_osm_id")] long? ToOsmId,
+    [property: JsonPropertyName("to_center_latitude")] double? ToCenterLatitude,
+    [property: JsonPropertyName("to_center_longitude")] double? ToCenterLongitude
+)
+{
+    [JsonExtensionData]
+    public Dictionary<string, object>? ExtensionData { get; init; }
+}
 
 /// <summary>
 /// Detailed prediction metrics and optimization suitability evaluated per zone.
@@ -135,7 +155,11 @@ public record ProfitZoneEvaluation(
     [property: JsonPropertyName("source_candidate")] bool SourceCandidate,
     [property: JsonPropertyName("target_candidate")] bool TargetCandidate,
     [property: JsonPropertyName("reason")] string Reason,
-    long? OsmId = null,
-    double? CenterLatitude = null,
-    double? CenterLongitude = null
-);
+    [property: JsonPropertyName("osm_id")] long? OsmId,
+    [property: JsonPropertyName("center_latitude")] double? CenterLatitude,
+    [property: JsonPropertyName("center_longitude")] double? CenterLongitude
+)
+{
+    [JsonExtensionData]
+    public Dictionary<string, object>? ExtensionData { get; init; }
+}
