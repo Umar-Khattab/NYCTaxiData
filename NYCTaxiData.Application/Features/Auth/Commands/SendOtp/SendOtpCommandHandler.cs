@@ -1,4 +1,5 @@
 using MediatR;
+using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Interfaces.Services; 
 using NYCTaxiData.Application.DTOs.Identity;
 using NYCTaxiData.Domain.Interfaces;
@@ -9,38 +10,33 @@ namespace NYCTaxiData.Application.Features.Auth.Commands.SendOtp
     public class SendOtpCommandHandler(
         IUnitOfWork _uow,
         ICacheService _cache,
+        ICurrentUserService currentUser,
         ISmsService _sms)
         : IRequestHandler<SendOtpCommand, ResultDto>
     {
         public async Task<ResultDto> Handle(SendOtpCommand request, CancellationToken cancellationToken)
         {
-            var cleanPhone = request.PhoneNumber.Trim().Replace(" ", "");
-             
-            if (cleanPhone.StartsWith("20")) cleanPhone = "0" + cleanPhone.Substring(2);
+            // 1. لا تأخذ الرقم من الـ request. قم بإحضاره من الـ Current User
+            // (بافتراض أنك تستخدم _userContext لتعريف السائق الحالي)
+            var userId = currentUser.UserId;
+            var user = await _uow.Users.GetByIdAsync(userId);
 
-            var spec = new UserByPhoneSpec(cleanPhone);
-            var userExists = await _uow.Users.AnyWithSpecAsync(spec, cancellationToken);
-            if (!userExists)
-            {
-                return new ResultDto { IsSuccess = false, Message = "Phone number not registered" };
-            }
+            if (string.IsNullOrEmpty(userId.ToString()))
+                return new ResultDto { IsSuccess = false, Message = "Unauthorized" };
 
+            // 2. استخدم الرقم المخزن في الداتابيز (المصدر الموثوق)
+            var phoneToSend = user.PhoneNumber;
+
+            // 3. إنشاء الـ OTP وتخزينه في الكاش
             var otp = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
-            var cacheKey = $"otp:{cleanPhone}";
-             
-            await _cache.SetAsync(cacheKey, otp, TimeSpan.FromMinutes(5));
-             
-            var smsSent = await _sms.SendSmsAsync(
-                request.PhoneNumber,
-                $"Your NYCTaxi OTP code is: {otp}. Valid for 5 minutes.");
-             
-            if (!smsSent)
-            {
-                await _cache.RemoveAsync(cacheKey);
-                return new ResultDto { IsSuccess = false, Message = "Failed to send OTP" };
-            }
+            var cacheKey = $"otp:{user.Id}"; // استخدم الـ ID كـ Key أفضل من الرقم
 
-            return new ResultDto { IsSuccess = true, Message = "OTP sent successfully" };
+            await _cache.SetAsync(cacheKey, otp, TimeSpan.FromMinutes(5));
+
+            // 4. الإرسال للرقم الموجود في الداتابيز
+            var smsSent = await _sms.SendSmsAsync(phoneToSend, $"Your code: {otp}");
+
+            return new ResultDto { IsSuccess = true, Message = "OTP sent" };
         }
     }
 }

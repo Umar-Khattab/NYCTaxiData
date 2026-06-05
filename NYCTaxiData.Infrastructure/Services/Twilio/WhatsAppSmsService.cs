@@ -1,10 +1,12 @@
 using Microsoft.Extensions.Configuration;
-using NYCTaxiData.Application.Common.Interfaces.Services;  
-using System.Net.Http.Json;
+using NYCTaxiData.Application.Common.Interfaces.Services;
+using Twilio;
+using Twilio.Rest.Api.V2010.Account;
+using Twilio.Types;
 
-namespace NYCTaxiData.Infrastructure.Services.Twilio;  
+namespace NYCTaxiData.Infrastructure.Services.Twilio;
 
-public class WhatsAppSmsService : ISmsService  
+public class WhatsAppSmsService : ISmsService
 {
     private readonly IConfiguration _configuration;
 
@@ -18,43 +20,36 @@ public class WhatsAppSmsService : ISmsService
         var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
         if (env == "Development")
         {
-            Console.WriteLine($"[DEVELOPMENT OTP BYPASS] Sent SMS to {phoneNumber}: {message}");
+            Console.WriteLine($"[DEV OTP] {phoneNumber}: {message}");
             return true;
         }
 
         try
         {
-            using var client = new HttpClient();
-            var instanceId = "91849";
-            var apiToken = "V4ltwCVdMJf8BavnIpng7EKEdxmd1Ip0NBnXg6HQ4df49270";
-            var url = $"https://waapi.app/api/v1/instances/{instanceId}/client/action/send-message";
+            var accountSid = _configuration["Twilio:AccountSid"];
+            var authToken = _configuration["Twilio:AuthToken"];
+            var fromNumber = _configuration["Twilio:PhoneNumber"];
 
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiToken);
+            TwilioClient.Init(accountSid, authToken);
 
+            // تنسيق الرقم
             var formattedPhone = phoneNumber.Trim()
-                .Replace("+", "")
-                .Replace(" ", "");
+                .Replace(" ", "")
+                .Replace("+", "");
 
             if (formattedPhone.StartsWith("0"))
                 formattedPhone = "20" + formattedPhone.Substring(1);
             else if (!formattedPhone.StartsWith("20"))
                 formattedPhone = "20" + formattedPhone;
 
-            var payload = new
-            {
-                chatId = $"{formattedPhone}@c.us",
-                message = message
-            };
+            var msg = await MessageResource.CreateAsync(
+                body: message,
+                from: new PhoneNumber(fromNumber),
+                to: new PhoneNumber($"+{formattedPhone}")
+            );
 
-            var response = await client.PostAsJsonAsync(url, payload);
-
-            if (response.IsSuccessStatusCode) return true;
-
-            var errorBody = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"❌ WaAPI Error: {errorBody}");
-            return false;
+            Console.WriteLine($"✅ SMS sent: {msg.Sid}");
+            return true;
         }
         catch (Exception ex)
         {
