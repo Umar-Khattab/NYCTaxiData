@@ -1,0 +1,2275 @@
+{
+  "info": {
+    "_postman_id": "nyctaxidata-api-v1-collection",
+    "name": "NYCTaxiData API",
+    "description": "Complete REST API collection for NYCTaxiData — generated from source code (Controllers, Commands, Queries, DTOs). Covers Auth, Trips, Drivers, Zones, Analytics, AI Predictions, Simulation, and Admin endpoints. JWT Bearer authentication is required for most routes.\n\nBase URL: {{baseUrl}}\nAuth: Bearer Token → {{authToken}}",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "string",
+      "description": "Base URL of the NYCTaxiData API. Change this to match your environment."
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string",
+      "description": "JWT Bearer token obtained from POST /api/v1/auth/login or register. Set this after login."
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints — login, registration, OTP, password reset, token refresh, and profile retrieval. Route prefix: /api/v1/auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\",\n  \"password\": \"YourSecurePassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Authenticates a user (driver or manager) with phone number and password. Returns a JWT token on success.\n\nCommand: LoginCommand(PhoneNumber, Password)"
+          },
+          "response": []
+        },
+        {
+          "name": "Register Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/driver",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register", "driver"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+12125551234\",\n  \"password\": \"StrongPassword123!\",\n  \"age\": 30,\n  \"city\": \"New York\",\n  \"street\": \"123 Main St\",\n  \"licenseNumber\": \"LIC-987654\",\n  \"plateNumber\": \"ABC-1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Registers a new driver account.\n\nCommand: RegisterDriverCommand(FirstName, LastName, PhoneNumber, Password, Age, City, Street, LicenseNumber, PlateNumber)"
+          },
+          "response": []
+        },
+        {
+          "name": "Register Manager",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register/manager",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register", "manager"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"phoneNumber\": \"+12125559876\",\n  \"password\": \"ManagerPass456!\",\n  \"age\": 35,\n  \"city\": \"New York\",\n  \"street\": \"456 Broadway\",\n  \"employeeId\": \"EMP-001\",\n  \"department\": \"Operations\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Registers a new manager account.\n\nCommand: RegisterManagerCommand(FirstName, LastName, PhoneNumber, Password, Age, City, Street, EmployeeId, Department)"
+          },
+          "response": []
+        },
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/otp/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "otp", "send"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+12125551234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Sends a one-time password (OTP) to the specified phone number via WhatsApp/SMS. Used for phone verification or password reset flow.\n\nCommand: SendOtpCommand(PhoneNumber)"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/otp/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "otp", "verify"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+12125551234\",\n  \"otpCode\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Verifies a previously sent OTP code. Returns a reset token on success.\n\nCommand: VerifyOtpCommand(PhoneNumber, OtpCode)"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/password/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "password", "reset"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resetToken\": \"your-reset-token-from-verify-otp\",\n  \"newPassword\": \"NewSecurePassword789!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Resets the user's password using a valid reset token obtained from the OTP verification step.\n\nCommand: ResetPasswordCommand(ResetToken, NewPassword)"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/token/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "token", "refresh"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Refreshes an expired JWT token by providing the old token. Returns a new token on success.\n\nCommand: RefreshTokenCommand(OldToken)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/:phoneNumber",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "profile", ":phoneNumber"],
+              "variable": [
+                {
+                  "key": "phoneNumber",
+                  "value": "+12125551234",
+                  "description": "The phone number of the user whose profile to retrieve."
+                }
+              ]
+            },
+            "description": "Retrieves the profile of a user by their phone number.\n\nQuery: GetProfileQuery(phoneNumber)\nRoute param: phoneNumber"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Trips",
+      "description": "Trip management endpoints — CRUD operations, lifecycle actions (start/end), dispatch, and rich analytics. Route prefix: /api/v1/trips",
+      "item": [
+        {
+          "name": "CRUD",
+          "item": [
+            {
+              "name": "Get All Trips",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips?pageNumber=1&pageSize=10&startDate=2024-01-01&endDate=2024-12-31&driverId=&processStatus=",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips"],
+                  "query": [
+                    {
+                      "key": "pageNumber",
+                      "value": "1",
+                      "description": "Page number (default: 1)"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "10",
+                      "description": "Items per page (default: 10)"
+                    },
+                    {
+                      "key": "startDate",
+                      "value": "2024-01-01",
+                      "description": "Filter trips from this date (optional, ISO 8601)"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2024-12-31",
+                      "description": "Filter trips until this date (optional, ISO 8601)"
+                    },
+                    {
+                      "key": "driverId",
+                      "value": "",
+                      "description": "Filter by driver GUID (optional)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "processStatus",
+                      "value": "",
+                      "description": "Filter by process status string (optional)",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Returns a paginated list of trips with optional filters.\n\nQuery: GetAllTripsQuery(PageNumber, PageSize, StartDate, EndDate, DriverId, ProcessStatus)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Trip By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "Integer trip ID"
+                    }
+                  ]
+                },
+                "description": "Retrieves a single trip by its integer ID.\n\nQuery: GetTripByIdQuery(TripId)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Trips By Zone",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/zone/:zoneId?pageNumber=1&pageSize=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "zone", ":zoneId"],
+                  "query": [
+                    {
+                      "key": "pageNumber",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "10"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "zoneId",
+                      "value": "1",
+                      "description": "Integer zone ID"
+                    }
+                  ]
+                },
+                "description": "Returns paginated trips filtered by a specific taxi zone.\n\nQuery: GetTripsByZoneQuery(ZoneId, PageNumber, PageSize)"
+              },
+              "response": []
+            },
+            {
+              "name": "Create Trip",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"driverId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"pickupLocationId\": 132,\n  \"dropoffLocationId\": 79,\n  \"fareAmount\": 12.50,\n  \"tipAmount\": 2.00\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Creates a new trip record.\n\nCommand: CreateTripCommand(DriverId, PickupLocationId, DropoffLocationId, FareAmount, TipAmount)"
+              },
+              "response": []
+            },
+            {
+              "name": "Update Trip",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "Must match tripId in the request body"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tripId\": 1,\n  \"fareAmount\": 15.00,\n  \"tipAmount\": 3.00,\n  \"processStatus\": \"Completed\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Updates an existing trip's fare, tip, and processing status. The ID in the URL must match the TripId in the body.\n\nCommand: UpdateTripCommand(TripId, FareAmount, TipAmount, ProcessStatus)"
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Trip",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "Integer trip ID to delete"
+                    }
+                  ]
+                },
+                "description": "Permanently deletes a trip by its ID.\n\nCommand: DeleteTripCommand(TripId)"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Lifecycle",
+          "item": [
+            {
+              "name": "Start Trip",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/start",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "start"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tripId\": 1,\n  \"driverId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"pickupLocationId\": 132,\n  \"dropoffLocationId\": 79\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Marks a trip as started (In-Progress). Updates driver status and logs the start time.\n\nCommand: StartTripCommand(TripId, DriverId, PickupLocationId, DropoffLocationId)"
+              },
+              "response": []
+            },
+            {
+              "name": "End Trip",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/end",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "end"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tripId\": 1,\n  \"farePerMinute\": 0.5,\n  \"baseFare\": 2.50,\n  \"surgeMultiplier\": 1.0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Marks a trip as completed. Calculates the final fare based on duration and pricing parameters.\n\nCommand: EndTripCommand(TripId, FarePerMinute=0.5, BaseFare=2.50, SurgeMultiplier=1.0)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Trip History",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/history?driverId=&pageNumber=1&pageSize=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "history"],
+                  "query": [
+                    {
+                      "key": "driverId",
+                      "value": "",
+                      "description": "Filter by driver GUID (optional)",
+                      "disabled": true
+                    },
+                    {
+                      "key": "pageNumber",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "10"
+                    }
+                  ]
+                },
+                "description": "Returns paginated trip history, optionally filtered by driver.\n\nQuery: GetTripHistoryQuery(DriverId, PageNumber, PageSize)"
+              },
+              "response": []
+            },
+            {
+              "name": "Test Audit",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/test-audit",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "test-audit"]
+                },
+                "description": "DEV/TEST endpoint — Creates a minimal trip to verify audit logging (CreatedBy, CreatedAt) is functioning correctly."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Dispatch",
+          "item": [
+            {
+              "name": "Get Online Drivers",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/online?page=1&limit=100",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "online"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Returns a paginated list of currently online/available drivers.\n\nSpec: AvailableDriversSpec(page, limit)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Live Dispatch Feed",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/dispatch/feed?limit=20&minutesWindow=60",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "dispatch", "feed"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "description": "Max number of dispatch items to return (default: 20)"
+                    },
+                    {
+                      "key": "minutesWindow",
+                      "value": "60",
+                      "description": "Time window in minutes to look back (default: 60)"
+                    }
+                  ]
+                },
+                "description": "Returns a live feed of recent dispatch events within a rolling time window.\n\nQuery: GetLiveDispatchFeedQuery(Limit, MinutesWindow)"
+              },
+              "response": []
+            },
+            {
+              "name": "Manual Dispatch",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/dispatch/manual",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "dispatch", "manual"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"driverId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"pickupZoneId\": 132,\n  \"dropoffZoneId\": 79,\n  \"passengerName\": \"Alice Johnson\",\n  \"passengerPhone\": \"+12125557890\",\n  \"priority\": \"NORMAL\",\n  \"smartRoutingEnabled\": true,\n  \"tripId\": null\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Manually dispatches a driver to a passenger. Supports optional trip linking and smart routing.\n\nCommand: ManualDispatchCommand(DriverId, PickupZoneId, DropoffZoneId, PassengerName, PassengerPhone, Priority, SmartRoutingEnabled, TripId)"
+              },
+              "response": []
+            },
+            {
+              "name": "Update Driver Status (via Trips)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/driver/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "driver", "status"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"driverId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"status\": \"Available\",\n  \"currentLat\": 40.712776,\n  \"currentLng\": -74.005974\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Updates driver availability status and current GPS location.\n\nCommand: UpdateDriverStatusCommand(DriverId, Status, CurrentLat, CurrentLng)"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Statistics",
+          "item": [
+            {
+              "name": "Get Trip Statistics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/statistics",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "statistics"]
+                },
+                "description": "Returns aggregate trip statistics (total trips, avg fare, etc.).\n\nQuery: GetTripsStatisticsQuery()"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Revenue Statistics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/statistics/revenue?startDate=2024-01-01&endDate=2024-12-31",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "statistics", "revenue"],
+                  "query": [
+                    {
+                      "key": "startDate",
+                      "value": "2024-01-01",
+                      "description": "Optional start date filter"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2024-12-31",
+                      "description": "Optional end date filter"
+                    }
+                  ]
+                },
+                "description": "Returns revenue statistics within an optional date range.\n\nQuery: GetRevenueStatisticsQuery(StartDate, EndDate)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Demand Statistics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/statistics/demand?startDate=2024-01-01&endDate=2024-12-31",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "statistics", "demand"],
+                  "query": [
+                    {
+                      "key": "startDate",
+                      "value": "2024-01-01"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2024-12-31"
+                    }
+                  ]
+                },
+                "description": "Returns demand statistics within an optional date range.\n\nQuery: GetDemandStatisticsQuery(StartDate, EndDate)"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Zone Statistics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/statistics/zones",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "statistics", "zones"]
+                },
+                "description": "Returns per-zone trip statistics aggregated across all zones with separate calculated and predicted fields.\n\nQuery: GetZoneStatisticsQuery()\nReturns: Result<List<ZoneStatisticsDto>> { zoneId, zoneName, borough, calculated: { totalPickupTrips, totalDropoffTrips, totalRevenue, avgFare, avgTip, busiestHourOfDay, busiestDayOfWeek }, predicted: { expectedDemand15Min, expectedDemand6H, expectedRevenue6H, stockoutProbability, busiestHourForecast } }"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Peak Hours",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/statistics/peak-hours",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "statistics", "peak-hours"]
+                },
+                "description": "Returns peak hour analysis for trip demand with separate calculated and predicted curves.\n\nQuery: GetPeakHoursQuery()\nReturns: Result<List<TripPeakHoursDto>> { hour, calculatedTripCount, calculatedTotalRevenue, predictedTripCount, predictedTotalRevenue, tripCount, totalRevenue }"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Trip Trends",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/statistics/trends",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "statistics", "trends"]
+                },
+                "description": "Returns trip trend data over time.\n\nQuery: GetTripTrendsQuery()"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Driver Activity",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/trips/statistics/drivers",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "trips", "statistics", "drivers"]
+                },
+                "description": "Returns driver activity statistics.\n\nQuery: GetDriverActivityQuery()"
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Drivers",
+      "description": "Driver management endpoints — list, profile, fleet status, shift stats, status updates, and offline data sync. Route prefix: /api/v1/drivers",
+      "item": [
+        {
+          "name": "Get Driver List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/drivers?status=Available&zoneId=132&pageNumber=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "drivers"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "Available",
+                  "description": "Filter by driver status (e.g. Available, Busy, Offline)"
+                },
+                {
+                  "key": "zoneId",
+                  "value": "132",
+                  "description": "Filter by zone ID (optional)"
+                },
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Returns a paginated list of drivers with optional status and zone filters.\n\nQuery: GetDriverListQuery(Status, ZoneId, PageNumber, PageSize)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Active Fleet",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/drivers/active?pageNumber=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "drivers", "active"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Returns a paginated list of active fleet drivers (excludes Offline status).\n\nQuery: GetActiveFleetQuery(PageNumber, PageSize)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Driver Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/drivers/:driverId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "drivers", ":driverId"],
+              "variable": [
+                {
+                  "key": "driverId",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Driver GUID"
+                }
+              ]
+            },
+            "description": "Returns detailed profile and current statistics for a specific driver.\n\nQuery: GetDriverProfileQuery(DriverId)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shift Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/drivers/:driverId/shift-stats?shiftStartUtc=2024-01-15T08:00:00Z&shiftEndUtc=2024-01-15T20:00:00Z",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "drivers", ":driverId", "shift-stats"],
+              "query": [
+                {
+                  "key": "shiftStartUtc",
+                  "value": "2024-01-15T08:00:00Z",
+                  "description": "Shift start time in UTC (optional)"
+                },
+                {
+                  "key": "shiftEndUtc",
+                  "value": "2024-01-15T20:00:00Z",
+                  "description": "Shift end time in UTC (optional)"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "driverId",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Driver GUID"
+                }
+              ]
+            },
+            "description": "Returns shift statistics for a driver within an optional time window.\n\nQuery: GetShiftStatisticsQuery(DriverId, ShiftStartUtc, ShiftEndUtc)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Driver Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/drivers/:driverId/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "drivers", ":driverId", "status"],
+              "variable": [
+                {
+                  "key": "driverId",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Driver GUID"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Available\",\n  \"currentLat\": 40.712776,\n  \"currentLng\": -74.005974\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Updates driver availability status and current GPS coordinates.\n\nRequest body: UpdateDriverStatusRequest(Status, CurrentLat, CurrentLng)\nCommand: UpdateDriverStatusCommand(DriverId, Status, CurrentLat, CurrentLng)"
+          },
+          "response": []
+        },
+        {
+          "name": "Sync Offline Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/drivers/sync-offline",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "drivers", "sync-offline"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driverId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"trips\": [\n    {\n      \"localTripId\": \"local-001\",\n      \"pickupLocationId\": 132,\n      \"dropoffLocationId\": 79,\n      \"startedAt\": \"2024-01-15T10:00:00Z\",\n      \"endedAt\": \"2024-01-15T10:25:00Z\",\n      \"actualFare\": 14.75\n    },\n    {\n      \"localTripId\": \"local-002\",\n      \"pickupLocationId\": 41,\n      \"dropoffLocationId\": 161,\n      \"startedAt\": \"2024-01-15T11:00:00Z\",\n      \"endedAt\": \"2024-01-15T11:40:00Z\",\n      \"actualFare\": 22.50\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Synchronizes batched offline trip data collected when the driver had no network connectivity.\n\nCommand: SyncOfflineDataCommand(DriverId, Trips[OfflineTripDto(LocalTripId, PickupLocationId, DropoffLocationId, StartedAt, EndedAt, ActualFare)])"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Zones",
+      "description": "Zone analytics and intelligence endpoints — metadata, statistics, heatmaps, trends, comparisons, and driver distribution. Route prefix: /api/v1/zones",
+      "item": [
+        {
+          "name": "Get All Zones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones"]
+            },
+            "description": "Returns all NYC taxi zones.\n\nQuery: GetAllZonesQuery()"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Zone Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/metadata",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "metadata"]
+            },
+            "description": "Returns metadata for all zones (names, borough, shape data).\n\nQuery: GetZoneMetadataQuery()"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Zone Statistics (All)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "statistics"]
+            },
+            "description": "Returns overall statistics aggregated across all zones.\n\nQuery: GetZoneStatisticsQuery(null)\nReturns: Result<ZoneStatisticsDto> { zoneId, zoneName, borough, calculated: { totalPickupTrips, totalDropoffTrips, totalRevenue, avgFare, avgTip, busiestHourOfDay, busiestDayOfWeek }, predicted: { expectedDemand15Min, expectedDemand6H, expectedRevenue6H, stockoutProbability, busiestHourForecast } }"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Zone By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "132",
+                  "description": "Zone integer ID (1-265)"
+                }
+              ]
+            },
+            "description": "Retrieves details of a single zone by its integer ID.\n\nQuery: GetZoneByIdQuery(id)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Zone Statistics By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/:id/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", ":id", "statistics"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "132",
+                  "description": "Zone integer ID"
+                }
+              ]
+            },
+            "description": "Returns statistics for a specific zone.\n\nQuery: GetZoneStatisticsQuery(id)\nReturns: Result<ZoneStatisticsDto> { zoneId, zoneName, borough, calculated: { totalPickupTrips, totalDropoffTrips, totalRevenue, avgFare, avgTip, busiestHourOfDay, busiestDayOfWeek }, predicted: { expectedDemand15Min, expectedDemand6H, expectedRevenue6H, stockoutProbability, busiestHourForecast } }"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Zone Insights",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/:id/insights",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", ":id", "insights"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "132",
+                  "description": "Zone integer ID"
+                }
+              ]
+            },
+            "description": "Returns AI-generated insights for a specific zone.\n\nQuery: GetZoneInsightsQuery(id)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Heatmap Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/heatmap",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "heatmap"]
+            },
+            "description": "Returns geographic heatmap data for trip pickup/dropoff density across all zones.\n\nQuery: GetHeatmapDataQuery()\nReturns: Result<List<HeatmapDataPointDto>> { zoneId, zoneName, borough, latitude, longitude, calculatedTripCount, predictedTripCount, predictedStockoutProbability, surgeMultiplier, demandLevel, tripCount }"
+          },
+          "response": []
+        },
+        {
+          "name": "Compare Zones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/compare?zoneIds=132&zoneIds=79&zoneIds=161",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "compare"],
+              "query": [
+                {
+                  "key": "zoneIds",
+                  "value": "132",
+                  "description": "Zone IDs to compare (send multiple times for each ID)"
+                },
+                {
+                  "key": "zoneIds",
+                  "value": "79"
+                },
+                {
+                  "key": "zoneIds",
+                  "value": "161"
+                }
+              ]
+            },
+            "description": "Compares statistics across multiple zones. Send multiple zoneIds query parameters.\n\nQuery: CompareZonesQuery(zoneIds: List<int>)\nReturns: Result<ZoneComparisonDto> { comparisonData: List<ZoneStatisticsDto>, highestRevenueZone, busiestZone }"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recommended Zones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/recommended?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "recommended"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of recommended zones to return (default: 10)"
+                }
+              ]
+            },
+            "description": "Returns the top recommended zones for driver positioning based on demand.\n\nQuery: GetRecommendedZonesQuery(limit)\nReturns: Result<List<RecommendedZoneDto>> { zoneId, zoneName, borough, recommendationScore, demandSupplyRatio, predictedRevenueYield, reason, avgFare, avgTip }"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Zone Trends",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/trends?zoneId=132&trendType=hourly",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "trends"],
+              "query": [
+                {
+                  "key": "zoneId",
+                  "value": "132",
+                  "description": "Zone ID to get trends for (optional — all zones if omitted)"
+                },
+                {
+                  "key": "trendType",
+                  "value": "hourly",
+                  "description": "Trend granularity: 'hourly', 'daily', etc. (default: 'hourly')"
+                }
+              ]
+            },
+            "description": "Returns trend data for a zone or all zones.\n\nQuery: GetZoneTrendsQuery(zoneId, trendType)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Zone History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/history?zoneId=132&startDate=2024-01-01T00:00:00Z&endDate=2024-01-31T23:59:59Z",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "history"],
+              "query": [
+                {
+                  "key": "zoneId",
+                  "value": "132",
+                  "description": "Zone ID (optional)"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01T00:00:00Z",
+                  "description": "History start date (required)"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31T23:59:59Z",
+                  "description": "History end date (required)"
+                }
+              ]
+            },
+            "description": "Returns historical zone data within a date range.\n\nQuery: GetZoneHistoryQuery(zoneId, startDate, endDate)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Peak Hours (Zone)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/peak-hours?zoneId=132",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "peak-hours"],
+              "query": [
+                {
+                  "key": "zoneId",
+                  "value": "132",
+                  "description": "Zone ID (optional — all zones if omitted)"
+                }
+              ]
+            },
+            "description": "Returns peak hours for a specific zone or all zones.\n\nQuery: GetPeakHoursQuery(zoneId)\nReturns: Result<List<PeakHoursDto>> { hour, calculatedTripCount, calculatedTotalRevenue, calculatedAverageFare, predictedTripCount, predictedTotalRevenue, predictedAverageFare, tripCount, totalRevenue, averageFare }"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Driver Distribution",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/driver-distribution",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "driver-distribution"]
+            },
+            "description": "Returns the current distribution of drivers across all zones.\n\nQuery: GetDriverDistributionQuery()"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Top Demand Zones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/top-demand?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "top-demand"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of top zones to return (default: 10)"
+                }
+              ]
+            },
+            "description": "Returns the top zones ranked by demand.\n\nQuery: GetTopDemandZonesQuery(limit)\nReturns: Result<List<TopDemandZoneDto>> { zoneId, zoneName, borough, calculatedPickups, percentageOfTotalCalculated, predictedPickups, percentageOfTotalPredicted, pickupCount, percentageOfTotal }"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Top Revenue Zones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/top-revenue?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "top-revenue"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of top zones to return (default: 10)"
+                }
+              ]
+            },
+            "description": "Returns the top zones ranked by revenue generated.\n\nQuery: GetTopRevenueZonesQuery(limit)\nReturns: Result<List<TopRevenueZoneDto>> { zoneId, zoneName, borough, calculatedRevenue, percentageOfTotalCalculated, predictedRevenue, percentageOfTotalPredicted, totalRevenue, percentageOfTotal }"
+          },
+          "response": []
+        },
+        {
+          "name": "Get High Stockout Zones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/zones/high-stockout?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "zones", "high-stockout"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of high-risk zones to return (default: 10)"
+                }
+              ]
+            },
+            "description": "Returns zones with the highest risk of driver stockout (supply shortage).\n\nQuery: GetHighStockoutZonesQuery(limit)\nReturns: Result<List<HighStockoutZoneDto>> { zoneId, zoneName, borough, calculatedPickupCount, calculatedAvailableDriversCount, calculatedDeficitCount, calculatedStockoutProbability, predictedPickupCount, predictedAvailableDriversCount, predictedDeficitCount, predictedStockoutProbability, pickupCount, availableDriversCount, deficitCount, stockoutProbability }"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "description": "Strategic analytics dashboard endpoints — KPIs, demand velocity, and system threshold management. Requires Admin or Dispatcher role. Route prefix: /api/v1/analytics",
+      "item": [
+        {
+          "name": "Get Top-Level KPIs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytics/kpis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analytics", "kpis"]
+            },
+            "description": "Returns the top-level KPIs for the dashboard (active drivers, total revenue, average wait time, etc.).\n\nRequires: Admin or Dispatcher role\nQuery: GetTopLevelKpisQuery()"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Demand Velocity Chart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytics/demand-velocity?zoneId=132&hours=24",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analytics", "demand-velocity"],
+              "query": [
+                {
+                  "key": "zoneId",
+                  "value": "132",
+                  "description": "Optional zone ID filter. Omit for all zones."
+                },
+                {
+                  "key": "hours",
+                  "value": "24",
+                  "description": "Number of hours to look back (default: 24)"
+                }
+              ]
+            },
+            "description": "Returns time-series chart data for AI-predicted demand velocity.\n\nRequires: Admin or Dispatcher role\nQuery: GetDemandVelocityChartQuery(ZoneId, Hours)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get System Thresholds",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytics/thresholds",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analytics", "thresholds"]
+            },
+            "description": "Returns the current system configuration for surge price multipliers and dispatch search radius.\n\nRequires: Admin or Dispatcher role\nQuery: GetSystemThresholdsQuery()"
+          },
+          "response": []
+        },
+        {
+          "name": "Update System Thresholds",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analytics/thresholds",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analytics", "thresholds"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"surgeMultipliers\": {\n    \"normal\": 1.0,\n    \"elevated\": 1.5,\n    \"critical\": 2.5\n  },\n  \"dispatchRadiusKm\": {\n    \"normal\": 2.0,\n    \"elevated\": 3.5,\n    \"critical\": 5.0\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Updates system-wide thresholds for surge pricing and dispatch search radius.\n\nRequires: Admin or Dispatcher role\nCommand: UpdateSystemThresholdsCommand(SurgeMultipliers, DispatchRadiusKm)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI Predictions",
+      "description": "Machine learning inference endpoints for demand forecasting, ETA prediction, revenue prediction, stockout risk, and vehicle repositioning optimization. Route prefix: /api/v1/ai",
+      "item": [
+        {
+          "name": "Predict Demand (15-Min)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/predict/demand-15min",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ai", "predict", "demand-15min"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zoneIds\": [132, 79, 161, 236, 48],\n  \"targetTime\": \"2024-06-15T14:00:00Z\",\n  \"roundToInt\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Predicts 15-minute trip demand for a list of zones at a specified target time.\n\nQuery: GetDemandForecast15MinQuery(ZoneIds, TargetTime, RoundToInt)"
+          },
+          "response": []
+        },
+        {
+          "name": "Predict Demand (6-Hour)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/predict/demand-6h",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ai", "predict", "demand-6h"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zoneIds\": [132, 79, 161],\n  \"targetTime\": \"2024-06-15T14:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Predicts 6-hour demand forecast for a list of zones.\n\nQuery: GetDemandForecast6hQuery(ZoneIds, TargetTime)"
+          },
+          "response": []
+        },
+        {
+          "name": "Predict ETA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/predict/eta",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ai", "predict", "eta"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"routes\": [\n    {\n      \"pickupZoneId\": 132,\n      \"dropoffZoneId\": 79,\n      \"targetTime\": \"2024-06-15T14:00:00Z\"\n    },\n    {\n      \"pickupZoneId\": 161,\n      \"dropoffZoneId\": 236,\n      \"targetTime\": \"2024-06-15T15:30:00Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Predicts ETA for one or more routes (zone pairs).\n\nQuery: GetEtaPredictionQuery(Routes: List<RouteRequest(PickupZoneId, DropoffZoneId, TargetTime)>)"
+          },
+          "response": []
+        },
+        {
+          "name": "Predict Revenue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/predict/revenue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ai", "predict", "revenue"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zoneIds\": [132, 79, 161],\n  \"targetTime\": \"2024-06-15T14:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Predicts revenue for a list of zones at a target time.\n\nQuery: GetRevenuePredictionQuery(ZoneIds, TargetTime)"
+          },
+          "response": []
+        },
+        {
+          "name": "Predict Stockout Risk",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/predict/stockout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ai", "predict", "stockout"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zoneIds\": [132, 79, 161, 236],\n  \"targetTime\": \"2024-06-15T14:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Predicts driver stockout (supply shortage) probability for a list of zones.\n\nQuery: GetStockOutPredictionQuery(ZoneIds, TargetTime)"
+          },
+          "response": []
+        },
+        {
+          "name": "Optimize Repositioning",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/optimize/repositioning",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ai", "optimize", "repositioning"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timeWindow\": \"2024-06-15T14:00:00Z\",\n  \"zoneStates\": [\n    {\n      \"zoneId\": 132,\n      \"currentDrivers\": 5,\n      \"predictedDemand\": 12.5,\n      \"currentDemand\": 8.0\n    },\n    {\n      \"zoneId\": 79,\n      \"currentDrivers\": 15,\n      \"predictedDemand\": 3.0,\n      \"currentDemand\": 2.0\n    }\n  ],\n  \"constraints\": {\n    \"maxMovesPerVehicle\": 1,\n    \"maxRelocationDistanceKm\": 5.0\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Generates an optimized fleet repositioning plan based on current supply/demand state across zones.\n\nCommand: OptimizeRepositioningCommand(TimeWindow, ZoneStates: List<ZoneSupplyState>, Constraints: OptimizationConstraints)"
+          },
+          "response": []
+        },
+        {
+          "name": "Optimize Profit Maximization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai/optimize/profit-maximization",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "ai", "optimize", "profit-maximization"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zoneStates\": [\n    {\n      \"zone_id\": 1,\n      \"current_drivers\": 12,\n      \"allow_as_source\": true,\n      \"allow_as_target\": true,\n      \"is_event_zone\": false,\n      \"is_airport_zone\": false,\n      \"hour\": 23,\n      \"day_of_week\": 6,\n      \"is_weekend\": 1,\n      \"temp_c\": 18.5,\n      \"rain_mm\": 0.0,\n      \"is_rain\": 0,\n      \"weather_code\": 1,\n      \"is_holiday\": 0,\n      \"lag_1_6h\": 45.0,\n      \"lag_2_6h\": 40.0,\n      \"lag_4_6h\": 35.0,\n      \"rolling_mean_24h\": 42.0,\n      \"rev_lag_1_6h\": 120.0,\n      \"rev_lag_1_week\": 115.0,\n      \"rev_rolling_mean_7d\": 118.0,\n      \"rev_rolling_mean_30d\": 112.0,\n      \"avg_fare\": 15.5,\n      \"tip_rate\": 0.18,\n      \"pickup_count\": 45,\n      \"dropoff_count\": 38,\n      \"net_flow\": 7.0,\n      \"activity_ratio\": 0.85,\n      \"lag_1_pickup\": 42.0,\n      \"lag_1_dropoff\": 36.0,\n      \"lag_1_net_flow\": 6.0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Optimizes driver distribution across zones to maximize profit in the next 6 hours.\n\nCommand: OptimizeProfitMaximizationCommand(ZoneStates: ProfitMaximizationInput[])\nReturns: ApiResponse<ProfitMaximizationResult>"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Simulation",
+      "description": "Real-time taxi fleet simulation engine — control the simulation lifecycle (start/pause/resume/stop), adjust speed, query status, and retrieve playback data. Route prefix: /api/v1/simulation",
+      "item": [
+        {
+          "name": "Start Simulation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/simulation/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "simulation", "start"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"durationHours\": 24,\n  \"speedFactor\": 60,\n  \"totalDrivers\": 300,\n  \"zoneCount\": 30,\n  \"startTime\": \"2024-01-15T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Starts a new faster-than-real-time simulation run.\n\nBody: SimulationStartRequest(DurationHours[1-720], SpeedFactor[1-200], TotalDrivers[1-10000], ZoneCount[1-265], StartTime)"
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Simulation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/simulation/pause",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "simulation", "pause"]
+            },
+            "description": "Pauses the currently running simulation."
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Simulation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/simulation/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "simulation", "resume"]
+            },
+            "description": "Resumes a paused simulation."
+          },
+          "response": []
+        },
+        {
+          "name": "Stop Simulation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/simulation/stop",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "simulation", "stop"]
+            },
+            "description": "Stops and terminates the current simulation session."
+          },
+          "response": []
+        },
+        {
+          "name": "Set Simulation Speed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/simulation/speed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "simulation", "speed"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"speedFactor\": 120\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Adjusts the speed multiplier of the running simulation.\n\nBody: SimulationSpeedRequest(SpeedFactor: double)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Simulation Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/simulation/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "simulation", "status"]
+            },
+            "description": "Returns the current status snapshot of the simulation (ID, status, simulated time, speed factor)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Simulation Playback",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/simulation/playback?startHour=0&endHour=23",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "simulation", "playback"],
+              "query": [
+                {
+                  "key": "startHour",
+                  "value": "0",
+                  "description": "Start hour index (default: 0)"
+                },
+                {
+                  "key": "endHour",
+                  "value": "23",
+                  "description": "End hour index (default: 23)"
+                }
+              ]
+            },
+            "description": "Returns a playback chunk for scrubbing through recorded simulation ticks."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Simulation Zone IDs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/simulation/zones",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "simulation", "zones"]
+            },
+            "description": "Returns the list of zone IDs included in the current simulation run."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Zone History (Simulation)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/simulation/zones/:zoneId/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "simulation", "zones", ":zoneId", "history"],
+              "variable": [
+                {
+                  "key": "zoneId",
+                  "value": "132",
+                  "description": "Zone integer ID"
+                }
+              ]
+            },
+            "description": "Returns the full metric history for a specific zone during the current simulation."
+          },
+          "response": []
+        },
+        {
+          "name": "Compare Zones (Simulation)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/simulation/zones/compare?zoneA=132&zoneB=79",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "simulation", "zones", "compare"],
+              "query": [
+                {
+                  "key": "zoneA",
+                  "value": "132",
+                  "description": "First zone ID to compare"
+                },
+                {
+                  "key": "zoneB",
+                  "value": "79",
+                  "description": "Second zone ID to compare"
+                }
+              ]
+            },
+            "description": "Returns and compares simulation metric history for two zones side by side."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Administrative endpoints for data aggregation and daily statistics management. Requires Manager role. Route prefix: /api/v1/admin",
+      "item": [
+        {
+          "name": "Aggregate Today",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/aggregate/today",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "aggregate", "today"]
+            },
+            "description": "Triggers daily aggregation for today's date. Computes and stores DailyStats from raw trip data.\n\nRequires: Manager role"
+          },
+          "response": []
+        },
+        {
+          "name": "Aggregate By Date",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/aggregate/:date",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "aggregate", ":date"],
+              "variable": [
+                {
+                  "key": "date",
+                  "value": "2024-01-15",
+                  "description": "Target date to aggregate (cannot be a future date). Format: yyyy-MM-dd"
+                }
+              ]
+            },
+            "description": "Triggers aggregation for a specific historical date. Returns 400 if a future date is provided.\n\nRequires: Manager role"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/stats?from=2024-01-01&to=2024-01-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "stats"],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2024-01-01",
+                  "description": "Start date for stats range (optional, default: 30 days ago). Format: yyyy-MM-dd"
+                },
+                {
+                  "key": "to",
+                  "value": "2024-01-31",
+                  "description": "End date for stats range (optional, default: today). Format: yyyy-MM-dd. Max range: 365 days."
+                }
+              ]
+            },
+            "description": "Retrieves pre-aggregated DailyStats records within a date range. Returns a max of 365 days.\n\nRequires: Manager role"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "SignalR Hubs (WebSocket)",
+      "description": "Real-time WebSocket hubs using ASP.NET Core SignalR. Connect using a SignalR client library. JWT token can be passed via query param: ?access_token={{authToken}}\n\nHub endpoints (not standard HTTP — use SignalR client):\n• /hubs/taxi — General taxi status hub\n• /hubs/tracking — Live GPS tracking hub\n• /hubs/dispatch — Real-time dispatch notification hub\n• /hubs/simulation — Simulation event streaming hub",
+      "item": [
+        {
+          "name": "[INFO] Taxi Hub — Connection Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/hubs/taxi?access_token={{authToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hubs", "taxi"],
+              "query": [
+                {
+                  "key": "access_token",
+                  "value": "{{authToken}}",
+                  "description": "JWT token for SignalR authentication (passed as query param)"
+                }
+              ]
+            },
+            "description": "SignalR Hub: TaxiHub\nPath: /hubs/taxi\n\nUse a SignalR client (not a plain HTTP request) to connect.\nJWT is passed via ?access_token= query string for WebSocket negotiation.\n\nThis request is for documentation purposes only."
+          },
+          "response": []
+        },
+        {
+          "name": "[INFO] Live Tracking Hub — Connection Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/hubs/tracking?access_token={{authToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hubs", "tracking"],
+              "query": [
+                {
+                  "key": "access_token",
+                  "value": "{{authToken}}"
+                }
+              ]
+            },
+            "description": "SignalR Hub: LiveTrackingHub\nPath: /hubs/tracking\n\nStreams real-time GPS locations for active drivers.\nUse a SignalR client to subscribe to tracking events."
+          },
+          "response": []
+        },
+        {
+          "name": "[INFO] Dispatch Hub — Connection Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/hubs/dispatch?access_token={{authToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hubs", "dispatch"],
+              "query": [
+                {
+                  "key": "access_token",
+                  "value": "{{authToken}}"
+                }
+              ]
+            },
+            "description": "SignalR Hub: DispatchHub\nPath: /hubs/dispatch\n\nSends real-time dispatch notifications to drivers and dispatchers.\nUse a SignalR client to receive dispatch events."
+          },
+          "response": []
+        },
+        {
+          "name": "[INFO] Simulation Hub — Connection Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/hubs/simulation?access_token={{authToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["hubs", "simulation"],
+              "query": [
+                {
+                  "key": "access_token",
+                  "value": "{{authToken}}"
+                }
+              ]
+            },
+            "description": "SignalR Hub: SimulationHub\nPath: /hubs/simulation\n\nStreams real-time SimulationTick events during an active simulation run.\nEach tick contains aggregate metrics and per-zone snapshots."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
