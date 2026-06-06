@@ -87,7 +87,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("SimulationCors", policy =>
     {
         var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ??
-                      new[] { "http://localhost:5173","http://localhost:3000","https://nyc-taxi-front.vercel.app" };
+                      new[] { "http://localhost:5173","http://localhost:3000","https://nyc-taxi-front.vercel.app", "https://nyc-taxi-front.vercel.app/" };
         policy.WithOrigins(origins)
             .WithHeaders("Content-Type", "Authorization", "X-Requested-With", "X-Idempotency-Key")
             .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
