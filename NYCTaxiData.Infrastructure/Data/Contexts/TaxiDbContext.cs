@@ -1097,10 +1097,16 @@ public partial class TaxiDbContext : DbContext
             entity.Property(e => e.DropoffLocationId).HasColumnName("dropoff_location_id");
             entity.Property(e => e.EndedAt).HasColumnName("ended_at");
             entity.Property(e => e.FareAmount)
-                .HasPrecision(10, 2)
+                .HasConversion(
+                    v => v.HasValue ? (double)v.Value : (double?)null,
+                    v => v.HasValue ? (decimal)v.Value : (decimal?)null
+                )
                 .HasColumnName("fare_amount");
             entity.Property(e => e.TotalAmount)
-                .HasPrecision(10, 2)
+                .HasConversion(
+                    v => v.HasValue ? (double)v.Value : (double?)null,
+                    v => v.HasValue ? (decimal)v.Value : (decimal?)null
+                )
                 .HasColumnName("total_amount");
             entity.Property(e => e.PickupLocationId).HasColumnName("pickup_location_id");
             entity.Property(e => e.ProcessStatus)
@@ -1108,7 +1114,10 @@ public partial class TaxiDbContext : DbContext
                 .HasColumnName("process_status");
             entity.Property(e => e.StartedAt).HasColumnName("started_at");
             entity.Property(e => e.TipAmount)
-                .HasPrecision(10, 2)
+                .HasConversion(
+                    v => v.HasValue ? (double)v.Value : (double?)null,
+                    v => v.HasValue ? (decimal)v.Value : (decimal?)null
+                )
                 .HasColumnName("tip_amount");
 
             entity.HasOne(d => d.Driver).WithMany(p => p.Trips)

@@ -21,10 +21,9 @@ namespace NYCTaxiData.Application.Features.Trips.Queries.GetAllTrips
             GetAllTripsQuery request,
             CancellationToken cancellationToken)
         {
-            // Query only non-deleted trips
+            // Query trips without filtering out completed ones
             var query = _unitOfWork.Trips.Query()
-                .AsNoTracking()
-                .Where(t => t.EndedAt == null);
+                .AsNoTracking();
 
             if (request.StartDate.HasValue)
                 query = query.Where(t => t.StartedAt >= request.StartDate.Value);

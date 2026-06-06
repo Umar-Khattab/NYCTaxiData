@@ -1,10 +1,12 @@
 using AutoMapper;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using NYCTaxiData.Application.Common.Plumbing;
 using NYCTaxiData.Application.DTOs.Trip;
 using NYCTaxiData.Domain.Entities;
 using NYCTaxiData.Domain.Interfaces;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,17 +34,23 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.CreateTrip
             if (!dropoffExists)
                 return Result<TripDto>.Failure($"Dropoff location with ID {request.DropoffLocationId} does not exist", "Validation");
 
-            // 4. Create Trip Entity
+            // 4. Auto-generate next TripId
+            var maxTripId = await _unitOfWork.Trips.Query()
+                .Select(t => (int?)t.TripId)
+                .MaxAsync(cancellationToken) ?? 0;
+
+            // 5. Create Trip Entity
             var trip = new Trip
             {
+                TripId = maxTripId + 1,
                 DriverId = request.DriverId,
                 PickupLocationId = request.PickupLocationId,
                 DropoffLocationId = request.DropoffLocationId,
                 FareAmount = request.FareAmount,
                 TipAmount = request.TipAmount, 
-                StartedAt = DateTime.UtcNow.AddMinutes(-20), // Simulation: started 20 mins ago
-                EndedAt = DateTime.UtcNow, 
-                ProcessStatus = "Completed"
+                StartedAt = DateTime.UtcNow,
+                EndedAt = null, 
+                ProcessStatus = "Ongoing"
             };
 
             await _unitOfWork.Trips.AddAsync(trip);

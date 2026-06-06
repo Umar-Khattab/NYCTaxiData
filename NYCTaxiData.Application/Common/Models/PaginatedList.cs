@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,6 +15,9 @@ namespace NYCTaxiData.Application.Common.Models
         public int Offset { get; init; }
         public bool HasPrevious => PageNumber > 1;
         public bool HasNext => PageNumber < TotalPages;
+
+        [System.Text.Json.Serialization.JsonConstructor]
+        public PaginatedList() { Items = new List<T>().AsReadOnly(); }
 
         // Constructor خاص لضمان استخدام الـ Factory Methods فقط
         private PaginatedList(

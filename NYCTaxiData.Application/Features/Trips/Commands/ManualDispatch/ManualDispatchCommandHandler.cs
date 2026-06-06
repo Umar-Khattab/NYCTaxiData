@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using NYCTaxiData.Application.Common.Interfaces;
 using NYCTaxiData.Application.Common.Plumbing; // تأكد من الـ Spelling المعتمد (Plumbing)
 using NYCTaxiData.Application.DTOs.Tracking;
@@ -27,10 +28,10 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
             try
             {
                 // 1️⃣ التحقق من بناء الـ TripId وحمايته من التكرار (Unique Check)
-                int finalTripId = request.TripId is int id ? id : (request.TripId ?? 0);
-
-                if (finalTripId > 0)
+                int finalTripId;
+                if (request.TripId.HasValue && request.TripId.Value > 0)
                 {
+                    finalTripId = request.TripId.Value;
                     var existingTrip = await _unitOfWork.Trips.GetByIdAsync(finalTripId);
                     if (existingTrip != null)
                     {
@@ -38,6 +39,13 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
                             $"Trip with ID {finalTripId} already exists. Please use a unique Trip ID.",
                             "DuplicateTripId");
                     }
+                }
+                else
+                {
+                    var maxTripId = await _unitOfWork.Trips.Query()
+                        .Select(t => (int?)t.TripId)
+                        .MaxAsync(cancellationToken) ?? 0;
+                    finalTripId = maxTripId + 1;
                 }
 
                 // 2️⃣ التحقق من وجود السائق
@@ -75,7 +83,8 @@ namespace NYCTaxiData.Application.Features.Trips.Commands.ManualDispatch
                     PickupLocationId = finalPickupLocationId, // هتنزل null بأمان في الـ DB
                     DropoffLocationId = finalDropoffLocationId, 
                     StartedAt = DateTime.UtcNow,
-                    EndedAt = null
+                    EndedAt = null,
+                    ProcessStatus = "Ongoing"
                 };
 
                 // 5️⃣ تحديث حالة السائق لـ مشغول برحلة
